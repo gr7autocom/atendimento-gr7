@@ -1,5 +1,9 @@
 import { NavLink, Routes, Route, Navigate } from 'react-router-dom'
 import { cn } from '../lib/utils'
+import { Departamentos } from './admin/Departamentos'
+import { Tags } from './admin/Tags'
+import { Motivos } from './admin/Motivos'
+import { MensagensRapidas } from './admin/MensagensRapidas'
 
 const ABAS = [
   { slug: 'departamentos', label: 'Departamentos' },
@@ -10,6 +14,8 @@ const ABAS = [
   { slug: 'bot', label: 'Configurações BOT' },
   { slug: 'usuarios', label: 'Usuários' },
 ]
+
+const IMPLEMENTADAS = new Set(['departamentos', 'tags', 'motivos', 'mensagens-rapidas'])
 
 export function Admin() {
   return (
@@ -30,8 +36,16 @@ export function Admin() {
       </nav>
       <Routes>
         <Route index element={<Navigate to="departamentos" replace />} />
-        {ABAS.map((a) => (
-          <Route key={a.slug} path={a.slug} element={<p className="text-[#ffffffb3]">{a.label}: em construção (Plano 3).</p>} />
+        <Route path="departamentos" element={<Departamentos />} />
+        <Route path="tags" element={<Tags />} />
+        <Route path="motivos" element={<Motivos />} />
+        <Route path="mensagens-rapidas" element={<MensagensRapidas />} />
+        {ABAS.filter((a) => !IMPLEMENTADAS.has(a.slug)).map((a) => (
+          <Route
+            key={a.slug}
+            path={a.slug}
+            element={<p className="text-[#ffffffb3]">{a.label}: chega no Plano 4.</p>}
+          />
         ))}
       </Routes>
     </div>
