@@ -111,12 +111,12 @@ RLS por departamento **no banco desde o MVP**. Helpers: `atende_departamento(dep
 - `atendimentos`: SELECT se `atende_departamento(departamento_id)` **ou** `responsavel_id = current_user_id()` **ou** `e_plantonista(plantao_id)`. Tickets em `triagem` (dep nulo) não aparecem — conduzidos pela Edge Function (service role).
 - `atendimento_mensagens`/`atendimento_anexos`/`atendimento_tag_vinculos`/`atendimento_transferencias`: SELECT se o atendimento pai é visível.
 - Catálogos e config (`departamentos`, `atendimento_tags`, `atendimento_motivos`, `atendimento_mensagens_rapidas`, `atendimento_plantoes`, `atendimento_plantao_usuarios`, `bot_mensagens`, `atendimento_horarios`, `atendimento_config`): SELECT autenticado; escrita por `can('atendimento.config')`.
-- Ações novas no catálogo `acoes` do painel: `atendimento.assumir`, `atendimento.responder`, `atendimento.finalizar`, `atendimento.transferir`, `atendimento.config`.
+- Ações novas do atendimento (slugs em `permissoes.capacidades`, **não** há tabela `acoes`): `atendimento.assumir`, `atendimento.responder`, `atendimento.finalizar`, `atendimento.transferir`, `atendimento.config`. Semeadas no perfil `admin`; manter em sincronia com `src/lib/acoes.ts`.
 - Edge Functions (webhook/envio/bot) usam **service role** (ignoram RLS).
 
 ## Reaproveitamento do painel (read-only)
 
 - `clientes` — match/vínculo por telefone. Read-only no MVP.
 - `usuarios` — atendentes/responsáveis/plantonistas.
-- `acoes` / `can()` — permissões.
+- `permissoes.capacidades` (`text[]`) / `can()` — permissões (sem tabela `acoes`).
 - `notificacoes` — **não alterar no MVP**.
