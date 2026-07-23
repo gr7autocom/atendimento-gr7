@@ -4,6 +4,7 @@ export function Tags() {
   return (
     <CatalogoCrud
       titulo="Tags"
+      singular="tag"
       tabela="atendimento_tags"
       campos={[
         { nome: 'nome', label: 'Nome', tipo: 'texto', obrigatorio: true },

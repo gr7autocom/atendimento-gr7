@@ -4,6 +4,7 @@ export function MensagensRapidas() {
   return (
     <CatalogoCrud
       titulo="Mensagens rápidas"
+      singular="mensagem rápida"
       tabela="atendimento_mensagens_rapidas"
       orderBy="atalho"
       campos={[

@@ -4,6 +4,7 @@ export function Departamentos() {
   return (
     <CatalogoCrud
       titulo="Departamentos"
+      singular="departamento"
       tabela="departamentos"
       campos={[
         { nome: 'nome', label: 'Nome', tipo: 'texto', obrigatorio: true },

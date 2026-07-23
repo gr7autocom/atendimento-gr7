@@ -14,17 +14,21 @@ type Registro = { id: string; ativo?: boolean; [k: string]: unknown }
 
 export function CatalogoCrud({
   titulo,
+  singular,
   tabela,
   campos,
   colunas,
   orderBy = 'ordem',
 }: {
   titulo: string
+  /** Nome no singular, usado no título do formulário ("Novo departamento"). */
+  singular?: string
   tabela: string
   campos: Campo[]
   colunas: string[]
   orderBy?: string
 }) {
+  const nomeForm = singular ?? titulo
   const { lista, criar, atualizar, remover } = useCrud<Registro>(tabela, orderBy)
   const [aberto, setAberto] = useState(false)
   const [editando, setEditando] = useState<Registro | null>(null)
@@ -129,7 +133,7 @@ export function CatalogoCrud({
       )}
 
       <AdminModal
-        titulo={editando ? `Editar ${titulo}` : `Novo ${titulo}`}
+        titulo={editando ? `Editar ${nomeForm}` : `Novo ${nomeForm}`}
         aberto={aberto}
         onFechar={() => setAberto(false)}
       >

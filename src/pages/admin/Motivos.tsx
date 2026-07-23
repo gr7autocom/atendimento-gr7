@@ -4,6 +4,7 @@ export function Motivos() {
   return (
     <CatalogoCrud
       titulo="Motivos"
+      singular="motivo"
       tabela="atendimento_motivos"
       campos={[
         { nome: 'nome', label: 'Nome', tipo: 'texto', obrigatorio: true },
