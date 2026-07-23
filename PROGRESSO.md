@@ -6,7 +6,7 @@
 
 **Fase de design (brainstorming) — 2026-07-23**
 
-Design aprovado (Seções 1-4). **Seção 5 (uazapi) adiada:** desenvolvemos com **adapter mock + seeds**, integração real com a uazapi entra depois (só troca o driver). **Git dedicado resolvido** (repo próprio na pasta, branch main). Próximo: escrever o **plano de implementação** (migrations+seeds → admin → inbox, com mock).
+Implementação em curso na branch `feat/fundacao`. **Plano 1 (Fundação) concluído:** deps instaladas, Tailwind v4 + tema dark do painel, Supabase client, auth compartilhada (login com a conta do painel), rotas + guarda de acesso, layout com sidebar (Atendimento/Admin) e telas placeholder. Testes verdes (4/4), build ok, tela de login validada no navegador (corrigido bug de tema dark). Seção 5 (uazapi) segue adiada (adapter mock + seeds). Próximo: **Plano 2 (Banco)** — migrations aditivas das 16 tabelas + RLS + helpers + seeds, no repo do painel.
 
 ## 📋 Próximos passos
 
