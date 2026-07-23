@@ -6,7 +6,7 @@
 
 **Fase de design (brainstorming) — 2026-07-23**
 
-Design do MVP sendo fechado por seções. Seções 1 (Escopo), 2 (Modelo de dados), 3 (Fluxo do bot) e 4 (Telas) aprovadas. Falta fechar: integração uazapi (Seção 5, depende de conta uazapi). Depois: plano de implementação. Ordem de implementação já definida: migrations+seeds → admin (config) → inbox → dashboard/relatórios → uazapi.
+Design aprovado (Seções 1-4). **Seção 5 (uazapi) adiada:** desenvolvemos com **adapter mock + seeds**, integração real com a uazapi entra depois (só troca o driver). **Git dedicado resolvido** (repo próprio na pasta, branch main). Próximo: escrever o **plano de implementação** (migrations+seeds → admin → inbox, com mock).
 
 ## 📋 Próximos passos
 

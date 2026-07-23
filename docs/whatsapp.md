@@ -26,6 +26,8 @@ interface WhatsAppDriver {
 
 Trocar uazapi → outro provedor (ex.: Evolution API, ou a API oficial da Meta) = trocar só o driver. A inbox, o banco e o app não mudam.
 
+> **MVP sem uazapi:** o desenvolvimento começa com um **driver mock** (implementa a mesma interface, simula receber/enviar gravando direto no banco) + **seeds de exemplo**. Isso destrava inbox e bot sem conta uazapi. A integração real vira um passo isolado depois, trocando o mock pelo driver uazapi.
+
 ## Fluxo técnico (Edge Functions, Deno)
 
 - **Receber:** `whatsapp-webhook` (endpoint público) recebe o webhook da uazapi → valida → `normalizarWebhook` → deduplica por `wa_message_id` → casa/cria `contato` + `atendimento` → grava `atendimento_mensagens` (`entrada`) → realtime atualiza a inbox → dispara lógica do bot.
