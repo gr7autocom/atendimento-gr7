@@ -12,18 +12,12 @@ Implementação em curso. **Planos 1 (Fundação), 2 (Banco) e 3 (Admin — cat�
 
 ## 📋 Próximos passos
 
-### Fechar o design (antes de codar)
+### Implementação (o que falta)
 
-- [ ] Seção 5 — Integração uazapi + adapter (validar [docs/whatsapp.md](docs/whatsapp.md))
-- [ ] Escrever spec final + plano de implementação
-
-### Implementação do MVP (ordem — "base navegável primeiro, uazapi por último")
-
-1. [ ] Scaffold: instalar deps (espelhar painel), Tailwind v4, design tokens dark, Supabase client, auth compartilhada, layout + sidebar
-2. [ ] Migrations das tabelas novas (aditivas, no repo do painel)
-3. [ ] Configurações: CRUD Departamentos · vínculo atendentes↔departamentos · mensagens do bot · horários
-4. [ ] Inbox: fila do departamento + meus atendimentos · thread de mensagens · Assumir/Responder/Finalizar
-5. [ ] Integração uazapi: adapter + webhook (receber) + envio + bot por ticket — **depende de conta uazapi + número**
+1. [ ] (P0) **Plano 4 — Admin:** Configurações BOT (12 textos + flags), Horário de Funcionamento (comercial + plantão + plantonistas + msg fora de horário), Usuários (vínculo atendente↔departamento)
+2. [ ] (P0) **Inbox:** filas (Meus/Pendentes/Potenciais) · conversa · painel do contato · Assumir/Responder/Transferir/Finalizar · **adapter mock + bot simulado** (sem uazapi)
+3. [ ] (P1) **Etapa de design:** identidade visual **própria** do Atendimento (ADR-10), repolindo admin + inbox. Feita depois das telas, por decisão do cliente
+4. [ ] (P2) **Integração uazapi:** adapter real + webhook + envio (Seção 5 do design, adiada) — **depende de conta uazapi + número**
 
 ### Pré-requisitos externos (negócio — bloqueiam o passo 5)
 

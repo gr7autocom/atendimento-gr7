@@ -18,7 +18,7 @@ Plataforma de atendimento via WhatsApp da GR7, operada pela equipe interna, **in
 - **Frontend:** React 19 + TypeScript + Vite · TailwindCSS v4 (`@tailwindcss/vite`, sem config) · lucide-react · `clsx`+`tailwind-merge` (`cn`) · **TanStack Query** (data-fetching/cache do inbox) · **Zod** (validação de forms e payload do webhook)
 - **Backend:** Supabase compartilhado · Edge Functions (Deno) para webhook/envio WhatsApp
 - **WhatsApp:** **uazapi** (API REST SaaS não-oficial) via **adapter** — ver [docs/whatsapp.md](docs/whatsapp.md)
-- **Design:** tema **dark**, idêntico ao painel — ver [docs/design.md](docs/design.md)
+- **Design:** tema **dark** com visual **próprio** do Atendimento (tokens de cor base vindos do painel; layout e componentes próprios). Etapa de design dedicada no fim da implementação — ver [docs/design.md](docs/design.md)
 
 ## Credenciais Supabase
 
@@ -41,7 +41,7 @@ Plataforma de atendimento via WhatsApp da GR7, operada pela equipe interna, **in
 
 ## Regras específicas
 
-1. Design **dark idêntico ao painel** — copiar tokens/componentes, não reinventar.
+1. Design **dark com identidade própria** do Atendimento (decisão revista em 2026-07-23). Tokens de cor base copiados do painel; layout e componentes são próprios, definidos numa **etapa de design dedicada ao final** da implementação. Até lá, as telas saem funcionais e cruas de propósito.
 2. Toda tabela nova com RLS; atendente vê tickets dos **seus departamentos** (ver [docs/db.md](docs/db.md)).
 3. Provedor WhatsApp atrás de um **adapter** — nunca chamar a uazapi direto do código de domínio.
 4. Nada de multi-tenancy: **cliente final não loga** — só a equipe interna opera.

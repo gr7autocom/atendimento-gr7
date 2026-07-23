@@ -1,6 +1,6 @@
 # Design system — GR7 Atendimento
 
-> Objetivo: visual **dark idêntico ao painel**. O design system é **copiado** do painel (não importado), para manter o isolamento total. Fonte: `painel-implantacao-v2/`.
+> **Decisão revista em 2026-07-23:** o Atendimento terá **visual próprio** (dark), mais elaborado que o painel. Os **tokens de cor** continuam vindo do painel (já copiados em `src/design-tokens.css`), mas layout e componentes são próprios, definidos numa **etapa de design dedicada ao final da implementação**. Até lá as telas saem funcionais e cruas de propósito. O conteúdo abaixo sobre "copiar componentes do painel" fica como **referência opcional**, não mais como regra.
 
 ## Princípios
 

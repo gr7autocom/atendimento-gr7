@@ -10,6 +10,10 @@ Registro das decisões fechadas no discovery/design, com justificativa. Data: 20
 **Decisão:** usar a **uazapi** (SaaS não-oficial, online 24/7 do lado do provedor), atrás de um **adapter**. NÃO usar API oficial da Meta por ora. Baileys self-host + Fly.io ficou **fora do escopo** (não manter processo/sessão do nosso lado).
 **Por quê:** backend serverless (Edge Functions) não hospeda processo persistente; uazapi encaixa (webhook + REST) e terceiriza a operação de sessão. Adapter mantém a decisão reversível (→ Evolution API ou API oficial da Meta). Risco de ban existe em não-oficial.
 
+## ADR-10 — Visual próprio do Atendimento (revisa a decisão de "idêntico ao painel")
+**Decisão (2026-07-23):** o Atendimento terá **identidade visual própria** (dark), mais elaborada que o painel, definida numa **etapa de design dedicada no fim** da implementação. Os tokens de cor base seguem vindos do painel.
+**Por quê:** a inbox de atendimento pede um layout mais denso que as telas do painel, e o cliente quer um produto mais acabado. Trade-off aceito conscientemente: as telas construídas antes dessa etapa saem cruas e serão repolidas depois (retrabalho conhecido).
+
 ## ADR-03 — Migrations aditivas no repo do painel
 **Decisão:** as tabelas novas moram no `supabase/migrations/` do painel (fonte única já linkada) e o MVP só faz `CREATE TABLE` — nenhum `ALTER`/`DROP` em tabela do painel.
 **Por quê:** o painel está em produção; adição pura não afeta o funcionamento. Um único diretório de migrations por banco evita históricos divergentes.
