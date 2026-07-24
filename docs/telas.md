@@ -37,7 +37,15 @@ Layout de 3 colunas no desktop:
 ```
 
 ### Coluna 1 — Filas
-- Abas: **Meus** (em atendimento comigo), **Pendentes** (na fila esperando assumir), **Potenciais** (contato sem cadastro de cliente).
+
+As três abas são **exclusivas**: um chamado aparece em uma só, nunca duplicado.
+
+- **Meus** — tem responsável e o responsável sou eu.
+- **Pendentes** — na fila, sem dono, e o contato **já tem empresa vinculada**.
+- **Potenciais** — contato **sem cadastro**, sem dono. Cliente novo cai aqui e **não** aparece em Pendentes.
+
+**Fluxo do potencial (igual ao Zintech):** o atendente abre o chamado, clica em **Aceitar**, escolhe a **empresa** (busca na base de `clientes` do painel) e o **setor**, e o chamado é assumido por ele, indo para Meus. Criar empresa nova continua sendo tarefa do painel: aqui só se **vincula** a uma existente.
+
 - Chamados de **plantão** entram em **Pendentes** com um **selo "plantão"** (não é aba separada).
 - Cada item: nome do contato, departamento, hora da última mensagem, selo de tag/plantão, indicador de anexo.
 - Filtro por departamento respeita a RLS (o atendente só vê os seus).

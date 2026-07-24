@@ -28,11 +28,15 @@ export function ListaChamados({
 }) {
   const [fila, setFila] = useState<Fila>('pendentes')
 
+  // As três abas são exclusivas: um chamado aparece em uma só.
+  // Sem cadastro vai para Potenciais (mesmo estando na fila), até alguém
+  // vincular a empresa e assumir. Com dono, vai para Meus.
   const ativos = atendimentos.filter((a) => a.status !== 'finalizado')
+  const semCadastro = (a: AtendimentoLista) => !a.contato?.cliente_id
   const listas: Record<Fila, AtendimentoLista[]> = {
     meus: ativos.filter((a) => a.responsavel_id === usuarioId),
-    pendentes: ativos.filter((a) => a.status === 'na_fila'),
-    potenciais: ativos.filter((a) => a.contato && !a.contato.cliente_id),
+    pendentes: ativos.filter((a) => a.status === 'na_fila' && !a.responsavel_id && !semCadastro(a)),
+    potenciais: ativos.filter((a) => !a.responsavel_id && semCadastro(a)),
   }
   const abas: { id: Fila; label: string }[] = [
     { id: 'meus', label: 'Meus' },

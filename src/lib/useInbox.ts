@@ -1,12 +1,19 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from './supabase'
 
+export type EmpresaResumo = { id: string; razao_social: string | null; nome_fantasia: string | null }
+
 export type ContatoResumo = {
   id: string
   nome: string | null
   nome_whatsapp: string | null
   telefone: string
   cliente_id: string | null
+  cliente: EmpresaResumo | null
+}
+
+export function nomeEmpresa(e: EmpresaResumo | null | undefined) {
+  return e?.nome_fantasia || e?.razao_social || null
 }
 
 export type StatusAtendimento = 'triagem' | 'na_fila' | 'em_atendimento' | 'finalizado'
@@ -32,7 +39,26 @@ export type Mensagem = {
 }
 
 const SELECT_ATENDIMENTO =
-  '*, contato:contatos(id, nome, nome_whatsapp, telefone, cliente_id), departamento:departamentos(nome)'
+  '*, contato:contatos(id, nome, nome_whatsapp, telefone, cliente_id, cliente:clientes(id, razao_social, nome_fantasia)), departamento:departamentos(nome)'
+
+/** Clientes do painel, somente leitura, para vincular um contato à empresa. */
+export function useClientes(busca: string) {
+  return useQuery({
+    queryKey: ['clientes', busca],
+    enabled: busca.trim().length >= 2,
+    queryFn: async () => {
+      const termo = `%${busca.trim()}%`
+      const { data, error } = await supabase
+        .from('clientes')
+        .select('id, razao_social, nome_fantasia')
+        .or(`razao_social.ilike.${termo},nome_fantasia.ilike.${termo}`)
+        .order('nome_fantasia')
+        .limit(20)
+      if (error) throw error
+      return (data ?? []) as unknown as EmpresaResumo[]
+    },
+  })
+}
 
 export function useAtendimentos() {
   return useQuery({

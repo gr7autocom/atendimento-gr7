@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
-import { Send, UserCheck, ArrowLeftRight, CheckCheck } from 'lucide-react'
+import { Send, UserCheck, ArrowLeftRight, CheckCheck, UserPlus } from 'lucide-react'
+import { AceitarPotencial } from './AceitarPotencial'
 import { useMensagens, useAcoesAtendimento, type AtendimentoLista } from '../../lib/useInbox'
 import { useCrud } from '../../lib/useCrud'
 import { useUsuarios } from '../../lib/useVinculos'
@@ -36,6 +37,7 @@ export function Conversa({
   const [texto, setTexto] = useState('')
   const [modalTransferir, setModalTransferir] = useState(false)
   const [modalFinalizar, setModalFinalizar] = useState(false)
+  const [modalAceitar, setModalAceitar] = useState(false)
   const [destinoDep, setDestinoDep] = useState('')
   const [destinoUsuario, setDestinoUsuario] = useState('')
   const [motivoId, setMotivoId] = useState('')
@@ -51,6 +53,7 @@ export function Conversa({
   const souResponsavel = atendimento.responsavel_id === usuarioId
   const semDono = !atendimento.responsavel_id
   const finalizado = atendimento.status === 'finalizado'
+  const semCadastro = !atendimento.contato?.cliente_id
 
   function enviar(e: FormEvent) {
     e.preventDefault()
@@ -76,14 +79,23 @@ export function Conversa({
         </div>
         {!finalizado && (
           <div className="flex items-center gap-2">
-            {semDono && (
-              <button
-                onClick={() => usuarioId && assumir.mutate({ id: atendimento.id, usuarioId })}
-                className="flex items-center gap-1 rounded bg-[#0078d4] text-[#ffffff] text-sm px-3 py-1.5"
-              >
-                <UserCheck size={16} /> Assumir
-              </button>
-            )}
+            {semDono &&
+              (semCadastro ? (
+                <button
+                  onClick={() => setModalAceitar(true)}
+                  title="Vincular a empresa, escolher o setor e assumir"
+                  className="flex items-center gap-1 rounded bg-[#0078d4] text-[#ffffff] text-sm px-3 py-1.5"
+                >
+                  <UserPlus size={16} /> Aceitar
+                </button>
+              ) : (
+                <button
+                  onClick={() => usuarioId && assumir.mutate({ id: atendimento.id, usuarioId })}
+                  className="flex items-center gap-1 rounded bg-[#0078d4] text-[#ffffff] text-sm px-3 py-1.5"
+                >
+                  <UserCheck size={16} /> Assumir
+                </button>
+              ))}
             <button
               onClick={() => setModalTransferir(true)}
               className="flex items-center gap-1 rounded bg-[#ffffff14] text-[#ffffff] text-sm px-3 py-1.5"
@@ -147,6 +159,15 @@ export function Conversa({
             <Send size={16} /> Enviar
           </button>
         </form>
+      )}
+
+      {modalAceitar && (
+        <AceitarPotencial
+          atendimento={atendimento}
+          usuarioId={usuarioId}
+          aberto={modalAceitar}
+          onFechar={() => setModalAceitar(false)}
+        />
       )}
 
       <AdminModal titulo="Transferir atendimento" aberto={modalTransferir} onFechar={() => setModalTransferir(false)}>

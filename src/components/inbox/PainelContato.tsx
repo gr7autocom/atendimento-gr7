@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useAtualizarContato, type AtendimentoLista } from '../../lib/useInbox'
+import { useAtualizarContato, nomeEmpresa, type AtendimentoLista } from '../../lib/useInbox'
 
 const ROTULO_STATUS: Record<string, string> = {
   triagem: 'No bot',
@@ -55,10 +55,10 @@ export function PainelContato({ atendimento }: { atendimento: AtendimentoLista |
       <div>
         <div className="text-xs text-[#ffffffb3]">Empresa</div>
         {contato?.cliente_id ? (
-          <div className="text-[#ffffff] text-sm">Vinculada ao cadastro do painel</div>
+          <div className="text-[#ffffff] text-sm">{nomeEmpresa(contato.cliente) ?? 'Cadastro vinculado'}</div>
         ) : (
           <div className="text-[#ffffffb3] text-sm">
-            Sem cadastro. O vínculo com a empresa chega junto da etapa de design.
+            Sem cadastro. Use o botão Aceitar para vincular a empresa e assumir.
           </div>
         )}
       </div>
