@@ -4,24 +4,9 @@
 
 ## 🔄 Em Andamento
 
-**Checkpoint salvo em 2026-07-24 11:48**
+_(nada no momento)_
 
-### Feito nesta sessão
-- Reorganização estilo Zintech: casca única (`AppShell`) com **sidebar recolhido que expande no hover**, entrada por papel no login (bug de corrida do login corrigido).
-- **Visibilidade por dono** (fila única) + perfil `suporte` habilitado a atender (migrations aditivas no painel: `criar_atendimento`, `rls_visibilidade`).
-- Modal **Criar atendimento** (RPC), no lugar do simulador.
-- **Dashboard de supervisão dentro do Atendimentos** (área direita, X fecha a conversa e volta): filtra a lista por departamento/atendente (drill-down na setinha) e cores sólidas por métrica; cards refinados (borda inteira + números alinhados).
-- Polimento com **frontend-design**: painel do contato (avatar/status), lista (sem clipe), **chat** (avatar no header, coluna centralizada, separador de dia, check de enviado, estado vazio).
-- Regra registrada (CLAUDE.md 6 + memória): toda UI aciona skill de design; usar skills/plugins proativamente.
-
-### Em meio de edição
-- Nada pendente de commit (working tree limpo).
-
-### Próximo passo
-- Iniciar o **polimento das telas de admin** (Departamentos, Tags, Motivos, Mensagens rápidas, Configurações BOT, Horário, Usuários), uma por vez: usuário envia o print do Zintech → aciono `frontend-design` → aplico semelhante no tema dark → valido → commito.
-
-### Decisões pendentes
-- Integração **uazapi** segue adiada (depende de conta/número); ela também preenche as métricas do dashboard hoje em 0 (Atendentes online, Novas mensagens, Retornos).
+**Próximo:** polimento das **telas de admin** (Departamentos, Tags, Motivos, Mensagens rápidas, Configurações BOT, Horário, Usuários), uma por vez, a partir dos prints do Zintech. Integração **uazapi** segue adiada (depende de conta/número; preenche as métricas do dashboard hoje em 0).
 
 ## 📋 Próximos passos
 
@@ -39,6 +24,7 @@
 
 ## ✅ Concluído
 
+- 2026-07-24 — **Responsividade mobile do atendimento (padrão Zintech).** Mestre-detalhe no mobile: abrir uma conversa ocupa a tela cheia (a lista some), com **←** para voltar; menu **⋮** no chat com Dados do atendimento, Transferir, Finalizar (e Assumir/Aceitar quando couber); "Dados do atendimento" abre o painel do contato em tela cheia. No mobile a faixa de ícones do sidebar some e a navegação vai para um **menu de tela cheia aberto pela foto do usuário** (avatar + perfil + seções Menu/Conta). O admin no mobile vê **só as conversas** (dashboard é `lg+`). Dashboard passou a **preencher 100%** da largura com colunas balanceadas (nome 40%, métricas 20%, centralizadas) e cabeçalho destacado. Validado em 375/768/1000/1280/1440. Testes 8/8, build ok.
 - 2026-07-24 — **Refino do chat (frontend-design).** Cabeçalho da conversa com avatar do contato; **coluna de mensagens centralizada** (máx. 820px, legível em telas largas) com o compositor alinhado; **separadores de dia** (Hoje/Ontem/data); bolha de saída com **check de enviado** (✓✓) ao lado do horário e cantos refinados; estado vazio com ícone + orientação; aviso de finalizado com ícone. Testes 8/8, build ok.
 - 2026-07-24 — **Regra: UI sempre com skill de design + polimento do atendimento.** Registrada a regra (CLAUDE.md regra 6 + memória): toda criação/ajuste de UI aciona `frontend-design` antes de escrever, e usar skills/plugins proativamente. Cards do dashboard refeitos (borda inteira colorida + fundo tingido, sem barra lateral; números ancorados embaixo para alinhar). Painel do contato repaginado com avatar + selo WhatsApp, nome e status no topo, protocolo em linha limpa. Lista sem o clipe que aparecia sempre (enganoso). Testes 8/8, build ok.
 - 2026-07-24 — **Dashboard vira filtro da lista + cores por métrica.** As tabelas do dashboard filtram a lista da esquerda: clicar num **departamento** filtra por setor; a setinha expande os **atendentes com ativo naquele setor** e clicar filtra por setor + atendente; simétrico na tabela **por atendente** (expande os setores em que ele tem ativo). O filtro de atendente aparece como **chip** com **×** no topo da lista; o de setor usa o seletor de setores. Cores sólidas por métrica nos 6 cards (accent + número) e nas contagens (Ativos azul, Pendentes âmbar, etc.). Estado de filtro elevado ao `Inbox` e compartilhado com `ListaChamados` e `Dashboard`. Validado no navegador: expandir SUPORTE GERAL → Suporte GR7/Pabllo; clicar Pabllo → lista só com a conversa dele no setor + chip; limpar chip mantém o setor; expandir Pabllo (por atendente) → SUPORTE GERAL. Testes 8/8, build ok.
