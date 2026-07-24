@@ -1,6 +1,9 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { MessagesSquare } from 'lucide-react'
 import { useAuth } from '../lib/auth'
+import { Botao } from '../components/ui/Botao'
+import { Entrada } from '../components/ui/Campo'
 
 export function Login() {
   const { signIn } = useAuth()
@@ -24,34 +27,48 @@ export function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <form onSubmit={onSubmit} className="w-full max-w-sm flex flex-col gap-3">
-        <h1 className="text-[#ffffff] text-xl font-bold">GR7 Atendimento</h1>
-        <input
-          type="email"
-          placeholder="E-mail"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="rounded px-3 py-2 bg-[#ffffff1a] text-[#ffffff]"
-          required
-        />
-        <input
-          type="password"
-          placeholder="Senha"
-          value={senha}
-          onChange={(e) => setSenha(e.target.value)}
-          className="rounded px-3 py-2 bg-[#ffffff1a] text-[#ffffff]"
-          required
-        />
-        {erro && <p className="text-red-400 text-sm">{erro}</p>}
-        <button
-          type="submit"
-          disabled={enviando}
-          className="rounded px-3 py-2 bg-[#0078d4] text-[#ffffff] font-medium disabled:opacity-60"
+    <div className="min-h-screen flex items-center justify-center p-4 bg-sf-0">
+      <div className="w-full max-w-[360px]">
+        <div className="flex items-center gap-2.5 mb-6">
+          <div className="w-9 h-9 rounded-[8px] bg-br-1 flex items-center justify-center">
+            <MessagesSquare size={18} className="text-white" />
+          </div>
+          <div>
+            <div className="text-[15px] font-semibold text-tx-1 leading-tight">GR7 Atendimento</div>
+            <div className="text-[12px] text-tx-3 leading-tight">Central de WhatsApp da equipe</div>
+          </div>
+        </div>
+
+        <form
+          onSubmit={onSubmit}
+          className="flex flex-col gap-4 rounded-[10px] border border-bd-1 bg-sf-1 p-5"
         >
-          {enviando ? 'Entrando…' : 'Entrar'}
-        </button>
-      </form>
+          <Entrada
+            rotulo="E-mail"
+            type="email"
+            placeholder="voce@gr7autocom.com.br"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+          <Entrada
+            rotulo="Senha"
+            type="password"
+            placeholder="Sua senha do painel"
+            value={senha}
+            onChange={(e) => setSenha(e.target.value)}
+            erro={erro}
+            required
+          />
+          <Botao variante="primario" type="submit" disabled={enviando} className="w-full">
+            {enviando ? 'Entrando…' : 'Entrar'}
+          </Botao>
+        </form>
+
+        <p className="text-[12px] text-tx-3 mt-4 text-center">
+          Use a mesma conta do Painel de Implantação.
+        </p>
+      </div>
     </div>
   )
 }

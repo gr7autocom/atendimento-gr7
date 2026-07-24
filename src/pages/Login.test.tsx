@@ -13,8 +13,10 @@ describe('Login', () => {
         </MemoryRouter>
       </AuthProvider>
     )
-    expect(screen.getByPlaceholderText('E-mail')).toBeInTheDocument()
-    expect(screen.getByPlaceholderText('Senha')).toBeInTheDocument()
+    // busca por rótulo (e não placeholder): é o que o usuário lê e o que o
+    // leitor de tela anuncia
+    expect(screen.getByLabelText('E-mail')).toBeInTheDocument()
+    expect(screen.getByLabelText('Senha')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /entrar/i })).toBeInTheDocument()
   })
 })
