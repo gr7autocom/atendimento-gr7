@@ -96,7 +96,13 @@ export function ListaChamados({
   }
 
   return (
-    <div className="lg:w-[320px] shrink-0 bg-sf-1 border-b lg:border-b-0 lg:border-r border-bd-1 flex flex-col min-h-0">
+    <div
+      className={cn(
+        'lg:w-[320px] shrink-0 bg-sf-1 border-b lg:border-b-0 lg:border-r border-bd-1 flex-col min-h-0',
+        // No mobile, ao abrir uma conversa a lista some (mestre-detalhe); no desktop fica sempre.
+        selecionadoId ? 'hidden lg:flex' : 'flex'
+      )}
+    >
       <div className="p-2.5 flex flex-col gap-2 border-b border-bd-1">
         <div className="flex items-center gap-1.5">
           <div className="relative flex-1">

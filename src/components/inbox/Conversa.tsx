@@ -120,7 +120,7 @@ export function Conversa({
                     icone={<UserPlus size={15} />}
                     title="Vincular a empresa, escolher o setor e assumir"
                   >
-                    Aceitar
+                    <span className="hidden sm:inline">Aceitar</span>
                   </Botao>
                 ) : (
                   <Botao
@@ -129,7 +129,7 @@ export function Conversa({
                     onClick={() => usuarioId && assumir.mutate({ id: atendimento.id, usuarioId })}
                     icone={<UserCheck size={15} />}
                   >
-                    Assumir
+                    <span className="hidden sm:inline">Assumir</span>
                   </Botao>
                 ))}
               <Botao
@@ -138,7 +138,7 @@ export function Conversa({
                 onClick={() => setModalTransferir(true)}
                 icone={<ArrowLeftRight size={15} />}
               >
-                Transferir
+                <span className="hidden sm:inline">Transferir</span>
               </Botao>
               <Botao
                 variante="neutro"
@@ -146,7 +146,7 @@ export function Conversa({
                 onClick={() => setModalFinalizar(true)}
                 icone={<CheckCheck size={15} />}
               >
-                Finalizar
+                <span className="hidden sm:inline">Finalizar</span>
               </Botao>
             </>
           )}

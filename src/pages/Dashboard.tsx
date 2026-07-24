@@ -103,7 +103,9 @@ export function Dashboard({
 
   const carregando = atendimentos.isLoading || departamentos.lista.isLoading
 
-  const thCls = 'h-9 px-3 text-[12px] font-medium text-tx-3 border-b border-bd-1 whitespace-nowrap text-left'
+  const thCls = 'h-9 px-3 text-[12px] font-medium text-tx-3 border-b border-bd-1 whitespace-nowrap'
+  const thNome = cn(thCls, 'text-left w-[40%]')
+  const thNum = cn(thCls, 'text-center w-[20%]')
   const rowBase = 'border-b border-bd-1 last:border-0 transition-colors duration-[120ms]'
 
   return (
@@ -142,13 +144,13 @@ export function Dashboard({
             <LinhasCarregando linhas={4} />
           ) : (
             <div className="overflow-x-auto rounded-[10px] border border-bd-1 bg-sf-1">
-              <table className="w-full text-sm border-collapse">
+              <table className="w-full min-w-[560px] text-sm border-collapse table-fixed">
                 <thead>
-                  <tr>
-                    <th className={thCls}>Departamento</th>
-                    <th className={cn(thCls, 'w-24 text-center')}>Ativos</th>
-                    <th className={cn(thCls, 'w-24 text-center')}>Pendentes</th>
-                    <th className={cn(thCls, 'w-24 text-center')}>Retornos</th>
+                  <tr className="bg-sf-2">
+                    <th className={thNome}>Departamento</th>
+                    <th className={thNum}>Ativos</th>
+                    <th className={thNum}>Pendentes</th>
+                    <th className={thNum}>Retornos</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -228,13 +230,13 @@ export function Dashboard({
             <p className="text-[13px] text-tx-3">Ninguém com atendimento ativo no momento.</p>
           ) : (
             <div className="overflow-x-auto rounded-[10px] border border-bd-1 bg-sf-1">
-              <table className="w-full text-sm border-collapse">
+              <table className="w-full min-w-[560px] text-sm border-collapse table-fixed">
                 <thead>
-                  <tr>
-                    <th className={thCls}>Atendente</th>
-                    <th className={cn(thCls, 'w-24 text-center')}>Ativos</th>
-                    <th className={cn(thCls, 'w-24 text-center')}>Novas</th>
-                    <th className={cn(thCls, 'w-24 text-center')}>Retornos</th>
+                  <tr className="bg-sf-2">
+                    <th className={thNome}>Atendente</th>
+                    <th className={thNum}>Ativos</th>
+                    <th className={thNum}>Novas</th>
+                    <th className={thNum}>Retornos</th>
                   </tr>
                 </thead>
                 <tbody>

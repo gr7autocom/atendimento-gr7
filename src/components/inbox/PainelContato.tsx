@@ -21,7 +21,7 @@ export function PainelContato({ atendimento }: { atendimento: AtendimentoLista |
   const contato = atendimento.contato
 
   return (
-    <aside className="lg:w-[272px] shrink-0 bg-sf-1 border-t lg:border-t-0 lg:border-l border-bd-1 overflow-y-auto">
+    <aside className="hidden lg:block lg:w-[272px] shrink-0 bg-sf-1 lg:border-l border-bd-1 overflow-y-auto">
       <div className="p-5 flex flex-col items-center text-center border-b border-bd-1">
         <Avatar nome={nomeContato(atendimento)} tamanho={60} whatsapp />
         <div className="mt-2.5 text-[14px] font-medium text-tx-1 max-w-full truncate">
