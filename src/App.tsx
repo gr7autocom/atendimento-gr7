@@ -1,21 +1,14 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider } from './lib/auth'
-import { usePermissao } from './lib/permissoes'
 import { ProtectedRoute } from './components/ProtectedRoute'
-import { LayoutAtendimento } from './components/LayoutAtendimento'
-import { LayoutAdmin } from './components/LayoutAdmin'
+import { AppShell } from './components/AppShell'
 import { Login } from './pages/Login'
 import { Inbox } from './pages/Inbox'
+import { Dashboard } from './pages/Dashboard'
 import { Admin } from './pages/Admin'
 
 const queryClient = new QueryClient()
-
-/** Depois do login, cada papel cai no seu ambiente: admin no painel, suporte no atendimento. */
-function InicioPorPapel() {
-  const { isAdmin } = usePermissao()
-  return <Navigate to={isAdmin ? '/admin' : '/inbox'} replace />
-}
 
 export default function App() {
   return (
@@ -25,20 +18,22 @@ export default function App() {
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route
-              path="/"
+              path="/inbox"
               element={
                 <ProtectedRoute>
-                  <InicioPorPapel />
+                  <AppShell>
+                    <Inbox />
+                  </AppShell>
                 </ProtectedRoute>
               }
             />
             <Route
-              path="/inbox"
+              path="/dashboard"
               element={
-                <ProtectedRoute>
-                  <LayoutAtendimento>
-                    <Inbox />
-                  </LayoutAtendimento>
+                <ProtectedRoute requireAdmin>
+                  <AppShell>
+                    <Dashboard />
+                  </AppShell>
                 </ProtectedRoute>
               }
             />
@@ -46,13 +41,14 @@ export default function App() {
               path="/admin/*"
               element={
                 <ProtectedRoute requireAdmin>
-                  <LayoutAdmin>
+                  <AppShell>
                     <Admin />
-                  </LayoutAdmin>
+                  </AppShell>
                 </ProtectedRoute>
               }
             />
-            <Route path="*" element={<Navigate to="/" replace />} />
+            {/* Todos os papéis começam no atendimento; o admin acessa o resto pelo menu. */}
+            <Route path="*" element={<Navigate to="/inbox" replace />} />
           </Routes>
         </BrowserRouter>
       </AuthProvider>

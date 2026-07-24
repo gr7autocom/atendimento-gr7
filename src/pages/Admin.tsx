@@ -1,5 +1,4 @@
-import { NavLink, Routes, Route, Navigate } from 'react-router-dom'
-import { cn } from '../lib/utils'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import { Departamentos } from './admin/Departamentos'
 import { Tags } from './admin/Tags'
 import { Motivos } from './admin/Motivos'
@@ -8,41 +7,11 @@ import { ConfiguracoesBot } from './admin/ConfiguracoesBot'
 import { HorarioFuncionamento } from './admin/HorarioFuncionamento'
 import { Usuarios } from './admin/Usuarios'
 
-const ABAS = [
-  { slug: 'departamentos', label: 'Departamentos' },
-  { slug: 'tags', label: 'Tags' },
-  { slug: 'motivos', label: 'Motivos' },
-  { slug: 'mensagens-rapidas', label: 'Mensagens rápidas' },
-  { slug: 'horario', label: 'Horário de Funcionamento' },
-  { slug: 'bot', label: 'Configurações BOT' },
-  { slug: 'usuarios', label: 'Usuários' },
-]
-
+/** A navegação entre as seções fica no sidebar; aqui só renderiza a tela da rota. */
 export function Admin() {
   return (
-    <div className="min-h-full">
-      <header className="sticky top-0 z-10 bg-sf-0/95 backdrop-blur border-b border-bd-1">
-        <nav className="px-6 py-3 flex flex-wrap gap-1.5">
-          {ABAS.map((a) => (
-            <NavLink
-              key={a.slug}
-              to={`/admin/${a.slug}`}
-              className={({ isActive }) =>
-                cn(
-                  'h-7 px-2.5 inline-flex items-center rounded-[6px] text-[13px] transition-colors duration-[120ms]',
-                  isActive
-                    ? 'bg-br-soft text-br-2 font-medium'
-                    : 'text-tx-2 hover:text-tx-1 hover:bg-sf-2'
-                )
-              }
-            >
-              {a.label}
-            </NavLink>
-          ))}
-        </nav>
-      </header>
-
-      <div className="p-6">
+    <div className="h-full overflow-y-auto">
+      <div className="p-5 sm:p-6">
         <Routes>
           <Route index element={<Navigate to="departamentos" replace />} />
           <Route path="departamentos" element={<Departamentos />} />

@@ -4,12 +4,12 @@
 
 ## Navegação geral
 
-O app tem **duas áreas separadas**, cada uma com casca própria e uma **barra do topo** comum (`BarraTopo`: marca à esquerda, notificações e menu do usuário à direita):
+App único (`AppShell`): **barra do topo** (`BarraTopo`: marca à esquerda, notificações e menu do usuário à direita) e um **sidebar recolhido** à esquerda (`SidebarRecolhida`) que expande no hover, revisto em 2026-07-24. Os itens do menu aparecem **por papel**:
 
-- **Atendimento** (`/inbox`, `LayoutAtendimento`) — usada pelos atendentes no dia a dia.
-- **Administração** (`/admin`, `LayoutAdmin`) — só para perfis com `can('atendimento.config')`.
+- **Atendimentos** (`/inbox`) — todos os papéis.
+- **Dashboard** (`/dashboard`), **Departamentos, Tags, Motivos, Mensagens rápidas, Configurações BOT, Horário de Funcionamento, Usuários** (`/admin/*`) — **só admin** (`requireAdmin`).
 
-Login compartilhado com o painel (mesmo Supabase). **O ambiente é decidido no login pelo papel** (`InicioPorPapel`): `admin` cai no painel administrativo, `suporte` cai no atendimento. Não há navegação entre as áreas na tela: o atendente só vê o atendimento.
+O **suporte** vê só **Atendimentos** no menu; o **admin** vê tudo. Login compartilhado com o painel (mesmo Supabase); todos caem em `/inbox` ao entrar, e o admin acessa o resto pelo sidebar. As seções de admin, que eram abas em pílula, viraram **itens do menu, cada um com sua tela** (as rotas já existiam).
 
 ## Responsividade
 
