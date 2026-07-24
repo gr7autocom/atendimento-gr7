@@ -43,7 +43,7 @@ export function Dashboard() {
   const carregando = atendimentos.isLoading || departamentos.lista.isLoading
 
   return (
-    <div className="h-full overflow-y-auto">
+    <div className="flex-1 min-w-0 min-h-0 overflow-y-auto bg-sf-0">
       <div className="p-5 sm:p-6 max-w-5xl flex flex-col gap-6">
         <div>
           <h1 className="text-[16px] font-semibold text-tx-1">Supervisão</h1>

@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Send, UserCheck, ArrowLeftRight, CheckCheck, UserPlus, MessagesSquare } from 'lucide-react'
+import { Send, UserCheck, ArrowLeftRight, CheckCheck, UserPlus, MessagesSquare, X } from 'lucide-react'
 import { useMensagens, useAcoesAtendimento, type AtendimentoLista } from '../../lib/useInbox'
 import { useCrud } from '../../lib/useCrud'
 import { useUsuarios } from '../../lib/useVinculos'
@@ -25,9 +25,11 @@ function hora(iso: string) {
 export function Conversa({
   atendimento,
   usuarioId,
+  aoFechar,
 }: {
   atendimento: AtendimentoLista | null
   usuarioId: string | null
+  aoFechar?: () => void
 }) {
   const mensagens = useMensagens(atendimento?.id ?? null)
   const { assumir, responder, finalizar, transferir } = useAcoesAtendimento()
@@ -87,47 +89,60 @@ export function Conversa({
           </div>
         </div>
 
-        {!finalizado && (
-          <div className="flex items-center gap-1.5 shrink-0">
-            {semDono &&
-              (semCadastro ? (
-                <Botao
-                  variante="primario"
-                  tamanho="sm"
-                  onClick={() => setModalAceitar(true)}
-                  icone={<UserPlus size={15} />}
-                  title="Vincular a empresa, escolher o setor e assumir"
-                >
-                  Aceitar
-                </Botao>
-              ) : (
-                <Botao
-                  variante="primario"
-                  tamanho="sm"
-                  onClick={() => usuarioId && assumir.mutate({ id: atendimento.id, usuarioId })}
-                  icone={<UserCheck size={15} />}
-                >
-                  Assumir
-                </Botao>
-              ))}
-            <Botao
-              variante="neutro"
-              tamanho="sm"
-              onClick={() => setModalTransferir(true)}
-              icone={<ArrowLeftRight size={15} />}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {!finalizado && (
+            <>
+              {semDono &&
+                (semCadastro ? (
+                  <Botao
+                    variante="primario"
+                    tamanho="sm"
+                    onClick={() => setModalAceitar(true)}
+                    icone={<UserPlus size={15} />}
+                    title="Vincular a empresa, escolher o setor e assumir"
+                  >
+                    Aceitar
+                  </Botao>
+                ) : (
+                  <Botao
+                    variante="primario"
+                    tamanho="sm"
+                    onClick={() => usuarioId && assumir.mutate({ id: atendimento.id, usuarioId })}
+                    icone={<UserCheck size={15} />}
+                  >
+                    Assumir
+                  </Botao>
+                ))}
+              <Botao
+                variante="neutro"
+                tamanho="sm"
+                onClick={() => setModalTransferir(true)}
+                icone={<ArrowLeftRight size={15} />}
+              >
+                Transferir
+              </Botao>
+              <Botao
+                variante="neutro"
+                tamanho="sm"
+                onClick={() => setModalFinalizar(true)}
+                icone={<CheckCheck size={15} />}
+              >
+                Finalizar
+              </Botao>
+            </>
+          )}
+          {aoFechar && (
+            <button
+              type="button"
+              onClick={aoFechar}
+              aria-label="Fechar conversa"
+              title="Fechar conversa"
+              className="w-8 h-8 ml-0.5 rounded-[6px] flex items-center justify-center text-tx-2 hover:text-tx-1 hover:bg-sf-2 transition-colors duration-[120ms]"
             >
-              Transferir
-            </Botao>
-            <Botao
-              variante="neutro"
-              tamanho="sm"
-              onClick={() => setModalFinalizar(true)}
-              icone={<CheckCheck size={15} />}
-            >
-              Finalizar
-            </Botao>
-          </div>
-        )}
+              <X size={16} />
+            </button>
+          )}
+        </div>
       </header>
 
       <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-1.5">

@@ -7,9 +7,11 @@
 App único (`AppShell`): **barra do topo** (`BarraTopo`: marca à esquerda, notificações e menu do usuário à direita) e um **sidebar recolhido** à esquerda (`SidebarRecolhida`) que expande no hover, revisto em 2026-07-24. Os itens do menu aparecem **por papel**:
 
 - **Atendimentos** (`/inbox`) — todos os papéis.
-- **Dashboard** (`/dashboard`), **Departamentos, Tags, Motivos, Mensagens rápidas, Configurações BOT, Horário de Funcionamento, Usuários** (`/admin/*`) — **só admin** (`requireAdmin`).
+- **Departamentos, Tags, Motivos, Mensagens rápidas, Configurações BOT, Horário de Funcionamento, Usuários** (`/admin/*`) — **só admin** (`requireAdmin`).
 
 O **suporte** vê só **Atendimentos** no menu; o **admin** vê tudo. Login compartilhado com o painel (mesmo Supabase); todos caem em `/inbox` ao entrar, e o admin acessa o resto pelo sidebar. As seções de admin, que eram abas em pílula, viraram **itens do menu, cada um com sua tela** (as rotas já existiam).
+
+**Dashboard de supervisão (só admin):** não é tela separada. Fica **dentro de Atendimentos**, na área da direita, como estado padrão quando nenhuma conversa está aberta. Ao abrir uma conversa aparece o chat; o **X** no cabeçalho da conversa fecha e volta ao dashboard. O atendente comum, sem conversa aberta, vê a marca d'água.
 
 ## Responsividade
 

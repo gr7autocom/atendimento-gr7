@@ -44,7 +44,7 @@ Em [`src/components/ui/`](../src/components/ui/):
 
 ## Padrões de tela
 
-- **Casca (`AppShell`):** barra do topo (`BarraTopo`: marca à esquerda, notificações e menu do usuário à direita com nome, e-mail e Sair) + **sidebar recolhido** (`SidebarRecolhida`) à esquerda. A sidebar é uma faixa de ícones que **expande no hover** (largura 52px → 216px), sobrepondo o conteúdo (um espaçador mantém o layout); item ativo com barra da marca à esquerda. Os itens aparecem por papel: `suporte` vê só **Atendimentos**; `admin` vê também **Dashboard** e as seções de configuração (cada uma sua tela).
+- **Casca (`AppShell`):** barra do topo (`BarraTopo`: marca à esquerda, notificações e menu do usuário à direita com nome, e-mail e Sair) + **sidebar recolhido** (`SidebarRecolhida`) à esquerda. A sidebar é uma faixa de ícones que **expande no hover** (largura 52px → 216px), sobrepondo o conteúdo (um espaçador mantém o layout); item ativo com barra da marca à esquerda. Os itens aparecem por papel: `suporte` vê só **Atendimentos**; `admin` vê também as seções de configuração (cada uma sua tela). O **Dashboard de supervisão não é item do menu**: ele é o estado padrão da área direita de Atendimentos para o admin (ver [telas.md](telas.md)).
 - **Admin:** cabeçalho fixo com abas em pílula (ativa em `br-soft`), conteúdo em cards por seção.
 - **Inbox:** três colunas (lista `sf-1` · conversa `sf-0` · painel `sf-1`). Item selecionado com faixa da marca. Bolhas com canto assimétrico: entrada em `sf-2`, saída na marca, bot em `sf-3` com rótulo.
 - **Listas:** primeira coluna em `font-medium`, apoio em `tx-2`, dados em `.dado`; item inativo em `tx-3`.

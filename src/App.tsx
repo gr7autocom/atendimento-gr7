@@ -5,7 +5,6 @@ import { ProtectedRoute } from './components/ProtectedRoute'
 import { AppShell } from './components/AppShell'
 import { Login } from './pages/Login'
 import { Inbox } from './pages/Inbox'
-import { Dashboard } from './pages/Dashboard'
 import { Admin } from './pages/Admin'
 
 const queryClient = new QueryClient()
@@ -23,16 +22,6 @@ export default function App() {
                 <ProtectedRoute>
                   <AppShell>
                     <Inbox />
-                  </AppShell>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute requireAdmin>
-                  <AppShell>
-                    <Dashboard />
                   </AppShell>
                 </ProtectedRoute>
               }
