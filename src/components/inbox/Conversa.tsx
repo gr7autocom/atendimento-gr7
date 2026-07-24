@@ -8,7 +8,7 @@ import { Modal } from '../ui/Modal'
 import { Botao } from '../ui/Botao'
 import { Selecao } from '../ui/Campo'
 import { PontoStatus } from '../ui/Selo'
-import { Vazio, LinhasCarregando } from '../ui/Estados'
+import { LinhasCarregando } from '../ui/Estados'
 import { cn } from '../../lib/utils'
 
 type Departamento = { id: string; nome: string; ativo: boolean }
@@ -45,12 +45,14 @@ export function Conversa({
 
   if (!atendimento) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-sf-0">
-        <Vazio
-          icone={<MessagesSquare size={24} />}
-          titulo="Nenhum chamado aberto"
-          descricao="Escolha um chamado na lista ao lado para ver a conversa."
-        />
+      <div className="flex-1 flex flex-col items-center justify-center gap-4 bg-sf-0 px-6 text-center">
+        <div className="w-24 h-24 rounded-[24px] bg-sf-1 border border-bd-1 flex items-center justify-center">
+          <MessagesSquare size={44} className="text-bd-3" />
+        </div>
+        <div>
+          <div className="text-[14px] font-medium text-tx-2">GR7 Atendimento</div>
+          <div className="text-[13px] text-tx-3 mt-0.5">Escolha um chamado na lista para abrir a conversa.</div>
+        </div>
       </div>
     )
   }

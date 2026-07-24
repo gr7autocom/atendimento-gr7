@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { MessagesSquare } from 'lucide-react'
 import { useAuth } from '../lib/auth'
@@ -6,12 +6,19 @@ import { Botao } from '../components/ui/Botao'
 import { Entrada } from '../components/ui/Campo'
 
 export function Login() {
-  const { signIn } = useAuth()
+  const { signIn, status, unauthorizedReason } = useAuth()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [senha, setSenha] = useState('')
   const [erro, setErro] = useState<string | null>(null)
   const [enviando, setEnviando] = useState(false)
+
+  // O redirecionamento espera o perfil resolver. Navegar direto após o signIn
+  // corria contra a resolução assíncrona do usuário e a rota protegida rebatia
+  // de volta para cá, prendendo quem já estava autenticado.
+  useEffect(() => {
+    if (status === 'authenticated') navigate('/', { replace: true })
+  }, [status, navigate])
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
@@ -19,12 +26,11 @@ export function Login() {
     setErro(null)
     const { error } = await signIn(email, senha)
     setEnviando(false)
-    if (error) {
-      setErro('Não foi possível entrar. Confira e-mail e senha.')
-      return
-    }
-    navigate('/inbox', { replace: true })
+    if (error) setErro('Não foi possível entrar. Confira e-mail e senha.')
   }
+
+  // Conta válida no login, mas sem perfil ativo no sistema: explica em vez de sumir.
+  const mensagemErro = erro ?? (status === 'unauthorized' ? unauthorizedReason : null)
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-sf-0">
@@ -57,7 +63,7 @@ export function Login() {
             placeholder="Sua senha do painel"
             value={senha}
             onChange={(e) => setSenha(e.target.value)}
-            erro={erro}
+            erro={mensagemErro}
             required
           />
           <Botao variante="primario" type="submit" disabled={enviando} className="w-full">

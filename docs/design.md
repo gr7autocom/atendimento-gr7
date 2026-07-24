@@ -44,7 +44,7 @@ Em [`src/components/ui/`](../src/components/ui/):
 
 ## Padrões de tela
 
-- **Sidebar:** marca no topo, itens com **barra de seleção** à esquerda no ativo, usuário e sair no rodapé.
+- **Barra do topo (`BarraTopo`):** marca à esquerda, notificações e menu do usuário à direita (nome, e-mail e Sair). Comum às duas cascas (`LayoutAtendimento` e `LayoutAdmin`); substitui a antiga sidebar lateral. Não há navegação entre Atendimento e Admin na tela: o ambiente é decidido no login pelo papel (`admin` → `/admin`, `suporte` → `/inbox`).
 - **Admin:** cabeçalho fixo com abas em pílula (ativa em `br-soft`), conteúdo em cards por seção.
 - **Inbox:** três colunas (lista `sf-1` · conversa `sf-0` · painel `sf-1`). Item selecionado com faixa da marca. Bolhas com canto assimétrico: entrada em `sf-2`, saída na marca, bot em `sf-3` com rótulo.
 - **Listas:** primeira coluna em `font-medium`, apoio em `tx-2`, dados em `.dado`; item inativo em `tx-3`.

@@ -4,9 +4,11 @@
 
 ## 🔄 Em Andamento
 
-**Fase de design (brainstorming) — 2026-07-23**
+_(nada em andamento)_
 
-**MVP funcional e com identidade visual própria.** Planos 1 a 6 concluídos: fundação, banco, admin completo, Inbox operacional e a **etapa de design** (ADR-10). Falta a **integração uazapi**, que depende de conta ativa. Detalhes de comportamento do Zintech ainda podem ser refinados conforme o cliente for trazendo.
+**MVP funcional, com identidade própria e navegação separada por papel.** Planos 1 a 6 concluídos e, por cima, a **reorganização estilo Zintech**: dois ambientes separados (Atendimento e Administração) com entrada decidida no login. Falta a **integração uazapi**, que depende de conta ativa. Detalhes de comportamento do Zintech ainda podem ser refinados conforme o cliente for trazendo.
+
+**Pendência de provisionamento:** a conta `suporte@gr7autocom.com.br` (slug `suporte`) **entra e cai no atendimento**, mas ainda **não enxerga chamados**: a permissão `suporte` não tem as capacidades `atendimento.*` e o usuário não está vinculado a nenhum departamento (`atendente_departamentos`). Decidir com o cliente antes de conceder (afeta todos os usuários `suporte` do painel).
 
 **Resumo anterior:** Planos 1 a 5: fundação, banco, admin completo e a Inbox operacional. A Inbox tem filas (Meus/Pendentes/Potenciais), conversa, painel do contato e as ações Assumir, Responder, Transferir e Finalizar, com um **simulador de chamado** no lugar da uazapi. Fluxo validado ponta a ponta no navegador. Próximo: **etapa de design** (ADR-10, identidade visual própria) e, quando houver conta, a **integração uazapi**.
 
@@ -30,6 +32,7 @@
 
 ## ✅ Concluído
 
+- 2026-07-24 — **Reorganização estilo Zintech + separação por papel.** Dois ambientes com casca própria: **Atendimento** (`LayoutAtendimento`) e **Administração** (`LayoutAdmin`), ligados por uma **barra do topo** comum (`BarraTopo`, marca à esquerda, notificações e menu do usuário à direita). A entrada é decidida no login: `admin` cai em `/admin`, `suporte` cai em `/inbox` (`InicioPorPapel`). Removida a sidebar compartilhada (`Layout`). Inbox repaginada no layout do Zintech: barra de ferramentas (Pesquisar, filtro por setor, Atualizar, Novo), abas **Ativos/Pendentes/Potenciais**, itens com **avatar de iniciais + selinho do WhatsApp** e **tag colorida do setor** (cor determinística por nome, pois `departamentos` não guarda cor), e marca d'água na área central vazia. **Bug de login corrigido:** o `navigate` pós-login corria contra a resolução assíncrona do perfil e a rota protegida rebatia para `/login`; agora o Login redireciona ao virar `authenticated` e mostra o motivo quando a conta não tem perfil. Validado no navegador: suporte → atendimento, admin → painel admin, card real (protocolo #3) com avatar/tag, dropdown do usuário e logout. Testes 8/8, build ok.
 - 2026-07-23 — Discovery + decisões de arquitetura fechadas (ver [docs/decisoes.md](docs/decisoes.md)): app separado + Supabase compartilhado; WhatsApp via uazapi + adapter; migrations aditivas no painel; Supabase Free→Pro; sem multi-tenancy (cliente não loga).
 - 2026-07-23 — Escopo do MVP aprovado (Seção 1). Corte: base navegável primeiro, uazapi por último.
 - 2026-07-23 — Decisões de fluxo: assumir explícito; menu do bot automático a partir dos departamentos; janela de reabertura curta de ticket.

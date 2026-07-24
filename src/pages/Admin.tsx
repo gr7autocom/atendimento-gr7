@@ -22,10 +22,7 @@ export function Admin() {
   return (
     <div className="min-h-full">
       <header className="sticky top-0 z-10 bg-sf-0/95 backdrop-blur border-b border-bd-1">
-        <div className="px-6 h-14 flex items-center">
-          <h1 className="text-[15px] font-semibold text-tx-1">Administração</h1>
-        </div>
-        <nav className="px-6 pb-3 flex flex-wrap gap-1.5">
+        <nav className="px-6 py-3 flex flex-wrap gap-1.5">
           {ABAS.map((a) => (
             <NavLink
               key={a.slug}

@@ -1,17 +1,21 @@
 import { useState } from 'react'
-import { MessageSquarePlus } from 'lucide-react'
+import { MessageSquarePlus, Plus } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabase'
 import { useCrud } from '../../lib/useCrud'
 import { Botao } from '../ui/Botao'
+import { cn } from '../../lib/utils'
 
 type Departamento = { id: string; nome: string; ativo: boolean }
+
+const DICA = 'Cria um chamado de exemplo enquanto a integração com o WhatsApp não existe'
 
 /**
  * Cria um chamado de exemplo enquanto não existe integração com o WhatsApp.
  * Some quando a uazapi entrar (aí os chamados chegam pelo webhook).
+ * `compacto` rende só o botão de ícone, para caber na barra de ferramentas.
  */
-export function SimuladorChamado() {
+export function SimuladorChamado({ compacto = false }: { compacto?: boolean }) {
   const departamentos = useCrud<Departamento>('departamentos')
   const qc = useQueryClient()
   const [criando, setCriando] = useState(false)
@@ -60,6 +64,21 @@ export function SimuladorChamado() {
     }
   }
 
+  if (compacto) {
+    return (
+      <button
+        type="button"
+        onClick={simular}
+        disabled={criando}
+        aria-label="Novo chamado de exemplo"
+        title={erro ?? DICA}
+        className="w-8 h-8 shrink-0 rounded-[6px] flex items-center justify-center text-tx-2 hover:text-tx-1 hover:bg-sf-2 border border-bd-2 disabled:opacity-60 transition-colors duration-[120ms]"
+      >
+        <Plus size={16} className={cn(criando && 'animate-spin')} />
+      </button>
+    )
+  }
+
   return (
     <div className="flex items-center gap-2">
       {erro && <span className="text-[12px] text-err">{erro}</span>}
@@ -69,7 +88,7 @@ export function SimuladorChamado() {
         onClick={simular}
         disabled={criando}
         icone={<MessageSquarePlus size={15} />}
-        title="Cria um chamado de exemplo enquanto a integração com o WhatsApp não existe"
+        title={DICA}
       >
         {criando ? 'Criando…' : 'Simular chamado'}
       </Botao>

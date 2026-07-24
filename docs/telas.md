@@ -4,12 +4,12 @@
 
 ## Navegação geral
 
-O app tem **duas áreas**, com sidebar própria:
+O app tem **duas áreas separadas**, cada uma com casca própria e uma **barra do topo** comum (`BarraTopo`: marca à esquerda, notificações e menu do usuário à direita):
 
-- **Atendimento** (`/inbox`) — usada pelos atendentes no dia a dia.
-- **Administração** (`/admin`) — só para perfis com `can('atendimento.config')`.
+- **Atendimento** (`/inbox`, `LayoutAtendimento`) — usada pelos atendentes no dia a dia.
+- **Administração** (`/admin`, `LayoutAdmin`) — só para perfis com `can('atendimento.config')`.
 
-Login compartilhado com o painel (mesmo Supabase). A troca entre áreas fica no menu.
+Login compartilhado com o painel (mesmo Supabase). **O ambiente é decidido no login pelo papel** (`InicioPorPapel`): `admin` cai no painel administrativo, `suporte` cai no atendimento. Não há navegação entre as áreas na tela: o atendente só vê o atendimento.
 
 ## Responsividade
 
