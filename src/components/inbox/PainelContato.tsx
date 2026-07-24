@@ -1,7 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useAtualizarContato, nomeEmpresa, type AtendimentoLista } from '../../lib/useInbox'
 import { PontoStatus } from '../ui/Selo'
+import { Avatar } from '../ui/Avatar'
 import { Entrada } from '../ui/Campo'
+
+function nomeContato(a: AtendimentoLista) {
+  return a.contato?.nome || a.contato?.nome_whatsapp || a.contato?.telefone || 'Sem nome'
+}
 
 export function PainelContato({ atendimento }: { atendimento: AtendimentoLista | null }) {
   const atualizar = useAtualizarContato()
@@ -16,16 +21,23 @@ export function PainelContato({ atendimento }: { atendimento: AtendimentoLista |
   const contato = atendimento.contato
 
   return (
-    <aside className="lg:w-[264px] shrink-0 bg-sf-1 border-t lg:border-t-0 lg:border-l border-bd-1 overflow-y-auto">
-      <div className="p-4 border-b border-bd-1">
-        <div className="rotulo">Protocolo</div>
-        <div className="dado text-[20px] font-medium text-tx-1 leading-tight">#{atendimento.protocolo}</div>
-        <div className="mt-1">
+    <aside className="lg:w-[272px] shrink-0 bg-sf-1 border-t lg:border-t-0 lg:border-l border-bd-1 overflow-y-auto">
+      <div className="p-5 flex flex-col items-center text-center border-b border-bd-1">
+        <Avatar nome={nomeContato(atendimento)} tamanho={60} whatsapp />
+        <div className="mt-2.5 text-[14px] font-medium text-tx-1 max-w-full truncate">
+          {nomeContato(atendimento)}
+        </div>
+        <div className="mt-1.5">
           <PontoStatus status={atendimento.status} comRotulo />
         </div>
       </div>
 
-      <div className="p-4 flex flex-col gap-4">
+      <div className="px-5 py-4 border-b border-bd-1 flex items-baseline justify-between gap-3">
+        <span className="rotulo text-tx-3">Protocolo</span>
+        <span className="dado text-[16px] font-medium text-tx-1">#{atendimento.protocolo}</span>
+      </div>
+
+      <div className="p-5 flex flex-col gap-4">
         <div>
           <div className="rotulo mb-1.5">Quem está falando</div>
           <Entrada
@@ -43,20 +55,16 @@ export function PainelContato({ atendimento }: { atendimento: AtendimentoLista |
         </div>
 
         <div>
-          <div className="rotulo">Telefone</div>
-          <div className="dado text-[13px] text-tx-1 mt-0.5">{contato?.telefone}</div>
+          <div className="rotulo mb-1">Telefone</div>
+          <div className="dado text-[13px] text-tx-1">{contato?.telefone}</div>
         </div>
 
         <div>
-          <div className="rotulo">Empresa</div>
+          <div className="rotulo mb-1">Empresa</div>
           {contato?.cliente_id ? (
-            <div className="text-[13px] text-tx-1 mt-0.5">
-              {nomeEmpresa(contato.cliente) ?? 'Cadastro vinculado'}
-            </div>
+            <div className="text-[13px] text-tx-1">{nomeEmpresa(contato.cliente) ?? 'Cadastro vinculado'}</div>
           ) : (
-            <div className="text-[13px] text-tx-2 mt-0.5">
-              Sem cadastro. Use Aceitar para vincular a empresa e assumir.
-            </div>
+            <div className="text-[13px] text-tx-2">Sem cadastro. Use Aceitar para vincular a empresa e assumir.</div>
           )}
         </div>
       </div>

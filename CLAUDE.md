@@ -46,6 +46,7 @@ Plataforma de atendimento via WhatsApp da GR7, operada pela equipe interna, **in
 3. Provedor WhatsApp atrás de um **adapter** — nunca chamar a uazapi direto do código de domínio.
 4. Nada de multi-tenancy: **cliente final não loga** — só a equipe interna opera.
 5. Documentação viva: atualizar `PROGRESSO.md` + o `docs/*.md` afetado ao concluir algo.
+6. **Toda criação/ajuste de UI aciona uma skill de design** (`frontend-design`; `ui-ux-pro-max` para refino maior) **antes** de escrever a tela. E, no geral, usar **proativamente** as skills e plugins disponíveis para cada tarefa (design, copywriting, banco, etc.) sem esperar o usuário pedir. O visual deve fugir do padrão genérico de UI gerada por IA, mantendo o tema dark e a identidade própria.
 
 ## Context7 — libs a consultar
 

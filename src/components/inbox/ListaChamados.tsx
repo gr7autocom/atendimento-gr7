@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Inbox as IconeInbox, Search, ListFilter, RotateCw, Paperclip, X } from 'lucide-react'
+import { Inbox as IconeInbox, Search, ListFilter, RotateCw, X } from 'lucide-react'
 import type { AtendimentoLista } from '../../lib/useInbox'
 import type { FiltroInbox } from '../../pages/Dashboard'
 import { useCrud } from '../../lib/useCrud'
@@ -203,9 +203,8 @@ export function ListaChamados({
                     <PontoStatus status={a.status} />
                     <span className="text-[12px] text-tx-2 italic truncate">{setor ?? 'Sem setor'}</span>
                   </div>
-                  <div className="flex items-center justify-between gap-2 mt-1">
+                  <div className="mt-1">
                     <span className="dado text-[11px] text-tx-3 truncate">{a.contato?.telefone ?? ''}</span>
-                    <Paperclip size={12} className="text-tx-3 shrink-0" aria-hidden="true" />
                   </div>
                   {setor && cor && (
                     <span
