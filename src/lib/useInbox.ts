@@ -157,40 +157,31 @@ export function useAcoesAtendimento() {
     onSuccess: invalidar,
   })
 
+  /**
+   * Transferência vai por RPC, não por UPDATE direto: ao mandar o chamado para
+   * um departamento que o usuário não atende, a linha sai da visibilidade dele
+   * e o RETURNING do PostgREST esbarra na policy de SELECT. A função no banco
+   * roda como SECURITY DEFINER e ainda grava o histórico na mesma transação.
+   */
   const transferir = useMutation({
     mutationFn: async ({
       id,
       paraDepartamentoId,
       paraUsuarioId,
-      de,
+      observacao,
     }: {
       id: string
       paraDepartamentoId: string | null
       paraUsuarioId: string | null
-      de: { departamentoId: string | null; usuarioId: string | null; porUsuarioId: string }
+      observacao?: string | null
     }) => {
-      const patch: Record<string, unknown> = {}
-      if (paraUsuarioId) {
-        patch.responsavel_id = paraUsuarioId
-        patch.status = 'em_atendimento'
-        if (paraDepartamentoId) patch.departamento_id = paraDepartamentoId
-      } else if (paraDepartamentoId) {
-        patch.departamento_id = paraDepartamentoId
-        patch.responsavel_id = null
-        patch.status = 'na_fila'
-      }
-      const { error } = await supabase.from('atendimentos').update(patch as never).eq('id', id)
+      const { error } = await supabase.rpc('transferir_atendimento', {
+        p_atendimento_id: id,
+        p_departamento_id: paraDepartamentoId,
+        p_usuario_id: paraUsuarioId,
+        p_observacao: observacao ?? null,
+      })
       if (error) throw error
-
-      const { error: err2 } = await supabase.from('atendimento_transferencias').insert({
-        atendimento_id: id,
-        de_departamento_id: de.departamentoId,
-        para_departamento_id: paraDepartamentoId,
-        de_usuario_id: de.usuarioId,
-        para_usuario_id: paraUsuarioId,
-        transferido_por: de.porUsuarioId,
-      } as never)
-      if (err2) throw err2
     },
     onSuccess: invalidar,
   })

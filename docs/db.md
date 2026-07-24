@@ -113,6 +113,8 @@ RLS por departamento **no banco desde o MVP**. Helpers: `atende_departamento(dep
 - Catálogos e config (`departamentos`, `atendimento_tags`, `atendimento_motivos`, `atendimento_mensagens_rapidas`, `atendimento_plantoes`, `atendimento_plantao_usuarios`, `bot_mensagens`, `atendimento_horarios`, `atendimento_config`): SELECT autenticado; escrita por `can('atendimento.config')`.
 - Ações novas do atendimento (slugs em `permissoes.capacidades`, **não** há tabela `acoes`): `atendimento.assumir`, `atendimento.responder`, `atendimento.finalizar`, `atendimento.transferir`, `atendimento.config`. Semeadas no perfil `admin`; manter em sincronia com `src/lib/acoes.ts`.
 - Edge Functions (webhook/envio/bot) usam **service role** (ignoram RLS).
+- **Transferência é RPC, não UPDATE direto:** `transferir_atendimento(p_atendimento_id, p_departamento_id, p_usuario_id, p_observacao)` (SECURITY DEFINER). Motivo: o PostgREST executa `UPDATE ... RETURNING` e o Postgres exige que a **linha nova** satisfaça a policy de SELECT; ao mandar o chamado para um departamento que o usuário não atende, ele deixa de enxergá-la e o banco recusa (42501). A função valida acesso + `can('atendimento.transferir')` e grava o histórico na mesma transação.
+- `atendimentos` aceita INSERT de quem tem `can('atendimento.responder')` (registro manual de chamado e simulador enquanto não há uazapi).
 
 ## Reaproveitamento do painel (read-only)
 

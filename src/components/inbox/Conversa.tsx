@@ -187,16 +187,10 @@ export function Conversa({
             </button>
             <button
               onClick={() => {
-                if (!usuarioId) return
                 transferir.mutate({
                   id: atendimento.id,
                   paraDepartamentoId: destinoDep || null,
                   paraUsuarioId: destinoUsuario || null,
-                  de: {
-                    departamentoId: atendimento.departamento_id,
-                    usuarioId: atendimento.responsavel_id,
-                    porUsuarioId: usuarioId,
-                  },
                 })
                 setModalTransferir(false)
                 setDestinoDep('')
