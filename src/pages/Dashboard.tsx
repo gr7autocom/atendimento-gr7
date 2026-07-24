@@ -108,7 +108,7 @@ export function Dashboard({
 
   return (
     <div className="flex-1 min-w-0 min-h-0 overflow-y-auto bg-sf-0">
-      <div className="p-5 sm:p-6 max-w-5xl flex flex-col gap-6">
+      <div className="p-5 sm:p-6 flex flex-col gap-6">
         <div>
           <h1 className="text-[16px] font-semibold text-tx-1">Supervisão</h1>
           <p className="text-[13px] text-tx-2 mt-0.5">Clique num departamento ou atendente para filtrar as conversas.</p>

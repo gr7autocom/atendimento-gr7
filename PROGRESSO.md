@@ -4,17 +4,24 @@
 
 ## 🔄 Em Andamento
 
-_(nada em andamento)_
+**Checkpoint salvo em 2026-07-24 11:48**
 
-**MVP funcional, com identidade própria e navegação separada por papel.** Planos 1 a 6 concluídos e, por cima, a **reorganização estilo Zintech**: dois ambientes separados (Atendimento e Administração) com entrada decidida no login. Falta a **integração uazapi**, que depende de conta ativa. Detalhes de comportamento do Zintech ainda podem ser refinados conforme o cliente for trazendo.
+### Feito nesta sessão
+- Reorganização estilo Zintech: casca única (`AppShell`) com **sidebar recolhido que expande no hover**, entrada por papel no login (bug de corrida do login corrigido).
+- **Visibilidade por dono** (fila única) + perfil `suporte` habilitado a atender (migrations aditivas no painel: `criar_atendimento`, `rls_visibilidade`).
+- Modal **Criar atendimento** (RPC), no lugar do simulador.
+- **Dashboard de supervisão dentro do Atendimentos** (área direita, X fecha a conversa e volta): filtra a lista por departamento/atendente (drill-down na setinha) e cores sólidas por métrica; cards refinados (borda inteira + números alinhados).
+- Polimento com **frontend-design**: painel do contato (avatar/status), lista (sem clipe), **chat** (avatar no header, coluna centralizada, separador de dia, check de enviado, estado vazio).
+- Regra registrada (CLAUDE.md 6 + memória): toda UI aciona skill de design; usar skills/plugins proativamente.
 
-**Próximo:** integração **uazapi** (adapter real + webhook + envio + motor do bot), que depende de conta ativa. As métricas do dashboard que ficaram em 0 (Atendentes online, Novas mensagens, Retornos) passam a ter dado com a uazapi/presença.
+### Em meio de edição
+- Nada pendente de commit (working tree limpo).
 
-**Resumo anterior:** Planos 1 a 5: fundação, banco, admin completo e a Inbox operacional. A Inbox tem filas (Meus/Pendentes/Potenciais), conversa, painel do contato e as ações Assumir, Responder, Transferir e Finalizar, com um **simulador de chamado** no lugar da uazapi. Fluxo validado ponta a ponta no navegador. Próximo: **etapa de design** (ADR-10, identidade visual própria) e, quando houver conta, a **integração uazapi**.
+### Próximo passo
+- Iniciar o **polimento das telas de admin** (Departamentos, Tags, Motivos, Mensagens rápidas, Configurações BOT, Horário, Usuários), uma por vez: usuário envia o print do Zintech → aciono `frontend-design` → aplico semelhante no tema dark → valido → commito.
 
-**Planos 1 a 3 (resumo):** Admin: hook `useCrud` (TanStack Query), `AdminModal`, `CatalogoCrud` genérico e as 4 abas de catálogo (Departamentos, Tags, Motivos, Mensagens rápidas) funcionando contra o banco real; CRUD validado no navegador com admin (criar/remover persistiram, provando a RLS de escrita). Próximo: **Plano 4 (Admin — Configurações BOT, Horário de Funcionamento com plantão, Usuários)**, depois a Inbox.
-
-**Planos 1 e 2 (resumo):** Fundação: app rodando, auth compartilhada, rotas/guarda, layout + telas placeholder (branch `feat/fundacao`). Banco: 3 migrations aditivas (schema 16 tabelas + RLS por departamento + seeds) escritas no repo do painel e **aplicadas no Supabase compartilhado via `db push`**; verificado com admin logado (6 departamentos, 12 textos do bot, 6 configs, 5 tags, 5 motivos, capacidades `atendimento.*` no perfil admin, RLS sem erro). Seção 5 (uazapi) segue adiada (adapter mock + seeds). Próximo: **Plano 3 (Admin)** — telas de configuração (CRUD) consumindo as tabelas.
+### Decisões pendentes
+- Integração **uazapi** segue adiada (depende de conta/número); ela também preenche as métricas do dashboard hoje em 0 (Atendentes online, Novas mensagens, Retornos).
 
 ## 📋 Próximos passos
 
