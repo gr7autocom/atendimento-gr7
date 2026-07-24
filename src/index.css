@@ -1,22 +1,78 @@
-@import './design-tokens.css';
+/* Fontes locais (sem CDN): IBM Plex Sans para UI, Mono para dados */
+@import '@fontsource/ibm-plex-sans/400.css';
+@import '@fontsource/ibm-plex-sans/500.css';
+@import '@fontsource/ibm-plex-sans/600.css';
+@import '@fontsource/ibm-plex-mono/400.css';
+@import '@fontsource/ibm-plex-mono/500.css';
+
+@import './tema.css';
 @import 'tailwindcss';
 
-/* Dark theme base (dark-only, igual ao painel) */
+/* Base dark-only (ADR-10) */
 html {
   color-scheme: dark;
 }
+
 html,
-body {
-  margin: 0;
-  background-color: #1e1e1e;
-  color: #e8e8e8;
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  line-height: 1.5;
+body,
+#root {
+  height: 100%;
 }
 
+body {
+  margin: 0;
+  background-color: var(--sf-0);
+  color: var(--tx-1);
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Dados (protocolo, telefone, hora) em mono: alinham e leem melhor em lista */
+.dado {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Rótulo de bloco no painel lateral */
+.rotulo {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--tx-3);
+}
+
+/* Foco visível e consistente em tudo que é interativo */
+:where(button, a, input, textarea, select, [tabindex]):focus-visible {
+  outline: 2px solid var(--br-2);
+  outline-offset: 2px;
+  border-radius: var(--r-1);
+}
+
+/* Scrollbar fina, sem roubar atenção */
 * {
-  scrollbar-color: #3c3c3c #1e1e1e;
   scrollbar-width: thin;
+  scrollbar-color: #2a313b var(--sf-1);
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background: #2a313b;
+  border-radius: var(--r-full);
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: #39424e;
+  background-clip: content-box;
+}
+
+::selection {
+  background: var(--br-soft);
+  color: var(--tx-1);
 }

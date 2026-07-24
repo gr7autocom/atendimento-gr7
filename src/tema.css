@@ -1,0 +1,81 @@
+/**
+ * Tema do Atendimento GR7 (ADR-10): identidade própria, dark-only.
+ *
+ * Ideia: hierarquia por CAMADAS DE SUPERFÍCIE, não por borda em tudo. A cor da
+ * marca aparece só onde há ação, seleção ou foco. Status vira ponto colorido,
+ * que lê mais rápido que texto numa lista densa.
+ */
+:root {
+  /* Superfícies, do fundo ao elevado (quase-preto frio) */
+  --sf-0: #0d0f13; /* fundo da aplicação */
+  --sf-1: #12151b; /* painéis e barras */
+  --sf-2: #171b22; /* cards, linhas, hover */
+  --sf-3: #1e242d; /* elevado: modais, menus */
+
+  /* Bordas (sutis: separam sem pesar) */
+  --bd-1: rgba(255, 255, 255, 0.06);
+  --bd-2: rgba(255, 255, 255, 0.1);
+  --bd-3: rgba(255, 255, 255, 0.16);
+
+  /* Texto */
+  --tx-1: #e6e9ee; /* principal */
+  --tx-2: #9aa4b2; /* secundário */
+  --tx-3: #6a7482; /* apoio, placeholder */
+
+  /* Marca (azul do painel) */
+  --br-1: #0078d4;
+  --br-2: #3b9eff; /* hover */
+  --br-3: #005a9e; /* pressionado */
+  --br-soft: rgba(0, 120, 212, 0.16); /* seleção, fundo de selo */
+
+  /* Semânticas */
+  --ok: #3fb950;
+  --warn: #d29922;
+  --err: #f85149;
+  --err-soft: rgba(248, 81, 73, 0.14);
+
+  /* Forma */
+  --r-1: 6px;
+  --r-2: 10px;
+  --r-full: 999px;
+
+  /* Profundidade */
+  --sh-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --sh-2: 0 12px 32px rgba(0, 0, 0, 0.55);
+
+  /* Movimento */
+  --t-1: 120ms ease;
+  --t-2: 160ms ease;
+}
+
+/* Tokens expostos ao Tailwind v4 (permite bg-sf-1, text-tx-2, etc.) */
+@theme {
+  --color-sf-0: var(--sf-0);
+  --color-sf-1: var(--sf-1);
+  --color-sf-2: var(--sf-2);
+  --color-sf-3: var(--sf-3);
+
+  --color-bd-1: var(--bd-1);
+  --color-bd-2: var(--bd-2);
+  --color-bd-3: var(--bd-3);
+
+  --color-tx-1: var(--tx-1);
+  --color-tx-2: var(--tx-2);
+  --color-tx-3: var(--tx-3);
+
+  --color-br-1: var(--br-1);
+  --color-br-2: var(--br-2);
+  --color-br-3: var(--br-3);
+  --color-br-soft: var(--br-soft);
+
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-err: var(--err);
+  --color-err-soft: var(--err-soft);
+
+  --radius-1: var(--r-1);
+  --radius-2: var(--r-2);
+
+  --font-sans: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+}
