@@ -1,9 +1,21 @@
-import { Fragment, useState, type FormEvent } from 'react'
-import { Send, UserCheck, ArrowLeftRight, CheckCheck, UserPlus, MessagesSquare, X } from 'lucide-react'
+import { Fragment, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import {
+  Send,
+  UserCheck,
+  ArrowLeftRight,
+  CheckCheck,
+  UserPlus,
+  MessagesSquare,
+  X,
+  ArrowLeft,
+  MoreVertical,
+  Info,
+} from 'lucide-react'
 import { useMensagens, useAcoesAtendimento, type AtendimentoLista } from '../../lib/useInbox'
 import { useCrud } from '../../lib/useCrud'
 import { useUsuarios } from '../../lib/useVinculos'
 import { AceitarPotencial } from './AceitarPotencial'
+import { PainelContato } from './PainelContato'
 import { Modal } from '../ui/Modal'
 import { Botao } from '../ui/Botao'
 import { Selecao } from '../ui/Campo'
@@ -11,6 +23,33 @@ import { PontoStatus } from '../ui/Selo'
 import { Avatar } from '../ui/Avatar'
 import { LinhasCarregando } from '../ui/Estados'
 import { cn } from '../../lib/utils'
+
+/** Item do menu ⋮ (mobile) no cabeçalho da conversa. */
+function ItemMenu({
+  onClick,
+  icone,
+  children,
+  perigo,
+}: {
+  onClick: () => void
+  icone: ReactNode
+  children: ReactNode
+  perigo?: boolean
+}) {
+  return (
+    <button
+      type="button"
+      role="menuitem"
+      onClick={onClick}
+      className={cn(
+        'flex items-center gap-2.5 w-full px-3 h-10 text-[13px] transition-colors duration-[120ms]',
+        perigo ? 'text-err hover:bg-err-soft' : 'text-tx-2 hover:text-tx-1 hover:bg-sf-2'
+      )}
+    >
+      {icone} {children}
+    </button>
+  )
+}
 
 type Departamento = { id: string; nome: string; ativo: boolean }
 type Motivo = { id: string; nome: string; ativo: boolean }
@@ -57,6 +96,18 @@ export function Conversa({
   const [modalTransferir, setModalTransferir] = useState(false)
   const [modalFinalizar, setModalFinalizar] = useState(false)
   const [modalAceitar, setModalAceitar] = useState(false)
+  const [menuAberto, setMenuAberto] = useState(false)
+  const [mostrarDados, setMostrarDados] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!menuAberto) return
+    function fora(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuAberto(false)
+    }
+    document.addEventListener('mousedown', fora)
+    return () => document.removeEventListener('mousedown', fora)
+  }, [menuAberto])
   const [destinoDep, setDestinoDep] = useState('')
   const [destinoUsuario, setDestinoUsuario] = useState('')
   const [motivoId, setMotivoId] = useState('')
@@ -94,8 +145,18 @@ export function Conversa({
 
   return (
     <div className="flex-1 flex flex-col min-w-0 min-h-0 bg-sf-0">
-      <header className="h-14 shrink-0 px-4 flex items-center justify-between gap-3 border-b border-bd-1 bg-sf-1">
-        <div className="flex items-center gap-2.5 min-w-0">
+      <header className="h-14 shrink-0 px-3 sm:px-4 flex items-center justify-between gap-3 border-b border-bd-1 bg-sf-1">
+        <div className="flex items-center gap-2 min-w-0">
+          {aoFechar && (
+            <button
+              type="button"
+              onClick={aoFechar}
+              aria-label="Voltar para a lista"
+              className="lg:hidden w-8 h-8 shrink-0 rounded-[6px] flex items-center justify-center text-tx-2 hover:text-tx-1 hover:bg-sf-2 transition-colors duration-[120ms]"
+            >
+              <ArrowLeft size={18} />
+            </button>
+          )}
           <Avatar nome={nomeContato(atendimento)} tamanho={34} whatsapp />
           <div className="min-w-0">
             <div className="text-[13px] font-medium text-tx-1 truncate">{nomeContato(atendimento)}</div>
@@ -108,7 +169,8 @@ export function Conversa({
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 shrink-0">
+        {/* Desktop: ações inline + fechar */}
+        <div className="hidden lg:flex items-center gap-1.5 shrink-0">
           {!finalizado && (
             <>
               {semDono &&
@@ -120,7 +182,7 @@ export function Conversa({
                     icone={<UserPlus size={15} />}
                     title="Vincular a empresa, escolher o setor e assumir"
                   >
-                    <span className="hidden sm:inline">Aceitar</span>
+                    Aceitar
                   </Botao>
                 ) : (
                   <Botao
@@ -129,24 +191,14 @@ export function Conversa({
                     onClick={() => usuarioId && assumir.mutate({ id: atendimento.id, usuarioId })}
                     icone={<UserCheck size={15} />}
                   >
-                    <span className="hidden sm:inline">Assumir</span>
+                    Assumir
                   </Botao>
                 ))}
-              <Botao
-                variante="neutro"
-                tamanho="sm"
-                onClick={() => setModalTransferir(true)}
-                icone={<ArrowLeftRight size={15} />}
-              >
-                <span className="hidden sm:inline">Transferir</span>
+              <Botao variante="neutro" tamanho="sm" onClick={() => setModalTransferir(true)} icone={<ArrowLeftRight size={15} />}>
+                Transferir
               </Botao>
-              <Botao
-                variante="neutro"
-                tamanho="sm"
-                onClick={() => setModalFinalizar(true)}
-                icone={<CheckCheck size={15} />}
-              >
-                <span className="hidden sm:inline">Finalizar</span>
+              <Botao variante="neutro" tamanho="sm" onClick={() => setModalFinalizar(true)} icone={<CheckCheck size={15} />}>
+                Finalizar
               </Botao>
             </>
           )}
@@ -162,7 +214,75 @@ export function Conversa({
             </button>
           )}
         </div>
+
+        {/* Mobile: ações no menu ⋮ */}
+        <div className="lg:hidden relative shrink-0" ref={menuRef}>
+          <button
+            type="button"
+            onClick={() => setMenuAberto((v) => !v)}
+            aria-haspopup="menu"
+            aria-expanded={menuAberto}
+            aria-label="Ações do atendimento"
+            className="w-9 h-9 rounded-[6px] flex items-center justify-center text-tx-2 hover:text-tx-1 hover:bg-sf-2 transition-colors duration-[120ms]"
+          >
+            <MoreVertical size={18} />
+          </button>
+          {menuAberto && (
+            <div role="menu" className="absolute right-0 top-[calc(100%+6px)] z-30 w-56 rounded-[10px] border border-bd-2 bg-sf-3 shadow-lg py-1">
+              <ItemMenu onClick={() => { setMostrarDados(true); setMenuAberto(false) }} icone={<Info size={16} />}>
+                Dados do atendimento
+              </ItemMenu>
+              {!finalizado &&
+                semDono &&
+                (semCadastro ? (
+                  <ItemMenu onClick={() => { setModalAceitar(true); setMenuAberto(false) }} icone={<UserPlus size={16} />}>
+                    Aceitar
+                  </ItemMenu>
+                ) : (
+                  <ItemMenu
+                    onClick={() => {
+                      if (usuarioId) assumir.mutate({ id: atendimento.id, usuarioId })
+                      setMenuAberto(false)
+                    }}
+                    icone={<UserCheck size={16} />}
+                  >
+                    Assumir
+                  </ItemMenu>
+                ))}
+              {!finalizado && (
+                <>
+                  <ItemMenu onClick={() => { setModalTransferir(true); setMenuAberto(false) }} icone={<ArrowLeftRight size={16} />}>
+                    Transferir
+                  </ItemMenu>
+                  <ItemMenu onClick={() => { setModalFinalizar(true); setMenuAberto(false) }} icone={<CheckCheck size={16} />}>
+                    Finalizar
+                  </ItemMenu>
+                </>
+              )}
+            </div>
+          )}
+        </div>
       </header>
+
+      {/* Mobile: painel do contato em tela cheia (acessado por "Dados do atendimento") */}
+      {mostrarDados && (
+        <div className="lg:hidden fixed inset-0 z-40 bg-sf-0 flex flex-col">
+          <header className="h-14 shrink-0 px-3 flex items-center gap-2 border-b border-bd-1 bg-sf-1">
+            <button
+              type="button"
+              onClick={() => setMostrarDados(false)}
+              aria-label="Voltar"
+              className="w-9 h-9 rounded-[6px] flex items-center justify-center text-tx-2 hover:text-tx-1 hover:bg-sf-2"
+            >
+              <ArrowLeft size={18} />
+            </button>
+            <span className="text-[14px] font-medium text-tx-1">Dados do atendimento</span>
+          </header>
+          <div className="flex-1 min-h-0">
+            <PainelContato atendimento={atendimento} variante="cheia" />
+          </div>
+        </div>
+      )}
 
       <div className="flex-1 overflow-y-auto px-4 py-4">
         {mensagens.isLoading ? (

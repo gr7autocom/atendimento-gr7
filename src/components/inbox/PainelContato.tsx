@@ -8,7 +8,14 @@ function nomeContato(a: AtendimentoLista) {
   return a.contato?.nome || a.contato?.nome_whatsapp || a.contato?.telefone || 'Sem nome'
 }
 
-export function PainelContato({ atendimento }: { atendimento: AtendimentoLista | null }) {
+export function PainelContato({
+  atendimento,
+  variante = 'lateral',
+}: {
+  atendimento: AtendimentoLista | null
+  /** 'lateral' = coluna no desktop (some no mobile); 'cheia' = ocupa tudo (overlay no mobile). */
+  variante?: 'lateral' | 'cheia'
+}) {
   const atualizar = useAtualizarContato()
   const [nome, setNome] = useState('')
 
@@ -19,9 +26,13 @@ export function PainelContato({ atendimento }: { atendimento: AtendimentoLista |
   if (!atendimento) return null
 
   const contato = atendimento.contato
+  const cls =
+    variante === 'cheia'
+      ? 'w-full h-full overflow-y-auto bg-sf-1'
+      : 'hidden lg:block lg:w-[272px] shrink-0 bg-sf-1 lg:border-l border-bd-1 overflow-y-auto'
 
   return (
-    <aside className="hidden lg:block lg:w-[272px] shrink-0 bg-sf-1 lg:border-l border-bd-1 overflow-y-auto">
+    <aside className={cls}>
       <div className="p-5 flex flex-col items-center text-center border-b border-bd-1">
         <Avatar nome={nomeContato(atendimento)} tamanho={60} whatsapp />
         <div className="mt-2.5 text-[14px] font-medium text-tx-1 max-w-full truncate">

@@ -13,6 +13,8 @@ O **suporte** vê só **Atendimentos** no menu; o **admin** vê tudo. Login comp
 
 **Dashboard de supervisão (só admin):** não é tela separada. Fica **dentro de Atendimentos**, na área da direita, como estado padrão quando nenhuma conversa está aberta. Ao abrir uma conversa aparece o chat; o **X** no cabeçalho da conversa fecha e volta ao dashboard. O atendente comum, sem conversa aberta, vê a marca d'água.
 
+**Chat no mobile (mestre-detalhe, padrão Zintech):** abaixo de `lg` a lista some ao abrir a conversa, que ocupa a tela cheia. O cabeçalho tem **←** (volta à lista) e um **menu ⋮** com **Dados do atendimento, Transferir, Finalizar** (e Assumir/Aceitar quando couber). "Dados do atendimento" abre o **painel do contato em tela cheia** (`PainelContato variante="cheia"`). No desktop (`lg+`) as ações ficam inline no cabeçalho e o painel do contato é a coluna lateral.
+
 O dashboard também **filtra a lista** (à esquerda): 6 cards coloridos (cor sólida por métrica) + tabelas **Por departamento** e **Por atendente**. Clicar num departamento filtra a lista por setor; a setinha expande os **atendentes com ativo naquele setor**, e clicar num deles filtra por setor + atendente. Simétrico na tabela de atendentes (expande os **setores em que ele tem ativo**). O filtro de atendente aparece como um **chip** no topo da lista, com **×** para limpar; o filtro de setor fica no seletor de setores.
 
 ## Responsividade
