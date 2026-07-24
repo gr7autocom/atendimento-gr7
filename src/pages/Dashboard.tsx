@@ -118,11 +118,14 @@ export function Dashboard({
           {cards.map((c) => (
             <div
               key={c.rotulo}
-              className="rounded-[10px] border border-bd-1 bg-sf-1 p-3 border-l-[3px]"
-              style={{ borderLeftColor: c.cor }}
+              className="rounded-[10px] border p-3 h-[84px] flex flex-col justify-between"
+              style={{ background: `${c.cor}12`, borderColor: `${c.cor}40` }}
             >
-              <div className="rotulo text-tx-3">{c.rotulo}</div>
-              <div className="dado text-[24px] font-medium leading-tight mt-1" style={{ color: c.valor ? c.cor : undefined }}>
+              <div className="rotulo text-tx-2 leading-tight">{c.rotulo}</div>
+              <div
+                className="dado text-[26px] font-semibold leading-none tracking-tight"
+                style={{ color: c.valor ? c.cor : 'var(--tx-3)' }}
+              >
                 {c.valor}
               </div>
             </div>
