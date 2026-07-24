@@ -1,7 +1,9 @@
 import { useState } from 'react'
-import { Inbox as IconeInbox, Search, ListFilter, RotateCw, Paperclip } from 'lucide-react'
+import { Inbox as IconeInbox, Search, ListFilter, RotateCw, Paperclip, X } from 'lucide-react'
 import type { AtendimentoLista } from '../../lib/useInbox'
+import type { FiltroInbox } from '../../pages/Dashboard'
 import { useCrud } from '../../lib/useCrud'
+import { useUsuarios } from '../../lib/useVinculos'
 import { usePermissao } from '../../lib/permissoes'
 import { cn } from '../../lib/utils'
 import { corSetor } from '../../lib/coresSetor'
@@ -34,6 +36,8 @@ export function ListaChamados({
   carregando,
   aoAtualizar,
   atualizando,
+  filtro,
+  aoFiltrar,
 }: {
   atendimentos: AtendimentoLista[]
   usuarioId: string | null
@@ -42,12 +46,20 @@ export function ListaChamados({
   carregando?: boolean
   aoAtualizar: () => void
   atualizando?: boolean
+  filtro: FiltroInbox
+  aoFiltrar: (f: FiltroInbox) => void
 }) {
   const [fila, setFila] = useState<Fila>('ativos')
   const [busca, setBusca] = useState('')
-  const [setorFiltro, setSetorFiltro] = useState('')
   const departamentos = useCrud<Departamento>('departamentos', 'ordem')
+  const usuarios = useUsuarios()
   const { isAdmin } = usePermissao()
+
+  const setorFiltro = filtro.departamentoId ?? ''
+  const atendenteFiltro = filtro.atendenteId
+  const nomeAtendente = atendenteFiltro
+    ? (usuarios.data ?? []).find((u) => u.id === atendenteFiltro)?.nome ?? 'Atendente'
+    : null
 
   // As três abas são exclusivas: um chamado aparece em uma só.
   // Sem cadastro vai para Potenciais (mesmo estando na fila), até alguém
@@ -66,10 +78,12 @@ export function ListaChamados({
     { id: 'potenciais', label: 'Potenciais' },
   ]
 
-  // Busca por nome, telefone, protocolo ou setor; filtro por departamento.
+  // Busca por nome/telefone/protocolo/setor; filtros por departamento e por atendente
+  // (estes vêm do painel de supervisão do admin, ou do seletor de setor).
   const termo = busca.trim().toLowerCase()
   const lista = listas[fila].filter((a) => {
     if (setorFiltro && a.departamento_id !== setorFiltro) return false
+    if (atendenteFiltro && a.responsavel_id !== atendenteFiltro) return false
     if (!termo) return true
     const alvo = `${nomeContato(a)} ${a.contato?.telefone ?? ''} ${a.protocolo} ${a.departamento?.nome ?? ''}`
     return alvo.toLowerCase().includes(termo)
@@ -110,7 +124,7 @@ export function ListaChamados({
           <ListFilter size={15} className="text-tx-3 shrink-0" />
           <select
             value={setorFiltro}
-            onChange={(e) => setSetorFiltro(e.target.value)}
+            onChange={(e) => aoFiltrar({ ...filtro, departamentoId: e.target.value || null })}
             aria-label="Filtrar por departamento"
             className="flex-1 h-7 px-2 text-[12px] rounded-[6px] bg-sf-2 border border-bd-2 text-tx-2 hover:border-bd-3 focus:border-br-1 focus:outline-none transition-colors duration-[120ms]"
           >
@@ -122,6 +136,22 @@ export function ListaChamados({
             ))}
           </select>
         </div>
+
+        {nomeAtendente && (
+          <div className="flex items-center">
+            <span className="inline-flex items-center gap-1.5 h-6 pl-2 pr-1 rounded-[6px] bg-br-soft text-br-2 text-[12px] font-medium">
+              Atendente: {nomeAtendente}
+              <button
+                type="button"
+                onClick={() => aoFiltrar({ ...filtro, atendenteId: null })}
+                aria-label="Limpar filtro de atendente"
+                className="w-5 h-5 flex items-center justify-center rounded-[4px] hover:bg-[color:var(--br-soft)]"
+              >
+                <X size={13} />
+              </button>
+            </span>
+          </div>
+        )}
       </div>
 
       <div className="flex gap-0.5 p-2 border-b border-bd-1">

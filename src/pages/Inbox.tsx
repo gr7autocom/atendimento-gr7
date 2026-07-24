@@ -5,14 +5,17 @@ import { usePermissao } from '../lib/permissoes'
 import { ListaChamados } from '../components/inbox/ListaChamados'
 import { Conversa } from '../components/inbox/Conversa'
 import { PainelContato } from '../components/inbox/PainelContato'
-import { Dashboard } from './Dashboard'
+import { Dashboard, type FiltroInbox } from './Dashboard'
 import { Erro } from '../components/ui/Estados'
+
+const SEM_FILTRO: FiltroInbox = { departamentoId: null, atendenteId: null }
 
 export function Inbox() {
   const atendimentos = useAtendimentos()
   const usuario = useUsuarioAtual()
   const { isAdmin } = usePermissao()
   const [selecionadoId, setSelecionadoId] = useState<string | null>(null)
+  const [filtro, setFiltro] = useState<FiltroInbox>(SEM_FILTRO)
 
   const lista = atendimentos.data ?? []
   const selecionado = lista.find((a) => a.id === selecionadoId) ?? null
@@ -35,6 +38,8 @@ export function Inbox() {
         carregando={atendimentos.isLoading}
         aoAtualizar={() => atendimentos.refetch()}
         atualizando={atendimentos.isFetching}
+        filtro={filtro}
+        aoFiltrar={setFiltro}
       />
 
       {selecionado ? (
@@ -48,7 +53,7 @@ export function Inbox() {
         </>
       ) : isAdmin ? (
         // Sem conversa aberta, o admin vê o painel de supervisão na área da direita.
-        <Dashboard />
+        <Dashboard aoFiltrar={setFiltro} filtro={filtro} />
       ) : (
         // Atendente vê a marca d'água (estado vazio da conversa).
         <Conversa atendimento={null} usuarioId={usuario?.id ?? null} />
