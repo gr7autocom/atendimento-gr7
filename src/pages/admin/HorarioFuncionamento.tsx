@@ -20,7 +20,33 @@ export function HorarioFuncionamento() {
   const plantoes = useCrud<Plantao>('atendimento_plantoes', 'dia_semana')
   const vinculos = useVinculos('atendimento_plantao_usuarios', 'plantao_id', 'usuario_id')
   const usuarios = useUsuarios()
-  const [novo, setNovo] = useState({ nome: '', dia_semana: '1', hora_inicio: '18:00', hora_fim: '21:00' })
+  const [novo, setNovo] = useState({
+    nome: '',
+    dias: [] as number[],
+    hora_inicio: '18:00',
+    hora_fim: '21:00',
+  })
+
+  function alternarDiaNovo(d: number) {
+    setNovo((n) => ({
+      ...n,
+      dias: n.dias.includes(d) ? n.dias.filter((x) => x !== d) : [...n.dias, d],
+    }))
+  }
+
+  /** Cria um turno por dia marcado, com o mesmo nome e horário. */
+  function criarTurnos() {
+    for (const d of [...novo.dias].sort((a, b) => a - b)) {
+      plantoes.criar.mutate({
+        nome: novo.nome || null,
+        dia_semana: d,
+        hora_inicio: novo.hora_inicio,
+        hora_fim: novo.hora_fim,
+        ativo: true,
+      } as Partial<Plantao>)
+    }
+    setNovo((n) => ({ ...n, nome: '', dias: [] }))
+  }
 
   const porDia = (d: number) => (horarios.lista.data ?? []).find((h) => h.dia_semana === d)
 
@@ -106,54 +132,61 @@ export function HorarioFuncionamento() {
           horário e mostrar os contatos de emergência (texto na aba Configurações BOT).
         </p>
 
-        <div className="flex flex-wrap items-end gap-2 mb-4">
-          <input
-            placeholder="Nome do turno"
-            aria-label="Nome do turno"
-            value={novo.nome}
-            onChange={(e) => setNovo({ ...novo, nome: e.target.value })}
-            className="rounded px-3 py-1.5 bg-[#ffffff14] text-[#ffffff]"
-          />
-          <select
-            aria-label="Dia do turno"
-            value={novo.dia_semana}
-            onChange={(e) => setNovo({ ...novo, dia_semana: e.target.value })}
-            className="rounded px-3 py-1.5 bg-[#ffffff14] text-[#ffffff]"
-          >
+        <div className="rounded border border-[#ffffff1a] p-3 mb-4 flex flex-col gap-3">
+          <div className="flex flex-wrap items-end gap-2">
+            <input
+              placeholder="Nome do turno"
+              aria-label="Nome do turno"
+              value={novo.nome}
+              onChange={(e) => setNovo({ ...novo, nome: e.target.value })}
+              className="rounded px-3 py-1.5 bg-[#ffffff14] text-[#ffffff]"
+            />
+            <input
+              type="time"
+              aria-label="Início do turno"
+              value={novo.hora_inicio}
+              onChange={(e) => setNovo({ ...novo, hora_inicio: e.target.value })}
+              className="rounded px-2 py-1.5 bg-[#ffffff14] text-[#ffffff]"
+            />
+            <input
+              type="time"
+              aria-label="Fim do turno"
+              value={novo.hora_fim}
+              onChange={(e) => setNovo({ ...novo, hora_fim: e.target.value })}
+              className="rounded px-2 py-1.5 bg-[#ffffff14] text-[#ffffff]"
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-sm text-[#ffffffb3]">Dias:</span>
             {DIAS.map((nome, d) => (
-              <option key={d} value={d}>
-                {nome}
-              </option>
+              <label key={d} className="text-sm text-[#ffffffb3] flex items-center gap-1">
+                <input
+                  type="checkbox"
+                  aria-label={`Turno em ${nome}`}
+                  checked={novo.dias.includes(d)}
+                  onChange={() => alternarDiaNovo(d)}
+                />
+                {nome.slice(0, 3)}
+              </label>
             ))}
-          </select>
-          <input
-            type="time"
-            aria-label="Início do turno"
-            value={novo.hora_inicio}
-            onChange={(e) => setNovo({ ...novo, hora_inicio: e.target.value })}
-            className="rounded px-2 py-1.5 bg-[#ffffff14] text-[#ffffff]"
-          />
-          <input
-            type="time"
-            aria-label="Fim do turno"
-            value={novo.hora_fim}
-            onChange={(e) => setNovo({ ...novo, hora_fim: e.target.value })}
-            className="rounded px-2 py-1.5 bg-[#ffffff14] text-[#ffffff]"
-          />
-          <button
-            onClick={() =>
-              plantoes.criar.mutate({
-                nome: novo.nome || null,
-                dia_semana: Number(novo.dia_semana),
-                hora_inicio: novo.hora_inicio,
-                hora_fim: novo.hora_fim,
-                ativo: true,
-              } as Partial<Plantao>)
-            }
-            className="flex items-center gap-1 rounded bg-[#0078d4] text-[#ffffff] text-sm px-3 py-1.5"
-          >
-            <Plus size={16} /> Novo turno
-          </button>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={criarTurnos}
+              disabled={novo.dias.length === 0}
+              className="flex items-center gap-1 rounded bg-[#0078d4] text-[#ffffff] text-sm px-3 py-1.5 disabled:opacity-50"
+            >
+              <Plus size={16} />
+              {novo.dias.length > 1 ? `Criar ${novo.dias.length} turnos` : 'Criar turno'}
+            </button>
+            <span className="text-sm text-[#ffffffb3]">
+              {novo.dias.length === 0
+                ? 'Marque os dias que esse turno cobre.'
+                : 'Depois de criar, marque quem atende em cada dia.'}
+            </span>
+          </div>
         </div>
 
         {(plantoes.lista.data ?? []).length === 0 ? (
