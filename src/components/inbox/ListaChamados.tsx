@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Inbox as IconeInbox, Search, ListFilter, RotateCw, Paperclip } from 'lucide-react'
 import type { AtendimentoLista } from '../../lib/useInbox'
 import { useCrud } from '../../lib/useCrud'
+import { usePermissao } from '../../lib/permissoes'
 import { cn } from '../../lib/utils'
 import { corSetor } from '../../lib/coresSetor'
 import { Avatar } from '../ui/Avatar'
@@ -46,14 +47,16 @@ export function ListaChamados({
   const [busca, setBusca] = useState('')
   const [setorFiltro, setSetorFiltro] = useState('')
   const departamentos = useCrud<Departamento>('departamentos', 'ordem')
+  const { isAdmin } = usePermissao()
 
   // As três abas são exclusivas: um chamado aparece em uma só.
   // Sem cadastro vai para Potenciais (mesmo estando na fila), até alguém
   // vincular a empresa e assumir. Com dono, vai para Ativos.
+  // Admin enxerga tudo: em "Ativos" vê os de todos os atendentes, não só os dele.
   const base = atendimentos.filter((a) => a.status !== 'finalizado')
   const semCadastro = (a: AtendimentoLista) => !a.contato?.cliente_id
   const listas: Record<Fila, AtendimentoLista[]> = {
-    ativos: base.filter((a) => a.responsavel_id === usuarioId),
+    ativos: base.filter((a) => (isAdmin ? !!a.responsavel_id : a.responsavel_id === usuarioId)),
     pendentes: base.filter((a) => a.status === 'na_fila' && !a.responsavel_id && !semCadastro(a)),
     potenciais: base.filter((a) => !a.responsavel_id && semCadastro(a)),
   }
