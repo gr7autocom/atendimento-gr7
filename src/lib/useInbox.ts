@@ -60,6 +60,54 @@ export function useClientes(busca: string) {
   })
 }
 
+/** Busca em contatos já existentes (por nome, nome do WhatsApp ou telefone). */
+export function useContatos(busca: string) {
+  return useQuery({
+    queryKey: ['contatos-busca', busca],
+    enabled: busca.trim().length >= 2,
+    queryFn: async () => {
+      const termo = `%${busca.trim()}%`
+      const { data, error } = await supabase
+        .from('contatos')
+        .select('id, nome, nome_whatsapp, telefone, cliente_id, cliente:clientes(id, razao_social, nome_fantasia)')
+        .or(`nome.ilike.${termo},nome_whatsapp.ilike.${termo},telefone.ilike.${termo}`)
+        .order('nome')
+        .limit(20)
+      if (error) throw error
+      return (data ?? []) as unknown as ContatoResumo[]
+    },
+  })
+}
+
+/** Cria um chamado manualmente (atendente iniciando). Via RPC pelo mesmo motivo
+ *  da transferência: o INSERT ... RETURNING esbarraria na RLS ao atribuir a
+ *  outro atendente/departamento. Sem atendente nasce pendente; com, em atendimento. */
+export function useCriarAtendimento() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (p: {
+      telefone: string | null
+      nome: string | null
+      clienteId: string | null
+      contatoId: string | null
+      departamentoId: string | null
+      responsavelId: string | null
+    }) => {
+      const { data, error } = await supabase.rpc('criar_atendimento', {
+        p_telefone: p.telefone,
+        p_nome: p.nome,
+        p_cliente_id: p.clienteId,
+        p_contato_id: p.contatoId,
+        p_departamento_id: p.departamentoId,
+        p_responsavel_id: p.responsavelId,
+      })
+      if (error) throw error
+      return data as unknown as string
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['atendimentos'] }),
+  })
+}
+
 export function useAtendimentos() {
   return useQuery({
     queryKey: ['atendimentos'],

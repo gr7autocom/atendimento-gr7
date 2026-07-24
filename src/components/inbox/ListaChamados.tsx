@@ -7,7 +7,7 @@ import { corSetor } from '../../lib/coresSetor'
 import { Avatar } from '../ui/Avatar'
 import { PontoStatus } from '../ui/Selo'
 import { Vazio, LinhasCarregando } from '../ui/Estados'
-import { SimuladorChamado } from './SimuladorChamado'
+import { CriarAtendimento } from './CriarAtendimento'
 
 type Fila = 'ativos' | 'pendentes' | 'potenciais'
 type Departamento = { id: string; nome: string; ativo: boolean }
@@ -100,7 +100,7 @@ export function ListaChamados({
           >
             <RotateCw size={15} className={cn(atualizando && 'animate-spin')} />
           </button>
-          <SimuladorChamado compacto />
+          <CriarAtendimento />
         </div>
 
         <div className="flex items-center gap-1.5">
