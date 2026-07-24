@@ -25,6 +25,13 @@ const CONFIGS: { chave: string; label: string; tipo: 'numero' | 'booleano' | 'te
   { chave: 'timezone', label: 'Fuso horário', tipo: 'texto' },
 ]
 
+/** Ordem em que o cliente encontra cada mensagem na conversa, não a ordem alfabética. */
+const ORDEM_FLUXO = Object.keys(ROTULOS)
+const posicaoNoFluxo = (chave: string) => {
+  const i = ORDEM_FLUXO.indexOf(chave)
+  return i === -1 ? ORDEM_FLUXO.length : i
+}
+
 export function ConfiguracoesBot() {
   const { lista: mensagens, salvar: salvarMensagem } = useBotMensagens()
   const { lista: config, salvar: salvarConfig } = useConfig()
@@ -51,7 +58,9 @@ export function ConfiguracoesBot() {
           <p className="text-[#ffffffb3]">Carregando…</p>
         ) : (
           <div className="flex flex-col gap-4">
-            {(mensagens.data ?? []).map((m) => (
+            {[...(mensagens.data ?? [])]
+              .sort((a, b) => posicaoNoFluxo(a.chave) - posicaoNoFluxo(b.chave))
+              .map((m) => (
               <div key={m.id} className="flex flex-col gap-1">
                 <label className="text-sm text-[#ffffffb3]">{ROTULOS[m.chave] ?? m.chave}</label>
                 <textarea
