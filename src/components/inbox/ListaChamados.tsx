@@ -98,7 +98,9 @@ export function ListaChamados({
   return (
     <div
       className={cn(
-        'lg:w-[320px] shrink-0 bg-sf-1 border-b lg:border-b-0 lg:border-r border-bd-1 flex-col min-h-0',
+        'bg-sf-1 border-b lg:border-b-0 lg:border-r border-bd-1 flex-col min-h-0',
+        // No mobile a lista ocupa a altura toda; no desktop é uma coluna fixa de 320px.
+        'flex-1 lg:flex-none lg:w-[320px]',
         // No mobile, ao abrir uma conversa a lista some (mestre-detalhe); no desktop fica sempre.
         selecionadoId ? 'hidden lg:flex' : 'flex'
       )}

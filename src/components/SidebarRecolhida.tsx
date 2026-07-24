@@ -4,9 +4,9 @@ import type { LucideIcon } from 'lucide-react'
 import { usePermissao } from '../lib/permissoes'
 import { cn } from '../lib/utils'
 
-type Item = { to: string; label: string; icone: LucideIcon; adminOnly: boolean }
+export type ItemNav = { to: string; label: string; icone: LucideIcon; adminOnly: boolean }
 
-const ITENS: Item[] = [
+export const ITENS_NAV: ItemNav[] = [
   { to: '/inbox', label: 'Atendimentos', icone: MessagesSquare, adminOnly: false },
   { to: '/admin/departamentos', label: 'Departamentos', icone: Network, adminOnly: true },
   { to: '/admin/tags', label: 'Tags', icone: Tag, adminOnly: true },
@@ -24,12 +24,13 @@ const ITENS: Item[] = [
  */
 export function SidebarRecolhida() {
   const { isAdmin } = usePermissao()
-  const itens = ITENS.filter((i) => !i.adminOnly || isAdmin)
+  const itens = ITENS_NAV.filter((i) => !i.adminOnly || isAdmin)
 
   return (
     <>
+      {/* No mobile o sidebar some; a navegação vai para o menu do avatar (BarraTopo). */}
       <nav
-        className="group absolute inset-y-0 left-0 z-20 w-[52px] hover:w-[216px] bg-sf-1 border-r border-bd-1 overflow-hidden transition-[width] duration-150 flex flex-col py-2 gap-0.5"
+        className="group absolute inset-y-0 left-0 z-20 w-[52px] hover:w-[216px] bg-sf-1 border-r border-bd-1 overflow-hidden transition-[width] duration-150 hidden lg:flex flex-col py-2 gap-0.5"
         aria-label="Navegação"
       >
         {itens.map((i) => {
@@ -67,8 +68,8 @@ export function SidebarRecolhida() {
           )
         })}
       </nav>
-      {/* espaçador: mantém o conteúdo alinhado enquanto a barra sobrepõe no hover */}
-      <div className="w-[52px] shrink-0" aria-hidden="true" />
+      {/* espaçador: mantém o conteúdo alinhado enquanto a barra sobrepõe no hover (só desktop) */}
+      <div className="w-[52px] shrink-0 hidden lg:block" aria-hidden="true" />
     </>
   )
 }

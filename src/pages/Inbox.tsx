@@ -51,12 +51,16 @@ export function Inbox() {
           />
           <PainelContato atendimento={selecionado} />
         </>
-      ) : isAdmin ? (
-        // Sem conversa aberta, o admin vê o painel de supervisão na área da direita.
-        <Dashboard aoFiltrar={setFiltro} filtro={filtro} />
       ) : (
-        // Atendente vê a marca d'água (estado vazio da conversa).
-        <Conversa atendimento={null} usuarioId={usuario?.id ?? null} />
+        // Sem conversa: no mobile mostra só a lista; o painel da direita é lg+.
+        // Admin vê o dashboard de supervisão; atendente vê a marca d'água.
+        <div className="hidden lg:flex flex-1 min-w-0 min-h-0">
+          {isAdmin ? (
+            <Dashboard aoFiltrar={setFiltro} filtro={filtro} />
+          ) : (
+            <Conversa atendimento={null} usuarioId={usuario?.id ?? null} />
+          )}
+        </div>
       )}
     </div>
   )

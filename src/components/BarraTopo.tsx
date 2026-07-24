@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { MessagesSquare, Bell, ChevronDown, LogOut } from 'lucide-react'
+import { NavLink } from 'react-router-dom'
+import { MessagesSquare, Bell, ChevronDown, LogOut, ArrowLeft } from 'lucide-react'
 import { useAuth } from '../lib/auth'
+import { usePermissao } from '../lib/permissoes'
+import { ITENS_NAV } from './SidebarRecolhida'
 import { Avatar } from './ui/Avatar'
 import { cn } from '../lib/utils'
 
@@ -11,8 +14,10 @@ import { cn } from '../lib/utils'
  */
 export function BarraTopo({ titulo, menu }: { titulo: string; menu?: ReactNode }) {
   const { signOut, usuario } = useAuth()
+  const { isAdmin } = usePermissao()
   const [aberto, setAberto] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  const itensNav = ITENS_NAV.filter((i) => !i.adminOnly || isAdmin)
 
   useEffect(() => {
     if (!aberto) return
@@ -59,7 +64,7 @@ export function BarraTopo({ titulo, menu }: { titulo: string; menu?: ReactNode }
           {aberto && (
             <div
               role="menu"
-              className="absolute right-0 top-[calc(100%+6px)] z-30 w-56 rounded-[10px] border border-bd-2 bg-sf-3 shadow-lg py-1"
+              className="hidden lg:block absolute right-0 top-[calc(100%+6px)] z-30 w-56 rounded-[10px] border border-bd-2 bg-sf-3 shadow-lg py-1"
             >
               <div className="px-3 py-2 border-b border-bd-1">
                 <div className="text-[13px] text-tx-1 truncate">{usuario?.nome ?? 'Usuário'}</div>
@@ -76,6 +81,60 @@ export function BarraTopo({ titulo, menu }: { titulo: string; menu?: ReactNode }
               </button>
             </div>
           )}
+
+          {/* Mobile: menu em tela cheia, aberto ao tocar na foto (o sidebar de ícones não existe no mobile) */}
+          {aberto && (
+        <div className="lg:hidden fixed inset-0 z-40 bg-sf-0 flex flex-col">
+          <div className="h-16 shrink-0 px-3 flex items-center gap-3 bg-sf-1 border-b border-bd-1">
+            <button
+              type="button"
+              onClick={() => setAberto(false)}
+              aria-label="Voltar"
+              className="w-9 h-9 shrink-0 rounded-[6px] flex items-center justify-center text-tx-2 hover:text-tx-1 hover:bg-sf-2"
+            >
+              <ArrowLeft size={18} />
+            </button>
+            <Avatar nome={usuario?.nome ?? usuario?.email ?? '?'} tamanho={38} />
+            <div className="min-w-0">
+              <div className="text-[14px] font-semibold text-tx-1 truncate">{usuario?.nome ?? 'Usuário'}</div>
+              <div className="text-[12px] text-tx-3 truncate">{usuario?.permissao?.nome ?? usuario?.email}</div>
+            </div>
+          </div>
+
+          <nav className="flex-1 overflow-y-auto py-2" aria-label="Menu">
+            <div className="rotulo px-4 pt-2 pb-1 text-tx-3">Menu</div>
+            {itensNav.map((i) => {
+              const Icone = i.icone
+              return (
+                <NavLink
+                  key={i.to}
+                  to={i.to}
+                  onClick={() => setAberto(false)}
+                  className={({ isActive }) =>
+                    cn(
+                      'flex items-center gap-3 w-full px-4 h-12 text-[14px] border-b border-bd-1 transition-colors duration-[120ms]',
+                      isActive ? 'text-tx-1 bg-sf-2 font-medium' : 'text-tx-1 hover:bg-sf-2'
+                    )
+                  }
+                >
+                  <Icone size={18} className="text-tx-2 shrink-0" /> {i.label}
+                </NavLink>
+              )
+            })}
+
+            <div className="rotulo px-4 pt-4 pb-1 text-tx-3">Conta</div>
+            <button
+              type="button"
+              onClick={() => signOut()}
+              className="flex items-center gap-3 w-full px-4 h-12 text-[14px] text-tx-1 border-b border-bd-1 hover:bg-sf-2 transition-colors duration-[120ms]"
+            >
+              <LogOut size={18} className="text-tx-2 shrink-0" /> Sair
+            </button>
+          </nav>
+
+          <div className="shrink-0 text-center text-[11px] text-tx-3 py-3">GR7 Atendimento</div>
+        </div>
+      )}
         </div>
       </div>
     </header>
