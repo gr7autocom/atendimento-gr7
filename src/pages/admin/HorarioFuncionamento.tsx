@@ -3,7 +3,7 @@ import { Plus, Trash2 } from 'lucide-react'
 import { useCrud } from '../../lib/useCrud'
 import { useVinculos, useUsuarios } from '../../lib/useVinculos'
 import { Botao } from '../../components/ui/Botao'
-import { Entrada } from '../../components/ui/Campo'
+import { Entrada, CampoHora } from '../../components/ui/Campo'
 import { Tabela, Th, Tr, Td } from '../../components/ui/Tabela'
 import { cn } from '../../lib/utils'
 
@@ -100,21 +100,17 @@ export function HorarioFuncionamento() {
               <Tr key={d}>
                 <Td className={cn('font-medium', !h?.ativo && 'text-tx-3')}>{nome}</Td>
                 <Td>
-                  <input
-                    type="time"
-                    aria-label={`Abre ${nome}`}
-                    value={h?.hora_inicio?.slice(0, 5) ?? '08:00'}
-                    onChange={(e) => salvarDia(d, { hora_inicio: e.target.value })}
-                    className={cn(inputHora, 'dado')}
+                  <CampoHora
+                    rotuloAcessivel={`Abre ${nome}`}
+                    valor={h?.hora_inicio?.slice(0, 5) ?? '08:00'}
+                    aoSalvar={(v) => salvarDia(d, { hora_inicio: v })}
                   />
                 </Td>
                 <Td>
-                  <input
-                    type="time"
-                    aria-label={`Fecha ${nome}`}
-                    value={h?.hora_fim?.slice(0, 5) ?? '18:00'}
-                    onChange={(e) => salvarDia(d, { hora_fim: e.target.value })}
-                    className={cn(inputHora, 'dado')}
+                  <CampoHora
+                    rotuloAcessivel={`Fecha ${nome}`}
+                    valor={h?.hora_fim?.slice(0, 5) ?? '18:00'}
+                    aoSalvar={(v) => salvarDia(d, { hora_fim: v })}
                   />
                 </Td>
                 <Td>
