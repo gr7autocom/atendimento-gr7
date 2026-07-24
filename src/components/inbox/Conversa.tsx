@@ -1,24 +1,25 @@
 import { useState, type FormEvent } from 'react'
-import { Send, UserCheck, ArrowLeftRight, CheckCheck, UserPlus } from 'lucide-react'
-import { AceitarPotencial } from './AceitarPotencial'
+import { Send, UserCheck, ArrowLeftRight, CheckCheck, UserPlus, MessagesSquare } from 'lucide-react'
 import { useMensagens, useAcoesAtendimento, type AtendimentoLista } from '../../lib/useInbox'
 import { useCrud } from '../../lib/useCrud'
 import { useUsuarios } from '../../lib/useVinculos'
-import { AdminModal } from '../admin/AdminModal'
+import { AceitarPotencial } from './AceitarPotencial'
+import { Modal } from '../ui/Modal'
+import { Botao } from '../ui/Botao'
+import { Selecao } from '../ui/Campo'
+import { PontoStatus } from '../ui/Selo'
+import { Vazio, LinhasCarregando } from '../ui/Estados'
 import { cn } from '../../lib/utils'
 
 type Departamento = { id: string; nome: string; ativo: boolean }
 type Motivo = { id: string; nome: string; ativo: boolean }
 
-const ROTULO_STATUS: Record<string, string> = {
-  triagem: 'No bot',
-  na_fila: 'Na fila',
-  em_atendimento: 'Em atendimento',
-  finalizado: 'Finalizado',
-}
-
 function nomeContato(a: AtendimentoLista) {
   return a.contato?.nome || a.contato?.nome_whatsapp || a.contato?.telefone || 'Sem nome'
+}
+
+function hora(iso: string) {
+  return new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
 }
 
 export function Conversa({
@@ -44,8 +45,12 @@ export function Conversa({
 
   if (!atendimento) {
     return (
-      <div className="flex-1 flex items-center justify-center p-6">
-        <p className="text-[#ffffffb3]">Escolha um chamado na lista para ver a conversa.</p>
+      <div className="flex-1 flex items-center justify-center bg-sf-0">
+        <Vazio
+          icone={<MessagesSquare size={24} />}
+          titulo="Nenhum chamado aberto"
+          descricao="Escolha um chamado na lista ao lado para ver a conversa."
+        />
       </div>
     )
   }
@@ -68,96 +73,120 @@ export function Conversa({
   }
 
   return (
-    <div className="flex-1 flex flex-col min-w-0 min-h-0">
-      <header className="border-b border-[#ffffff1a] p-3 flex flex-wrap items-center justify-between gap-2">
+    <div className="flex-1 flex flex-col min-w-0 min-h-0 bg-sf-0">
+      <header className="h-14 shrink-0 px-4 flex items-center justify-between gap-3 border-b border-bd-1 bg-sf-1">
         <div className="min-w-0">
-          <div className="text-[#ffffff] truncate">{nomeContato(atendimento)}</div>
-          <div className="text-xs text-[#ffffffb3]">
-            #{atendimento.protocolo} · {atendimento.departamento?.nome ?? 'Sem departamento'} ·{' '}
-            {ROTULO_STATUS[atendimento.status] ?? atendimento.status}
+          <div className="text-[13px] font-medium text-tx-1 truncate">{nomeContato(atendimento)}</div>
+          <div className="flex items-center gap-2 text-[12px] text-tx-2">
+            <span className="dado text-tx-3">#{atendimento.protocolo}</span>
+            <span className="text-tx-3">·</span>
+            <span className="truncate">{atendimento.departamento?.nome ?? 'Sem setor'}</span>
+            <PontoStatus status={atendimento.status} />
           </div>
         </div>
+
         {!finalizado && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 shrink-0">
             {semDono &&
               (semCadastro ? (
-                <button
+                <Botao
+                  variante="primario"
+                  tamanho="sm"
                   onClick={() => setModalAceitar(true)}
+                  icone={<UserPlus size={15} />}
                   title="Vincular a empresa, escolher o setor e assumir"
-                  className="flex items-center gap-1 rounded bg-[#0078d4] text-[#ffffff] text-sm px-3 py-1.5"
                 >
-                  <UserPlus size={16} /> Aceitar
-                </button>
+                  Aceitar
+                </Botao>
               ) : (
-                <button
+                <Botao
+                  variante="primario"
+                  tamanho="sm"
                   onClick={() => usuarioId && assumir.mutate({ id: atendimento.id, usuarioId })}
-                  className="flex items-center gap-1 rounded bg-[#0078d4] text-[#ffffff] text-sm px-3 py-1.5"
+                  icone={<UserCheck size={15} />}
                 >
-                  <UserCheck size={16} /> Assumir
-                </button>
+                  Assumir
+                </Botao>
               ))}
-            <button
+            <Botao
+              variante="neutro"
+              tamanho="sm"
               onClick={() => setModalTransferir(true)}
-              className="flex items-center gap-1 rounded bg-[#ffffff14] text-[#ffffff] text-sm px-3 py-1.5"
+              icone={<ArrowLeftRight size={15} />}
             >
-              <ArrowLeftRight size={16} /> Transferir
-            </button>
-            <button
+              Transferir
+            </Botao>
+            <Botao
+              variante="neutro"
+              tamanho="sm"
               onClick={() => setModalFinalizar(true)}
-              className="flex items-center gap-1 rounded bg-[#ffffff14] text-[#ffffff] text-sm px-3 py-1.5"
+              icone={<CheckCheck size={15} />}
             >
-              <CheckCheck size={16} /> Finalizar
-            </button>
+              Finalizar
+            </Botao>
           </div>
         )}
       </header>
 
-      <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2">
+      <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-1.5">
         {mensagens.isLoading ? (
-          <p className="text-[#ffffffb3]">Carregando conversa…</p>
+          <LinhasCarregando linhas={3} />
         ) : (mensagens.data ?? []).length === 0 ? (
-          <p className="text-[#ffffffb3]">Nenhuma mensagem ainda.</p>
+          <p className="text-[13px] text-tx-3 text-center py-6">Nenhuma mensagem ainda.</p>
         ) : (
-          (mensagens.data ?? []).map((m) => (
-            <div
-              key={m.id}
-              className={cn(
-                'max-w-[75%] rounded px-3 py-2 text-sm',
-                m.direcao === 'entrada'
-                  ? 'self-start bg-[#ffffff14] text-[#ffffff]'
-                  : m.origem === 'bot'
-                    ? 'self-end bg-[#3a3d41] text-[#ffffff]'
-                    : 'self-end bg-[#0078d4] text-[#ffffff]'
-              )}
-            >
-              {m.origem === 'bot' && <div className="text-xs opacity-70 mb-0.5">Bot</div>}
-              {m.corpo}
-            </div>
-          ))
+          (mensagens.data ?? []).map((m) => {
+            const entrada = m.direcao === 'entrada'
+            const bot = m.origem === 'bot'
+            return (
+              <div
+                key={m.id}
+                className={cn(
+                  'max-w-[68%] px-3 py-2 text-[13px] leading-relaxed',
+                  entrada
+                    ? 'self-start bg-sf-2 text-tx-1 rounded-[10px] rounded-bl-[3px]'
+                    : bot
+                      ? 'self-end bg-sf-3 text-tx-2 rounded-[10px] rounded-br-[3px] border border-bd-1'
+                      : 'self-end bg-br-1 text-white rounded-[10px] rounded-br-[3px]'
+                )}
+              >
+                {bot && <div className="rotulo mb-0.5 text-tx-3">Bot</div>}
+                <div className="whitespace-pre-wrap break-words">{m.corpo}</div>
+                <div
+                  className={cn(
+                    'dado text-[10px] mt-1 text-right',
+                    entrada ? 'text-tx-3' : bot ? 'text-tx-3' : 'text-white/70'
+                  )}
+                >
+                  {hora(m.created_at)}
+                </div>
+              </div>
+            )
+          })
         )}
       </div>
 
       {finalizado ? (
-        <div className="border-t border-[#ffffff1a] p-3 text-sm text-[#ffffffb3]">
+        <div className="shrink-0 border-t border-bd-1 bg-sf-1 px-4 py-3 text-[13px] text-tx-2">
           Atendimento finalizado. Se o cliente voltar a falar, o chamado reabre pela regra de reabertura.
         </div>
       ) : (
-        <form onSubmit={enviar} className="border-t border-[#ffffff1a] p-3 flex gap-2">
+        <form onSubmit={enviar} className="shrink-0 border-t border-bd-1 bg-sf-1 p-3 flex gap-2">
           <input
             value={texto}
             onChange={(e) => setTexto(e.target.value)}
             placeholder={semDono ? 'Responder (isso assume o chamado)' : 'Escreva sua resposta'}
             aria-label="Resposta"
-            className="flex-1 rounded px-3 py-2 bg-[#ffffff14] text-[#ffffff]"
+            className="flex-1 h-9 px-3 text-sm rounded-[6px] bg-sf-2 border border-bd-2 text-tx-1 placeholder:text-tx-3 hover:border-bd-3 focus:border-br-1 focus:outline-none focus:ring-2 focus:ring-[color:var(--br-soft)] transition-colors duration-[120ms]"
           />
-          <button
+          <Botao
+            variante="primario"
             type="submit"
             disabled={!texto.trim() || (!souResponsavel && !semDono)}
             title={!souResponsavel && !semDono ? 'Este chamado é de outro atendente' : undefined}
-            className="flex items-center gap-1 rounded bg-[#0078d4] text-[#ffffff] px-3 py-2 disabled:opacity-50"
+            icone={<Send size={15} />}
           >
-            <Send size={16} /> Enviar
-          </button>
+            Enviar
+          </Botao>
         </form>
       )}
 
@@ -170,43 +199,40 @@ export function Conversa({
         />
       )}
 
-      <AdminModal titulo="Transferir atendimento" aberto={modalTransferir} onFechar={() => setModalTransferir(false)}>
+      <Modal titulo="Transferir atendimento" aberto={modalTransferir} onFechar={() => setModalTransferir(false)}>
         <div className="flex flex-col gap-3">
-          <label className="flex flex-col gap-1 text-sm text-[#ffffffb3]">
-            Departamento
-            <select
-              value={destinoDep}
-              onChange={(e) => setDestinoDep(e.target.value)}
-              className="rounded px-3 py-2 bg-[#ffffff14] text-[#ffffff]"
-            >
-              <option value="">Manter o atual</option>
-              {(departamentos.lista.data ?? []).map((d) => (
-                <option key={d.id} value={d.id}>
-                  {d.nome}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="flex flex-col gap-1 text-sm text-[#ffffffb3]">
-            Atendente (opcional)
-            <select
-              value={destinoUsuario}
-              onChange={(e) => setDestinoUsuario(e.target.value)}
-              className="rounded px-3 py-2 bg-[#ffffff14] text-[#ffffff]"
-            >
-              <option value="">Deixar na fila do departamento</option>
-              {(usuarios.data ?? []).map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.nome}
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="flex justify-end gap-2">
-            <button onClick={() => setModalTransferir(false)} className="px-3 py-1.5 text-[#ffffffb3]">
+          <Selecao
+            rotulo="Departamento"
+            value={destinoDep}
+            onChange={(e) => setDestinoDep(e.target.value)}
+          >
+            <option value="">Manter o atual</option>
+            {(departamentos.lista.data ?? []).map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.nome}
+              </option>
+            ))}
+          </Selecao>
+          <Selecao
+            rotulo="Atendente"
+            dica="Sem escolher ninguém, o chamado volta para a fila do departamento."
+            value={destinoUsuario}
+            onChange={(e) => setDestinoUsuario(e.target.value)}
+          >
+            <option value="">Deixar na fila</option>
+            {(usuarios.data ?? []).map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.nome}
+              </option>
+            ))}
+          </Selecao>
+          <div className="flex justify-end gap-2 pt-1">
+            <Botao variante="fantasma" onClick={() => setModalTransferir(false)}>
               Cancelar
-            </button>
-            <button
+            </Botao>
+            <Botao
+              variante="primario"
+              disabled={!destinoDep && !destinoUsuario}
               onClick={() => {
                 transferir.mutate({
                   id: atendimento.id,
@@ -217,49 +243,45 @@ export function Conversa({
                 setDestinoDep('')
                 setDestinoUsuario('')
               }}
-              disabled={!destinoDep && !destinoUsuario}
-              className="rounded bg-[#0078d4] text-[#ffffff] px-3 py-1.5 disabled:opacity-50"
             >
               Transferir
-            </button>
+            </Botao>
           </div>
         </div>
-      </AdminModal>
+      </Modal>
 
-      <AdminModal titulo="Finalizar atendimento" aberto={modalFinalizar} onFechar={() => setModalFinalizar(false)}>
+      <Modal titulo="Finalizar atendimento" aberto={modalFinalizar} onFechar={() => setModalFinalizar(false)}>
         <div className="flex flex-col gap-3">
-          <label className="flex flex-col gap-1 text-sm text-[#ffffffb3]">
-            Qual foi o motivo do atendimento?
-            <select
-              value={motivoId}
-              onChange={(e) => setMotivoId(e.target.value)}
-              className="rounded px-3 py-2 bg-[#ffffff14] text-[#ffffff]"
-            >
-              <option value="">Selecionar</option>
-              {(motivos.lista.data ?? []).map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.nome}
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="flex justify-end gap-2">
-            <button onClick={() => setModalFinalizar(false)} className="px-3 py-1.5 text-[#ffffffb3]">
+          <Selecao
+            rotulo="Qual foi o motivo do atendimento?"
+            dica="Usado nos relatórios de atendimento."
+            value={motivoId}
+            onChange={(e) => setMotivoId(e.target.value)}
+          >
+            <option value="">Selecionar</option>
+            {(motivos.lista.data ?? []).map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.nome}
+              </option>
+            ))}
+          </Selecao>
+          <div className="flex justify-end gap-2 pt-1">
+            <Botao variante="fantasma" onClick={() => setModalFinalizar(false)}>
               Cancelar
-            </button>
-            <button
+            </Botao>
+            <Botao
+              variante="primario"
               onClick={() => {
                 finalizar.mutate({ id: atendimento.id, motivoId: motivoId || null })
                 setModalFinalizar(false)
                 setMotivoId('')
               }}
-              className="rounded bg-[#0078d4] text-[#ffffff] px-3 py-1.5"
             >
               Finalizar
-            </button>
+            </Botao>
           </div>
         </div>
-      </AdminModal>
+      </Modal>
     </div>
   )
 }

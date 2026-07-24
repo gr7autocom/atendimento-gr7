@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useBotMensagens, useConfig } from '../../lib/useConfig'
+import { Botao } from '../../components/ui/Botao'
+import { AreaTexto, Entrada } from '../../components/ui/Campo'
+import { LinhasCarregando } from '../../components/ui/Estados'
 
 const ROTULOS: Record<string, string> = {
   bem_vindo: 'Boas-vindas',
@@ -25,7 +28,7 @@ const CONFIGS: { chave: string; label: string; tipo: 'numero' | 'booleano' | 'te
   { chave: 'timezone', label: 'Fuso horário', tipo: 'texto' },
 ]
 
-/** Ordem em que o cliente encontra cada mensagem na conversa, não a ordem alfabética. */
+/** Ordem em que o cliente encontra cada mensagem na conversa, não a alfabética. */
 const ORDEM_FLUXO = Object.keys(ROTULOS)
 const posicaoNoFluxo = (chave: string) => {
   const i = ORDEM_FLUXO.indexOf(chave)
@@ -47,70 +50,79 @@ export function ConfiguracoesBot() {
   }, [config.data])
 
   return (
-    <div className="flex flex-col gap-8 max-w-3xl">
-      <section>
-        <h2 className="text-[#ffffff] font-bold text-lg mb-1">Mensagens do bot</h2>
-        <p className="text-[#ffffffb3] text-sm mb-4">
-          Variáveis disponíveis: {'{empresa}'}, {'{contato}'}, {'{protocolo}'}, {'{departamento}'},{' '}
-          {'{atendente}'}, {'{horario}'}. O menu de departamentos é montado sozinho, não precisa escrever aqui.
-        </p>
+    <div className="flex flex-col gap-6 max-w-2xl">
+      <section className="rounded-[10px] border border-bd-1 bg-sf-1">
+        <div className="px-4 py-3 border-b border-bd-1">
+          <h2 className="text-[14px] font-semibold text-tx-1">Mensagens do bot</h2>
+          <p className="text-[12px] text-tx-2 mt-0.5">
+            Na ordem em que o cliente recebe. Variáveis: <span className="dado">{'{empresa}'}</span>{' '}
+            <span className="dado">{'{contato}'}</span> <span className="dado">{'{protocolo}'}</span>{' '}
+            <span className="dado">{'{departamento}'}</span> <span className="dado">{'{atendente}'}</span>{' '}
+            <span className="dado">{'{horario}'}</span>. O menu de setores é montado sozinho.
+          </p>
+        </div>
+
         {mensagens.isLoading ? (
-          <p className="text-[#ffffffb3]">Carregando…</p>
+          <LinhasCarregando linhas={4} />
         ) : (
-          <div className="flex flex-col gap-4">
+          <div className="p-4 flex flex-col gap-4">
             {[...(mensagens.data ?? [])]
               .sort((a, b) => posicaoNoFluxo(a.chave) - posicaoNoFluxo(b.chave))
               .map((m) => (
-              <div key={m.id} className="flex flex-col gap-1">
-                <label className="text-sm text-[#ffffffb3]">{ROTULOS[m.chave] ?? m.chave}</label>
-                <textarea
-                  value={textos[m.id] ?? ''}
-                  onChange={(e) => setTextos((t) => ({ ...t, [m.id]: e.target.value }))}
-                  className="rounded px-3 py-2 bg-[#ffffff14] text-[#ffffff] min-h-20"
-                />
-                <div>
-                  <button
-                    onClick={() => salvarMensagem.mutate({ id: m.id, texto: textos[m.id] ?? '' })}
-                    className="rounded bg-[#0078d4] text-[#ffffff] text-sm px-3 py-1.5"
-                  >
-                    Salvar mensagem
-                  </button>
+                <div key={m.id} className="flex flex-col gap-2">
+                  <AreaTexto
+                    rotulo={ROTULOS[m.chave] ?? m.chave}
+                    value={textos[m.id] ?? ''}
+                    onChange={(e) => setTextos((t) => ({ ...t, [m.id]: e.target.value }))}
+                  />
+                  <div>
+                    <Botao
+                      variante="neutro"
+                      tamanho="sm"
+                      onClick={() => salvarMensagem.mutate({ id: m.id, texto: textos[m.id] ?? '' })}
+                    >
+                      Salvar mensagem
+                    </Botao>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
           </div>
         )}
       </section>
 
-      <section>
-        <h2 className="text-[#ffffff] font-bold text-lg mb-4">Comportamento</h2>
-        <div className="flex flex-col gap-3">
-          {CONFIGS.map((c) => (
-            <label key={c.chave} className="flex items-center gap-3 text-sm text-[#ffffffb3]">
-              {c.tipo === 'booleano' ? (
+      <section className="rounded-[10px] border border-bd-1 bg-sf-1">
+        <div className="px-4 py-3 border-b border-bd-1">
+          <h2 className="text-[14px] font-semibold text-tx-1">Comportamento</h2>
+          <p className="text-[12px] text-tx-2 mt-0.5">Regras que o bot segue durante o atendimento.</p>
+        </div>
+
+        <div className="p-4 flex flex-col gap-3">
+          {CONFIGS.map((c) =>
+            c.tipo === 'booleano' ? (
+              <label key={c.chave} className="flex items-center gap-2.5 text-[13px] text-tx-1">
                 <input
                   type="checkbox"
+                  className="accent-[color:var(--br-1)]"
                   checked={flags[c.chave] === 'true'}
                   onChange={(e) => setFlags((f) => ({ ...f, [c.chave]: String(e.target.checked) }))}
                 />
-              ) : (
-                <input
+                {c.label}
+              </label>
+            ) : (
+              <div key={c.chave} className="max-w-56">
+                <Entrada
+                  rotulo={c.label}
                   type={c.tipo === 'numero' ? 'number' : 'text'}
                   value={flags[c.chave] ?? ''}
                   onChange={(e) => setFlags((f) => ({ ...f, [c.chave]: e.target.value }))}
-                  className="rounded px-3 py-1.5 bg-[#ffffff14] text-[#ffffff] w-48"
                 />
-              )}
-              {c.label}
-            </label>
-          ))}
-          <div>
-            <button
-              onClick={() => salvarConfig.mutate(flags)}
-              className="rounded bg-[#0078d4] text-[#ffffff] text-sm px-3 py-1.5"
-            >
+              </div>
+            )
+          )}
+          <div className="pt-1">
+            <Botao variante="primario" tamanho="sm" onClick={() => salvarConfig.mutate(flags)}>
               Salvar comportamento
-            </button>
+            </Botao>
           </div>
         </div>
       </section>

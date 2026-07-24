@@ -5,6 +5,7 @@ import { ListaChamados } from '../components/inbox/ListaChamados'
 import { Conversa } from '../components/inbox/Conversa'
 import { PainelContato } from '../components/inbox/PainelContato'
 import { SimuladorChamado } from '../components/inbox/SimuladorChamado'
+import { Erro } from '../components/ui/Estados'
 
 export function Inbox() {
   const atendimentos = useAtendimentos()
@@ -16,13 +17,16 @@ export function Inbox() {
 
   return (
     <div className="h-full min-h-0 flex flex-col">
-      <header className="flex flex-wrap items-center justify-between gap-2 p-3 border-b border-[#ffffff1a]">
-        <h1 className="text-[#ffffff] font-bold">Atendimento</h1>
+      <header className="h-14 shrink-0 px-4 flex items-center justify-between gap-3 border-b border-bd-1 bg-sf-1">
+        <h1 className="text-[15px] font-semibold text-tx-1">Atendimento</h1>
         <SimuladorChamado />
       </header>
 
       {atendimentos.isError ? (
-        <p className="p-4 text-red-400">Não foi possível carregar os chamados. Recarregue a página.</p>
+        <Erro
+          mensagem="Não foi possível carregar os chamados."
+          onTentar={() => atendimentos.refetch()}
+        />
       ) : (
         <div className="flex-1 flex flex-col lg:flex-row min-h-0">
           <ListaChamados
@@ -30,6 +34,7 @@ export function Inbox() {
             usuarioId={usuario?.id ?? null}
             selecionadoId={selecionadoId}
             onSelecionar={setSelecionadoId}
+            carregando={atendimentos.isLoading}
           />
           <Conversa atendimento={selecionado} usuarioId={usuario?.id ?? null} />
           <PainelContato atendimento={selecionado} />

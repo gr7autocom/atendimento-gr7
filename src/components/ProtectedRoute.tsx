@@ -7,7 +7,13 @@ export function ProtectedRoute({ children, requireAdmin = false }: { children: R
   const { status } = useAuth()
   const { isAdmin } = usePermissao()
 
-  if (status === 'loading') return <div className="p-6 text-[#ffffff]">Carregando…</div>
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-sf-0">
+        <span className="text-[13px] text-tx-2">Carregando…</span>
+      </div>
+    )
+  }
   if (status !== 'authenticated') return <Navigate to="/login" replace />
   if (requireAdmin && !isAdmin) return <Navigate to="/inbox" replace />
   return <>{children}</>

@@ -7,7 +7,9 @@ import {
   type AtendimentoLista,
 } from '../../lib/useInbox'
 import { useCrud } from '../../lib/useCrud'
-import { AdminModal } from '../admin/AdminModal'
+import { Modal } from '../ui/Modal'
+import { Botao } from '../ui/Botao'
+import { Entrada, Selecao } from '../ui/Campo'
 import { cn } from '../../lib/utils'
 
 type Departamento = { id: string; nome: string; ativo: boolean }
@@ -60,29 +62,26 @@ export function AceitarPotencial({
   }
 
   return (
-    <AdminModal titulo="Aceitar chamado" aberto={aberto} onFechar={onFechar}>
+    <Modal titulo="Aceitar chamado" aberto={aberto} onFechar={onFechar}>
       <div className="flex flex-col gap-3">
-        <p className="text-sm text-[#ffffffb3]">
+        <p className="text-[13px] text-tx-2">
           Este contato ainda não tem empresa vinculada. Escolha a empresa e o setor para assumir o atendimento.
         </p>
 
-        <label className="flex flex-col gap-1 text-sm text-[#ffffffb3]">
-          Empresa
-          <input
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-            placeholder="Digite ao menos 2 letras do nome"
-            aria-label="Buscar empresa"
-            className="rounded px-3 py-2 bg-[#ffffff14] text-[#ffffff]"
-          />
-        </label>
+        <Entrada
+          rotulo="Empresa"
+          value={busca}
+          onChange={(e) => setBusca(e.target.value)}
+          placeholder="Digite ao menos 2 letras do nome"
+          aria-label="Buscar empresa"
+        />
 
         {busca.trim().length >= 2 && (
-          <div className="max-h-40 overflow-y-auto rounded border border-[#ffffff1a]">
+          <div className="max-h-40 overflow-y-auto rounded-[6px] border border-bd-2 bg-sf-2">
             {clientes.isLoading ? (
-              <p className="text-[#ffffffb3] text-sm p-2">Buscando…</p>
+              <p className="text-[13px] text-tx-3 p-2.5">Buscando…</p>
             ) : (clientes.data ?? []).length === 0 ? (
-              <p className="text-[#ffffffb3] text-sm p-2">
+              <p className="text-[13px] text-tx-3 p-2.5">
                 Nenhuma empresa encontrada. O cadastro novo é feito no painel.
               </p>
             ) : (
@@ -91,8 +90,8 @@ export function AceitarPotencial({
                   key={c.id}
                   onClick={() => setEmpresaId(c.id)}
                   className={cn(
-                    'w-full text-left px-3 py-2 text-sm text-[#ffffff]',
-                    empresaId === c.id ? 'bg-[#0078d4]' : 'hover:bg-[#ffffff14]'
+                    'w-full text-left px-2.5 py-2 text-[13px] transition-colors duration-[120ms]',
+                    empresaId === c.id ? 'bg-br-soft text-br-2 font-medium' : 'text-tx-1 hover:bg-sf-3'
                   )}
                 >
                   {nomeEmpresa(c) ?? 'Sem nome'}
@@ -103,41 +102,36 @@ export function AceitarPotencial({
         )}
 
         {empresaEscolhida && (
-          <p className="text-sm text-[#ffffff]">Empresa: {nomeEmpresa(empresaEscolhida)}</p>
+          <p className="text-[13px] text-tx-1">
+            Empresa escolhida: <span className="font-medium">{nomeEmpresa(empresaEscolhida)}</span>
+          </p>
         )}
 
-        <label className="flex flex-col gap-1 text-sm text-[#ffffffb3]">
-          Setor
-          <select
-            value={departamentoId}
-            onChange={(e) => setDepartamentoId(e.target.value)}
-            aria-label="Setor"
-            className="rounded px-3 py-2 bg-[#ffffff14] text-[#ffffff]"
-          >
-            <option value="">Selecionar</option>
-            {(departamentos.lista.data ?? []).map((d) => (
-              <option key={d.id} value={d.id}>
-                {d.nome}
-              </option>
-            ))}
-          </select>
-        </label>
+        <Selecao
+          rotulo="Setor"
+          value={departamentoId}
+          onChange={(e) => setDepartamentoId(e.target.value)}
+          aria-label="Setor"
+        >
+          <option value="">Selecionar</option>
+          {(departamentos.lista.data ?? []).map((d) => (
+            <option key={d.id} value={d.id}>
+              {d.nome}
+            </option>
+          ))}
+        </Selecao>
 
-        {erro && <p className="text-red-400 text-sm">{erro}</p>}
+        {erro && <p className="text-[13px] text-err">{erro}</p>}
 
-        <div className="flex justify-end gap-2">
-          <button onClick={onFechar} className="px-3 py-1.5 text-[#ffffffb3]">
+        <div className="flex justify-end gap-2 pt-1">
+          <Botao variante="fantasma" onClick={onFechar}>
             Cancelar
-          </button>
-          <button
-            onClick={aceitar}
-            disabled={!empresaId || !departamentoId}
-            className="rounded bg-[#0078d4] text-[#ffffff] px-3 py-1.5 disabled:opacity-50"
-          >
+          </Botao>
+          <Botao variante="primario" onClick={aceitar} disabled={!empresaId || !departamentoId}>
             Aceitar e assumir
-          </button>
+          </Botao>
         </div>
       </div>
-    </AdminModal>
+    </Modal>
   )
 }

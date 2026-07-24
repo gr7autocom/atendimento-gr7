@@ -3,6 +3,7 @@ import { MessageSquarePlus } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabase'
 import { useCrud } from '../../lib/useCrud'
+import { Botao } from '../ui/Botao'
 
 type Departamento = { id: string; nome: string; ativo: boolean }
 
@@ -60,16 +61,18 @@ export function SimuladorChamado() {
   }
 
   return (
-    <div className="flex flex-col gap-1">
-      <button
+    <div className="flex items-center gap-2">
+      {erro && <span className="text-[12px] text-err">{erro}</span>}
+      <Botao
+        variante="neutro"
+        tamanho="sm"
         onClick={simular}
         disabled={criando}
+        icone={<MessageSquarePlus size={15} />}
         title="Cria um chamado de exemplo enquanto a integração com o WhatsApp não existe"
-        className="flex items-center gap-1 rounded bg-[#ffffff14] text-[#ffffff] text-sm px-3 py-1.5 disabled:opacity-50"
       >
-        <MessageSquarePlus size={16} /> {criando ? 'Criando…' : 'Simular chamado'}
-      </button>
-      {erro && <span className="text-red-400 text-xs">{erro}</span>}
+        {criando ? 'Criando…' : 'Simular chamado'}
+      </Botao>
     </div>
   )
 }

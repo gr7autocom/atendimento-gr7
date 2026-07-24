@@ -1,38 +1,54 @@
 # Design system — GR7 Atendimento
 
-> **Decisão revista em 2026-07-23:** o Atendimento terá **visual próprio** (dark), mais elaborado que o painel. Os **tokens de cor** continuam vindo do painel (já copiados em `src/design-tokens.css`), mas layout e componentes são próprios, definidos numa **etapa de design dedicada ao final da implementação**. Até lá as telas saem funcionais e cruas de propósito. O conteúdo abaixo sobre "copiar componentes do painel" fica como **referência opcional**, não mais como regra.
+> **Identidade própria (ADR-10), dark-only.** Conceito: **console de atendimento** — instrumento de trabalho, denso e preciso. Hierarquia por **camadas de superfície** (não por borda em tudo); cor da marca só onde há ação, seleção ou foco; status como **ponto colorido**; dados em mono.
 
-## Princípios
+## Regras invioláveis
 
-- **Dark-only** (mesma decisão do painel — ADR-003 lá). Sem light mode.
-- TailwindCSS v4 via `@tailwindcss/vite` (sem `tailwind.config`).
-- ⚠️ **Gotcha herdado do painel:** o `design-tokens.css` **inverte a escala de cinza do Tailwind** (`text-white` vira um cinza escuro). Por isso o painel usa `text-[#ffffff]` literal e superfícies com `#ffffff` + alpha. Copiar o `design-tokens.css` **junto** com esse entendimento para não repetir bugs de contraste.
+- **Dark-only.** Sem tema claro.
+- **Cores sólidas, sem gradiente. Sem emoji.** Ícones só via `lucide-react`.
+- **Azul do painel** (`#0078d4`) como cor da marca, usado com parcimônia.
+- Densidade: base 14px, listas compactas; respiro vem de ritmo consistente, não de espaço vazio.
+- Foco visível em tudo que é interativo; contraste mínimo AA.
 
-## O que copiar do painel
+## Tokens
 
-| Do painel | Para | Observação |
-|---|---|---|
-| `src/design-tokens.css` | `src/design-tokens.css` | tokens de cor/tema dark (a escala invertida) |
-| `src/index.css` (partes relevantes) | `src/index.css` | base, autofill, keyframes |
-| `src/lib/utils.ts` (`cn`, `estiloBadge`) | `src/lib/utils.ts` | helpers de classe/badge |
-| `src/components/Modal.tsx` | idem | modal com focus trap |
-| `src/components/*` base (Button, Tabs, PageHeader, EmptyState, Skeleton, StatusDot) | conforme necessário | copiar sob demanda |
-| Sidebar/Layout | adaptar | menu próprio do atendimento |
+Definidos em [`src/tema.css`](../src/tema.css) e expostos ao Tailwind v4 via `@theme` (uso: `bg-sf-1`, `text-tx-2`, `border-bd-1`, `text-br-2`…).
 
-## Componentes de conversa (reaproveitar do Talk)
+| Grupo | Tokens |
+|---|---|
+| Superfícies | `sf-0` fundo · `sf-1` painéis · `sf-2` cards/hover · `sf-3` elevado (modais) |
+| Texto | `tx-1` principal · `tx-2` secundário · `tx-3` apoio/placeholder |
+| Bordas | `bd-1` sutil · `bd-2` padrão · `bd-3` hover |
+| Marca | `br-1` base · `br-2` hover · `br-3` pressionado · `br-soft` seleção/selo |
+| Semânticas | `ok` · `warn` · `err` · `err-soft` |
+| Forma/tempo | `r-1` 6px · `r-2` 10px · transições 120–160ms |
 
-A UI de mensagem do Talk (`src/components/scrap/*` no painel) é ~70% reaproveitável para o thread do atendimento:
+## Tipografia
 
-- `MensagemBubble`, `MensagemInput`, `AudioPlayerWhats`, `GravadorAudio`, `MediaLightbox`
-- Padrões: optimistic update, upload Cloudinary, auto-scroll, busca na conversa
+- **IBM Plex Sans** (400/500/600) para UI. Instalada localmente via `@fontsource`, sem CDN.
+- **IBM Plex Mono** (400/500) para **dados**: protocolo, telefone, hora. Classe utilitária `.dado` (aplica mono + `tabular-nums`, que alinha números em coluna).
+- `.rotulo`: rótulo de bloco em maiúscula pequena, usado no painel do contato.
 
-**Não** copiar o *container* do Talk (`scrap_conversas` é 1:1 entre dois usuários internos). O container do atendimento é "contato externo ↔ atendente" — modelo próprio (ver [db.md](db.md)).
+## Componentes
 
-## Ícones e utilitários
+Em [`src/components/ui/`](../src/components/ui/):
 
-- `lucide-react` (mesmo do painel)
-- `clsx` + `tailwind-merge` → helper `cn`
+| Componente | Uso |
+|---|---|
+| `Botao` | variantes `primario`, `neutro`, `perigo`, `fantasma`; tamanhos `sm`/`md`; aceita ícone |
+| `Entrada`, `AreaTexto`, `Selecao` | campos com rótulo, dica e erro; foco por anel |
+| `Modal` | overlay, fecha no Esc e no clique fora; `role="dialog"` |
+| `Selo`, `PontoStatus` | selo por tom; status do atendimento como ponto colorido (+ rótulo opcional) |
+| `Tabela`, `Th`, `Tr`, `Td` | tabela densa com cabeçalho discreto e hover de linha |
+| `Vazio`, `Skeleton`, `LinhasCarregando`, `Erro` | estados: vazio orienta a ação; carregando usa esqueleto; erro oferece retry |
+
+## Padrões de tela
+
+- **Sidebar:** marca no topo, itens com **barra de seleção** à esquerda no ativo, usuário e sair no rodapé.
+- **Admin:** cabeçalho fixo com abas em pílula (ativa em `br-soft`), conteúdo em cards por seção.
+- **Inbox:** três colunas (lista `sf-1` · conversa `sf-0` · painel `sf-1`). Item selecionado com faixa da marca. Bolhas com canto assimétrico: entrada em `sf-2`, saída na marca, bot em `sf-3` com rótulo.
+- **Listas:** primeira coluna em `font-medium`, apoio em `tx-2`, dados em `.dado`; item inativo em `tx-3`.
 
 ## Dívida conhecida
 
-Cópia gera duplicação com o painel. Aceitável pelo isolamento. Se um dia virar monorepo, desduplicar num pacote `packages/ui` compartilhado.
+O painel continua com o visual antigo. Como o Atendimento tem identidade própria (ADR-10), não há mais objetivo de igualar os dois; só a cor da marca é compartilhada.

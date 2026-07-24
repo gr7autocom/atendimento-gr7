@@ -1,12 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useAtualizarContato, nomeEmpresa, type AtendimentoLista } from '../../lib/useInbox'
-
-const ROTULO_STATUS: Record<string, string> = {
-  triagem: 'No bot',
-  na_fila: 'Na fila',
-  em_atendimento: 'Em atendimento',
-  finalizado: 'Finalizado',
-}
+import { PontoStatus } from '../ui/Selo'
+import { Entrada } from '../ui/Campo'
 
 export function PainelContato({ atendimento }: { atendimento: AtendimentoLista | null }) {
   const atualizar = useAtualizarContato()
@@ -21,46 +16,49 @@ export function PainelContato({ atendimento }: { atendimento: AtendimentoLista |
   const contato = atendimento.contato
 
   return (
-    <aside className="lg:w-72 shrink-0 border-t lg:border-t-0 lg:border-l border-[#ffffff1a] p-3 flex flex-col gap-4 overflow-y-auto">
-      <div>
-        <div className="text-xs text-[#ffffffb3]">Protocolo</div>
-        <div className="text-[#ffffff] text-lg font-bold">#{atendimento.protocolo}</div>
-        <div className="text-xs text-[#ffffffb3]">{ROTULO_STATUS[atendimento.status] ?? atendimento.status}</div>
+    <aside className="lg:w-[264px] shrink-0 bg-sf-1 border-t lg:border-t-0 lg:border-l border-bd-1 overflow-y-auto">
+      <div className="p-4 border-b border-bd-1">
+        <div className="rotulo">Protocolo</div>
+        <div className="dado text-[20px] font-medium text-tx-1 leading-tight">#{atendimento.protocolo}</div>
+        <div className="mt-1">
+          <PontoStatus status={atendimento.status} comRotulo />
+        </div>
       </div>
 
-      <div className="flex flex-col gap-1">
-        <label className="text-xs text-[#ffffffb3]">Quem está falando</label>
-        <input
-          value={nome}
-          onChange={(e) => setNome(e.target.value)}
-          onBlur={() => {
-            if (contato && nome !== (contato.nome ?? '')) {
-              atualizar.mutate({ id: contato.id, valores: { nome: nome || null } })
-            }
-          }}
-          placeholder={contato?.nome_whatsapp ?? 'Nome do contato'}
-          aria-label="Nome do contato"
-          className="rounded px-3 py-2 bg-[#ffffff14] text-[#ffffff] text-sm"
-        />
-        <span className="text-xs text-[#ffffff80]">
-          O WhatsApp informou: {contato?.nome_whatsapp || 'sem nome'}
-        </span>
-      </div>
+      <div className="p-4 flex flex-col gap-4">
+        <div>
+          <div className="rotulo mb-1.5">Quem está falando</div>
+          <Entrada
+            value={nome}
+            onChange={(e) => setNome(e.target.value)}
+            onBlur={() => {
+              if (contato && nome !== (contato.nome ?? '')) {
+                atualizar.mutate({ id: contato.id, valores: { nome: nome || null } })
+              }
+            }}
+            placeholder={contato?.nome_whatsapp ?? 'Nome do contato'}
+            aria-label="Nome do contato"
+            dica={`WhatsApp informou: ${contato?.nome_whatsapp || 'sem nome'}`}
+          />
+        </div>
 
-      <div>
-        <div className="text-xs text-[#ffffffb3]">Telefone</div>
-        <div className="text-[#ffffff] text-sm">{contato?.telefone}</div>
-      </div>
+        <div>
+          <div className="rotulo">Telefone</div>
+          <div className="dado text-[13px] text-tx-1 mt-0.5">{contato?.telefone}</div>
+        </div>
 
-      <div>
-        <div className="text-xs text-[#ffffffb3]">Empresa</div>
-        {contato?.cliente_id ? (
-          <div className="text-[#ffffff] text-sm">{nomeEmpresa(contato.cliente) ?? 'Cadastro vinculado'}</div>
-        ) : (
-          <div className="text-[#ffffffb3] text-sm">
-            Sem cadastro. Use o botão Aceitar para vincular a empresa e assumir.
-          </div>
-        )}
+        <div>
+          <div className="rotulo">Empresa</div>
+          {contato?.cliente_id ? (
+            <div className="text-[13px] text-tx-1 mt-0.5">
+              {nomeEmpresa(contato.cliente) ?? 'Cadastro vinculado'}
+            </div>
+          ) : (
+            <div className="text-[13px] text-tx-2 mt-0.5">
+              Sem cadastro. Use Aceitar para vincular a empresa e assumir.
+            </div>
+          )}
+        </div>
       </div>
     </aside>
   )

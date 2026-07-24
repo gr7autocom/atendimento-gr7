@@ -1,7 +1,11 @@
 import { useState } from 'react'
-import { Plus, Pencil, Trash2 } from 'lucide-react'
+import { Plus, Pencil, Trash2, Inbox } from 'lucide-react'
 import { useCrud } from '../../lib/useCrud'
-import { AdminModal } from './AdminModal'
+import { Modal } from '../ui/Modal'
+import { Botao } from '../ui/Botao'
+import { Entrada, AreaTexto } from '../ui/Campo'
+import { Tabela, Th, Tr, Td } from '../ui/Tabela'
+import { Vazio, LinhasCarregando } from '../ui/Estados'
 
 export type Campo = {
   nome: string
@@ -15,6 +19,7 @@ type Registro = { id: string; ativo?: boolean; [k: string]: unknown }
 export function CatalogoCrud({
   titulo,
   singular,
+  descricao,
   tabela,
   campos,
   colunas,
@@ -23,6 +28,7 @@ export function CatalogoCrud({
   titulo: string
   /** Nome no singular, usado no título do formulário ("Novo departamento"). */
   singular?: string
+  descricao?: string
   tabela: string
   campos: Campo[]
   colunas: string[]
@@ -58,81 +64,86 @@ export function CatalogoCrud({
   }
 
   const itens = lista.data ?? []
+  const colunasVisiveis = campos.filter((c) => colunas.includes(c.nome))
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-[#ffffff] font-bold text-lg">{titulo}</h2>
-        <button
-          onClick={abrirNovo}
-          className="flex items-center gap-1 rounded bg-[#0078d4] text-[#ffffff] text-sm px-3 py-1.5"
-        >
-          <Plus size={16} /> Novo
-        </button>
+    <div className="max-w-3xl">
+      <div className="flex items-start justify-between gap-4 mb-4">
+        <div>
+          <h2 className="text-[15px] font-semibold text-tx-1">{titulo}</h2>
+          {descricao && <p className="text-[13px] text-tx-2 mt-0.5">{descricao}</p>}
+        </div>
+        <Botao variante="primario" tamanho="sm" onClick={abrirNovo} icone={<Plus size={15} />}>
+          Novo
+        </Botao>
       </div>
 
       {lista.isLoading ? (
-        <p className="text-[#ffffffb3]">Carregando…</p>
+        <LinhasCarregando />
       ) : itens.length === 0 ? (
-        <p className="text-[#ffffffb3]">Nada cadastrado ainda. Clique em Novo para começar.</p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-[#ffffff]">
-            <thead className="text-[#ffffffb3] text-left">
-              <tr>
-                {campos
-                  .filter((c) => colunas.includes(c.nome))
-                  .map((c) => (
-                    <th key={c.nome} className="py-2 pr-3">
-                      {c.label}
-                    </th>
-                  ))}
-                <th className="py-2 pr-3">Ativo</th>
-                <th className="py-2 w-20">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {itens.map((r) => (
-                <tr key={r.id} className="border-t border-[#ffffff14]">
-                  {colunas.map((col) => (
-                    <td key={col} className="py-2 pr-3">
-                      {String(r[col] ?? '')}
-                    </td>
-                  ))}
-                  <td className="py-2 pr-3">
-                    <input
-                      type="checkbox"
-                      checked={r.ativo !== false}
-                      aria-label={`Ativo: ${String(r[colunas[0]] ?? '')}`}
-                      onChange={(e) => atualizar.mutate({ id: r.id, valores: { ativo: e.target.checked } })}
-                    />
-                  </td>
-                  <td className="py-2 flex gap-2">
-                    <button
-                      onClick={() => abrirEdicao(r)}
-                      aria-label="Editar"
-                      className="text-[#ffffffb3] hover:text-[#ffffff]"
-                    >
-                      <Pencil size={16} />
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (confirm('Remover este item?')) remover.mutate(r.id)
-                      }}
-                      aria-label="Remover"
-                      className="text-red-400 hover:text-red-300"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="rounded-[10px] border border-bd-1 bg-sf-1">
+          <Vazio
+            icone={<Inbox size={22} />}
+            titulo="Nada cadastrado ainda"
+            descricao={`Clique em Novo para criar o primeiro ${nomeForm}.`}
+            acao={
+              <Botao variante="neutro" tamanho="sm" onClick={abrirNovo} icone={<Plus size={15} />}>
+                Novo
+              </Botao>
+            }
+          />
         </div>
+      ) : (
+        <Tabela
+          cabecalho={
+            <>
+              {colunasVisiveis.map((c) => (
+                <Th key={c.nome}>{c.label}</Th>
+              ))}
+              <Th className="w-16">Ativo</Th>
+              <Th className="w-20 text-right">Ações</Th>
+            </>
+          }
+        >
+          {itens.map((r) => (
+            <Tr key={r.id}>
+              {colunas.map((col, i) => (
+                <Td key={col} className={i === 0 ? 'font-medium' : 'text-tx-2'}>
+                  {String(r[col] ?? '')}
+                </Td>
+              ))}
+              <Td>
+                <input
+                  type="checkbox"
+                  className="accent-[color:var(--br-1)]"
+                  checked={r.ativo !== false}
+                  aria-label={`Ativo: ${String(r[colunas[0]] ?? '')}`}
+                  onChange={(e) => atualizar.mutate({ id: r.id, valores: { ativo: e.target.checked } })}
+                />
+              </Td>
+              <Td>
+                <div className="flex items-center justify-end gap-0.5">
+                  <Botao variante="fantasma" tamanho="sm" aria-label="Editar" onClick={() => abrirEdicao(r)}>
+                    <Pencil size={15} />
+                  </Botao>
+                  <Botao
+                    variante="perigo"
+                    tamanho="sm"
+                    aria-label="Remover"
+                    onClick={() => {
+                      if (confirm('Remover este item?')) remover.mutate(r.id)
+                    }}
+                  >
+                    <Trash2 size={15} />
+                  </Botao>
+                </div>
+              </Td>
+            </Tr>
+          ))}
+        </Tabela>
       )}
 
-      <AdminModal
+      <Modal
         titulo={editando ? `Editar ${nomeForm}` : `Novo ${nomeForm}`}
         aberto={aberto}
         onFechar={() => setAberto(false)}
@@ -144,37 +155,36 @@ export function CatalogoCrud({
           }}
           className="flex flex-col gap-3"
         >
-          {campos.map((c) => (
-            <label key={c.nome} className="flex flex-col gap-1 text-sm text-[#ffffffb3]">
-              {c.label}
-              {c.tipo === 'textarea' ? (
-                <textarea
-                  required={c.obrigatorio}
-                  value={form[c.nome] ?? ''}
-                  onChange={(e) => setForm((f) => ({ ...f, [c.nome]: e.target.value }))}
-                  className="rounded px-3 py-2 bg-[#ffffff14] text-[#ffffff] min-h-24"
-                />
-              ) : (
-                <input
-                  type={c.tipo === 'numero' ? 'number' : 'text'}
-                  required={c.obrigatorio}
-                  value={form[c.nome] ?? ''}
-                  onChange={(e) => setForm((f) => ({ ...f, [c.nome]: e.target.value }))}
-                  className="rounded px-3 py-2 bg-[#ffffff14] text-[#ffffff]"
-                />
-              )}
-            </label>
-          ))}
-          <div className="flex justify-end gap-2 mt-2">
-            <button type="button" onClick={() => setAberto(false)} className="px-3 py-1.5 text-[#ffffffb3]">
+          {campos.map((c) =>
+            c.tipo === 'textarea' ? (
+              <AreaTexto
+                key={c.nome}
+                rotulo={c.label}
+                required={c.obrigatorio}
+                value={form[c.nome] ?? ''}
+                onChange={(e) => setForm((f) => ({ ...f, [c.nome]: e.target.value }))}
+              />
+            ) : (
+              <Entrada
+                key={c.nome}
+                rotulo={c.label}
+                type={c.tipo === 'numero' ? 'number' : 'text'}
+                required={c.obrigatorio}
+                value={form[c.nome] ?? ''}
+                onChange={(e) => setForm((f) => ({ ...f, [c.nome]: e.target.value }))}
+              />
+            )
+          )}
+          <div className="flex justify-end gap-2 pt-1">
+            <Botao variante="fantasma" type="button" onClick={() => setAberto(false)}>
               Cancelar
-            </button>
-            <button type="submit" className="rounded bg-[#0078d4] text-[#ffffff] px-3 py-1.5">
+            </Botao>
+            <Botao variante="primario" type="submit">
               Salvar
-            </button>
+            </Botao>
           </div>
         </form>
-      </AdminModal>
+      </Modal>
     </div>
   )
 }
