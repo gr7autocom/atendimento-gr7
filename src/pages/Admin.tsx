@@ -4,6 +4,9 @@ import { Departamentos } from './admin/Departamentos'
 import { Tags } from './admin/Tags'
 import { Motivos } from './admin/Motivos'
 import { MensagensRapidas } from './admin/MensagensRapidas'
+import { ConfiguracoesBot } from './admin/ConfiguracoesBot'
+import { HorarioFuncionamento } from './admin/HorarioFuncionamento'
+import { Usuarios } from './admin/Usuarios'
 
 const ABAS = [
   { slug: 'departamentos', label: 'Departamentos' },
@@ -14,8 +17,6 @@ const ABAS = [
   { slug: 'bot', label: 'Configurações BOT' },
   { slug: 'usuarios', label: 'Usuários' },
 ]
-
-const IMPLEMENTADAS = new Set(['departamentos', 'tags', 'motivos', 'mensagens-rapidas'])
 
 export function Admin() {
   return (
@@ -40,13 +41,9 @@ export function Admin() {
         <Route path="tags" element={<Tags />} />
         <Route path="motivos" element={<Motivos />} />
         <Route path="mensagens-rapidas" element={<MensagensRapidas />} />
-        {ABAS.filter((a) => !IMPLEMENTADAS.has(a.slug)).map((a) => (
-          <Route
-            key={a.slug}
-            path={a.slug}
-            element={<p className="text-[#ffffffb3]">{a.label}: chega no Plano 4.</p>}
-          />
-        ))}
+        <Route path="horario" element={<HorarioFuncionamento />} />
+        <Route path="bot" element={<ConfiguracoesBot />} />
+        <Route path="usuarios" element={<Usuarios />} />
       </Routes>
     </div>
   )
