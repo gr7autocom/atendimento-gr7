@@ -2,7 +2,13 @@
 
 > Histórico de marcos entregues. Estado atual em `PROGRESSO.md`.
 
-Ainda sem marcos entregues — projeto em fase de design.
+---
+
+## 2026-07-25 — Tags no atendimento e telas de admin
+
+- Departamentos e Tags reformulados: Departamentos em cards, e Tags com cor própria e escopo por departamento
+- O atendente agora aplica uma ou mais tags ao chamado direto no chat; as tags aparecem no card da conversa
+- O card da conversa passou a mostrar a empresa do contato quando há vínculo
 
 ---
 
