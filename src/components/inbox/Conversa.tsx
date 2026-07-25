@@ -15,6 +15,8 @@ import { useMensagens, useAcoesAtendimento, type AtendimentoLista } from '../../
 import { useCrud } from '../../lib/useCrud'
 import { useUsuarios } from '../../lib/useVinculos'
 import { usePermissao } from '../../lib/permissoes'
+import { useUsuarioAtual } from '../../lib/auth'
+import { aplicarVariaveis } from '../../lib/variaveis'
 import { AceitarPotencial } from './AceitarPotencial'
 import { PainelContato } from './PainelContato'
 import { SeletorTags, FaixaTagsAplicadas } from './TagsAtendimento'
@@ -55,6 +57,7 @@ function ItemMenu({
 
 type Departamento = { id: string; nome: string; ativo: boolean }
 type Motivo = { id: string; nome: string; ativo: boolean }
+type MsgRapida = { id: string; atalho: string; texto: string; ativo?: boolean; departamento_id?: string | null }
 
 function nomeContato(a: AtendimentoLista) {
   return a.contato?.nome || a.contato?.nome_whatsapp || a.contato?.telefone || 'Sem nome'
@@ -94,8 +97,12 @@ export function Conversa({
   const motivos = useCrud<Motivo>('atendimento_motivos')
   const usuarios = useUsuarios()
   const { isAdmin } = usePermissao()
+  const usuarioAtual = useUsuarioAtual()
+  const msgsRapidas = useCrud<MsgRapida>('atendimento_mensagens_rapidas', 'atalho')
 
   const [texto, setTexto] = useState('')
+  const [pickerOff, setPickerOff] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
   const [modalTransferir, setModalTransferir] = useState(false)
   const [modalFinalizar, setModalFinalizar] = useState(false)
   const [modalAceitar, setModalAceitar] = useState(false)
@@ -146,6 +153,27 @@ export function Conversa({
       precisaAssumir: semDono,
     })
     setTexto('')
+  }
+
+  // Mensagens rápidas: digitar "/" no campo abre a lista de atalhos aplicáveis
+  // (do setor do chamado ou "Todos"); escolher insere o texto com as variáveis.
+  const atalhoQuery = !finalizado && !pickerOff && texto.startsWith('/') ? texto.slice(1).toLowerCase() : null
+  const rapidasAplicaveis = (msgsRapidas.lista.data ?? []).filter(
+    (m) => m.ativo !== false && (m.departamento_id == null || m.departamento_id === atendimento.departamento_id)
+  )
+  const rapidasMatches =
+    atalhoQuery === null
+      ? []
+      : rapidasAplicaveis
+          .filter((m) => m.atalho.toLowerCase().includes(atalhoQuery) || m.texto.toLowerCase().includes(atalhoQuery))
+          .slice(0, 8)
+  const mostrarPicker = rapidasMatches.length > 0
+
+  function inserirRapida(m: MsgRapida) {
+    if (!atendimento) return
+    setTexto(aplicarVariaveis(m.texto, { agente: usuarioAtual?.nome ?? null, contato: nomeContato(atendimento) }))
+    setPickerOff(true)
+    inputRef.current?.focus()
   }
 
   return (
@@ -375,23 +403,64 @@ export function Conversa({
         </div>
       ) : (
         <form onSubmit={enviar} className="shrink-0 border-t border-bd-1 bg-sf-1 p-3">
-          <div className="mx-auto w-full max-w-[820px] flex gap-2">
-          <input
-            value={texto}
-            onChange={(e) => setTexto(e.target.value)}
-            placeholder={semDono ? 'Responder (isso assume o chamado)' : 'Escreva sua resposta'}
-            aria-label="Resposta"
-            className="flex-1 h-9 px-3 text-sm rounded-[8px] bg-sf-2 border border-bd-2 text-tx-1 placeholder:text-tx-3 hover:border-bd-3 focus:border-br-1 focus:outline-none focus:ring-2 focus:ring-[color:var(--br-soft)] transition-colors duration-[120ms]"
-          />
-          <Botao
-            variante="primario"
-            type="submit"
-            disabled={!texto.trim() || (!souResponsavel && !semDono)}
-            title={!souResponsavel && !semDono ? 'Este chamado é de outro atendente' : undefined}
-            icone={<Send size={15} />}
-          >
-            Enviar
-          </Botao>
+          <div className="mx-auto w-full max-w-[820px] relative">
+            {mostrarPicker && (
+              <div className="absolute bottom-full left-0 right-0 mb-2 z-30 rounded-[10px] border border-bd-2 bg-sf-3 shadow-[0_12px_32px_rgba(0,0,0,0.55)] overflow-hidden">
+                <div className="px-3 h-7 flex items-center text-[11px] uppercase tracking-wide text-tx-3 border-b border-bd-1">
+                  Mensagens rápidas
+                </div>
+                <div className="max-h-64 overflow-y-auto py-1">
+                  {rapidasMatches.map((m, idx) => (
+                    <button
+                      key={m.id}
+                      type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => inserirRapida(m)}
+                      className={cn(
+                        'flex flex-col items-start gap-0.5 w-full px-3 py-1.5 text-left transition-colors duration-[120ms]',
+                        idx === 0 ? 'bg-sf-2' : 'hover:bg-sf-2'
+                      )}
+                    >
+                      <span className="dado text-[12px] text-br-2">/{m.atalho}</span>
+                      <span className="text-[12px] text-tx-2 truncate w-full">{m.texto}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div className="flex gap-2">
+              <input
+                ref={inputRef}
+                value={texto}
+                onChange={(e) => {
+                  setTexto(e.target.value)
+                  setPickerOff(false)
+                }}
+                onKeyDown={(e) => {
+                  if (mostrarPicker && e.key === 'Enter') {
+                    e.preventDefault()
+                    inserirRapida(rapidasMatches[0])
+                  } else if (mostrarPicker && e.key === 'Escape') {
+                    e.preventDefault()
+                    setPickerOff(true)
+                  }
+                }}
+                placeholder={
+                  semDono ? 'Responder (isso assume o chamado). / para atalhos' : 'Escreva sua resposta ou / para atalhos'
+                }
+                aria-label="Resposta"
+                className="flex-1 h-9 px-3 text-sm rounded-[8px] bg-sf-2 border border-bd-2 text-tx-1 placeholder:text-tx-3 hover:border-bd-3 focus:border-br-1 focus:outline-none focus:ring-2 focus:ring-[color:var(--br-soft)] transition-colors duration-[120ms]"
+              />
+              <Botao
+                variante="primario"
+                type="submit"
+                disabled={!texto.trim() || (!souResponsavel && !semDono)}
+                title={!souResponsavel && !semDono ? 'Este chamado é de outro atendente' : undefined}
+                icone={<Send size={15} />}
+              >
+                Enviar
+              </Botao>
+            </div>
           </div>
         </form>
       )}
