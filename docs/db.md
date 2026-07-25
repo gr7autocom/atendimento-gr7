@@ -32,7 +32,8 @@ Vínculo N:N atendente ↔ departamento (define visibilidade).
 
 ### `contatos`
 Identidade do cliente no WhatsApp (o **telefone é a identidade**).
-- `id`, `telefone` TEXT UNIQUE (E.164), `nome` TEXT (**editável pelo atendente** — quem está falando), `nome_whatsapp` TEXT (origem WhatsApp, não editável), `cliente_id` FK → `clientes` (SET NULL, nullable — match automático **ou** vínculo manual), `created_at`, `updated_at`
+- `id`, `telefone` TEXT UNIQUE (E.164), `nome` TEXT (**editável pelo atendente** — quem está falando), `nome_whatsapp` TEXT (origem WhatsApp, não editável), `cargo` TEXT (opcional, migration `20260725190000`), `cliente_id` FK → `clientes` (SET NULL, nullable — match automático **ou** vínculo manual), `created_at`, `updated_at`
+- **O painel também escreve nesta tabela** desde 2026-07-25: a aba "Contatos" do cadastro de cliente lista/edita os contatos por `cliente_id`. Escrita liberada para `can('atendimento.responder') OR can('cliente.editar')` (migration `20260725190000`). O painel nunca faz DELETE: remover contato de uma empresa por lá é `cliente_id = NULL`, para não derrubar os atendimentos em cascata.
 
 ### `atendimentos` (tickets)
 - `id`, `protocolo BIGINT IDENTITY UNIQUE`, `contato_id` FK → `contatos`, `departamento_id` FK → `departamentos` (nullable até escolher), `responsavel_id` FK → `usuarios` (nullable), `motivo_id` FK → `atendimento_motivos` (nullable, ao Finalizar), `plantao_id` FK → `atendimento_plantoes` (nullable — marca ticket criado em plantão), `status` TEXT CHECK (`triagem` | `na_fila` | `em_atendimento` | `finalizado`), `canal` TEXT default `'whatsapp'`, `tentativas_menu INT default 0`, `avaliacao INT` (nullable, 0-10), `avaliacao_solicitada_em TIMESTAMPTZ`, `encerrado_por TEXT` (`atendente` | `cliente`, nullable), `aberto_em`, `assumido_em`, `finalizado_em`, `ultima_mensagem_em`, `created_at`, `updated_at`
@@ -110,7 +111,7 @@ Ver [bot.md](bot.md) (Seção 3). Resumo: `triagem` (menu) → `na_fila` (depart
 - `contatos.telefone` sempre normalizado (`+55DDDNXXXXXXXX`, UNIQUE).
 - **Match automático:** compara com `clientes.telefone`/`telefone_responsavel` (normalizados em runtime, sem alterar o painel). Acerta pouco no MVP (painel só tem telefone do dono).
 - **Vínculo manual (principal):** o atendente escreve o `nome` do contato e associa a empresa (`cliente_id`) buscando na base de `clientes`. `clientes` read-only.
-- Futuro (pós-MVP, lado do painel): aba "Contatos" por cliente → vincular ao contato específico.
+- **Aba "Contatos" no painel (entregue em 2026-07-25):** o cadastro de cliente lista e edita os contatos daquela empresa direto em `contatos`, filtrando por `cliente_id`. Não foi criada a tabela `cliente_contatos` que o `prompt-painel-aba-contatos.md` propunha: duas listas exigiriam sincronização por trigger, com conflito no telefone único, e o contato cadastrado no painel não seria reconhecido aqui. Efeito prático: o que o atendente vincula em "Vincular empresa" aparece no painel, e o contato cadastrado no painel já entra no match da primeira mensagem.
 
 ## RLS
 

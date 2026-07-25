@@ -18,6 +18,7 @@
 - Configurar um departamento agora abre uma tela própria (dados, horário e motivos), com mais espaço
 - Configurar um atendente também abre uma tela própria (departamentos e horários de acesso)
 - Horário comercial no mesmo formato de grade dos departamentos, agora com horário partido (várias faixas por dia)
+- Contatos de uma empresa podem ser cadastrados na aba Contatos do cliente (painel), com cargo; o Atendimento reconhece quem fala por esse telefone
 
 ---
 

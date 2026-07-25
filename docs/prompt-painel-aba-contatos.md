@@ -1,5 +1,7 @@
 # Prompt para o projeto Painel de Implantação — aba "Contatos" no cliente
 
+> **RESOLVIDO em 2026-07-25.** A aba existe no painel, mas **sem** a tabela `cliente_contatos` descrita abaixo. Ela lê e grava direto em `contatos` (esta base), filtrando por `cliente_id`, porque esse já é o vínculo criado no "Vincular empresa" e duas listas exigiriam sincronização por trigger com conflito no telefone único. Migration `20260725190000` adicionou `cargo` e liberou a escrita para `can('cliente.editar')`. Ver `db.md`, seção `contatos`. O texto abaixo fica como registro do pedido original.
+
 > Cole o bloco abaixo numa sessão do Claude Code **dentro do projeto `painel-implantacao-v2`**. É uma melhoria no painel que o app de Atendimento (irmão, mesmo Supabase) vai consumir.
 
 ---

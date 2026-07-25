@@ -38,6 +38,7 @@ Plataforma de atendimento via WhatsApp da GR7, operada pela equipe interna, **in
 | Webhook, envio, uazapi, adapter | [docs/whatsapp.md](docs/whatsapp.md) |
 | Fluxo do bot, ciclo de vida do ticket | [docs/bot.md](docs/bot.md) |
 | Por que decidimos X | [docs/decisoes.md](docs/decisoes.md) |
+| Contatos, vínculo com empresa, o que o painel grava | [docs/prompt-alinhamento-contatos-painel.md](docs/prompt-alinhamento-contatos-painel.md) |
 
 ## Regras específicas
 
