@@ -68,7 +68,7 @@ As três abas são **exclusivas**: um chamado aparece em uma só, nunca duplicad
 - **Finalizar:** modal que pede o **motivo** (catálogo).
 
 ### Coluna 3 — Painel do contato
-- Nome do contato (**editável**), telefone (do WhatsApp), empresa vinculada com link para a ficha do painel.
+- Nome do contato (**editável**), **cargo** (editável, opcional), telefone (do WhatsApp), empresa vinculada com link para a ficha do painel. O rótulo do nome é **"Nome"**. O cargo aparece **só neste painel**, não no card da lista.
 - **Vincular empresa:** busca na base de `clientes` e associa (`cliente_id`), vínculo manual, principal no MVP. É o **mesmo dado** da aba **Contatos** do cadastro do cliente no painel (que grava direto em `contatos`), não uma cópia. O painel pode preencher também o **cargo** do contato (revisto 2026-07-25, migration `20260725190000`). Remover contato = `cliente_id = NULL` (nunca DELETE, por causa do CASCADE em `atendimentos`).
 - Tags do chamado (adicionar/remover).
 - **Histórico do contato:** atendimentos anteriores do mesmo contato.
