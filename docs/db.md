@@ -67,8 +67,10 @@ Histórico de transferências.
 - Índice: `atendimento_id`
 
 ### `atendimento_mensagens_rapidas`
-Textos prontos do atendente (`/`). Catálogo global; CRUD em Admin. **Não confundir** com `bot_mensagens`.
-- `id`, `atalho` TEXT UNIQUE (ex.: `bomdia`), `titulo` TEXT, `texto` TEXT, `ativo BOOLEAN`, `created_at`, `updated_at`
+Textos prontos do atendente (`/`). CRUD em Admin. **Não confundir** com `bot_mensagens`.
+- `id`, `atalho` TEXT UNIQUE (ex.: `bomdia`, o que vem depois da `/`), `titulo` TEXT (não usado na UI, recebe o atalho), `texto` TEXT, `ativo BOOLEAN`, `created_at`, `updated_at`
+- `departamento_id` FK → `departamentos` (SET NULL, nullable — **nulo = todos**; preenchido = mensagem de um setor). Migration `20260725140000`.
+- No chat, o atendente digita `/` e escolhe uma aplicável (do setor do chamado ou "Todos"); ao inserir, `{{agent.name}}` vira o nome do atendente e `{{contact.name}}` o do contato (`src/lib/variaveis.ts`).
 
 ### `atendimento_plantoes` / `atendimento_plantao_usuarios` (DEPRECATED)
 Modelo antigo de plantão global (turnos + plantonistas). **Substituído por `atendimento_usuario_horarios`** (plantão por usuário, revisto em 2026-07-25). As tabelas continuam existindo (sem DROP), mas **não são mais usadas** pela UI nem pela regra de acesso.

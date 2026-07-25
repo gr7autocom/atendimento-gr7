@@ -12,6 +12,7 @@
 - Tela de Atendentes em cards com foto (a mesma do painel) e filtros por nome, departamento e status
 - Plantão agora é definido por atendente (Horários de Acesso no card), não mais numa lista única
 - Acesso ao Atendimento fora do horário comercial só para quem está de plantão; administradores sempre entram
+- Mensagens rápidas reformuladas (por departamento) e acionáveis no chat com `/`, com variáveis do nome do atendente e do contato
 
 ---
 

@@ -85,7 +85,7 @@ Sidebar com as abas abaixo. Detalhe de cada aba chega por prints ao longo do des
 | **Departamentos** | tabela com criar / editar / ativar / desativar / ordenar | sim |
 | **Tags** | CRUD de tags | sim |
 | **Motivos** | CRUD de motivos de finalização | sim |
-| **Mensagens rápidas** | CRUD (atalho + título + texto) | sim |
+| **Mensagens rápidas** | grid full-width (palavra-chave/mensagem/departamento) + filtros; modal com **Departamento** (Todos ou um setor), palavra-chave e texto. No chat, `/` abre o seletor e insere trocando `{{agent.name}}`/`{{contact.name}}` | sim |
 | **Horário de Funcionamento** | **só o horário comercial** por dia (abre/fecha/atende). O **plantão virou janela por usuário**, editada no card do atendente (tela Atendentes). Fora do comercial, só acessa quem tem janela cobrindo a hora; reforçado no login e na RLS (`pode_atender_agora()`), admin sempre passa | sim |
 | **Configurações BOT** | edita os 12 textos do bot + flags (avaliação, nome do atendente, tempos) | sim |
 | **Relatórios** | listagens / exportação | placeholder (Fase 3) |
