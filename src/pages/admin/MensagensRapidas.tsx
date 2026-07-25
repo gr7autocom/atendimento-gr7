@@ -201,12 +201,25 @@ export function MensagensRapidas() {
           }}
           className="flex flex-col gap-3"
         >
-          <div className="rounded-[8px] border border-bd-1 bg-sf-2 px-3 py-2 text-[12px] text-tx-2">
-            Variáveis (trocadas ao inserir no chat): <span className="dado text-tx-1">{'{{atendente}}'}</span>{' '}
-            <span className="dado text-tx-1">{'{{contato}}'}</span>{' '}
-            <span className="dado text-tx-1">{'{{empresa}}'}</span>{' '}
-            <span className="dado text-tx-1">{'{{protocolo}}'}</span>{' '}
-            <span className="dado text-tx-1">{'{{departamento}}'}</span>.
+          <div className="rounded-[8px] border border-bd-1 bg-sf-2 px-3 py-2.5 text-[12px] text-tx-2 flex flex-col gap-1.5">
+            <ul className="flex flex-col gap-0.5">
+              <li className="flex gap-1.5">
+                <span className="text-tx-3 select-none">·</span>
+                <span>Crie uma mensagem pronta para enviar no chat com um clique.</span>
+              </li>
+              <li className="flex gap-1.5">
+                <span className="text-tx-3 select-none">·</span>
+                <span>Use as variáveis abaixo. Elas são trocadas pelos dados reais na hora de inserir a mensagem:</span>
+              </li>
+            </ul>
+            <div className="flex flex-wrap gap-x-1.5 gap-y-1 pl-4">
+              {['atendente', 'contato', 'empresa', 'protocolo', 'departamento'].map((v, i, arr) => (
+                <span key={v} className="dado text-tx-1">
+                  {`{{${v}}}`}
+                  {i < arr.length - 1 ? ',' : ''}
+                </span>
+              ))}
+            </div>
           </div>
 
           <Selecao
