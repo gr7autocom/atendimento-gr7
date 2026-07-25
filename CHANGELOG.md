@@ -15,6 +15,7 @@
 - Mensagens rápidas reformuladas (por departamento) e acionáveis no chat com `/`, com variáveis do nome do atendente e do contato
 - Motivos de finalização agora são definidos por departamento, dentro do próprio departamento
 - Cada departamento pode ter um horário de atendimento próprio e mostra se está disponível ou fora de horário
+- Configurar um departamento agora abre uma tela própria (dados, horário e motivos), com mais espaço
 
 ---
 

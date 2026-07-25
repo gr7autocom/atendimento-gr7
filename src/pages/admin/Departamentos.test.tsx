@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 vi.mock('../../lib/useCrud', () => ({
@@ -35,7 +36,9 @@ function montar() {
   const qc = new QueryClient()
   render(
     <QueryClientProvider client={qc}>
-      <Departamentos />
+      <MemoryRouter>
+        <Departamentos />
+      </MemoryRouter>
     </QueryClientProvider>
   )
 }
@@ -50,10 +53,11 @@ describe('Departamentos (cards)', () => {
     expect(screen.getByText('Inativo')).toBeInTheDocument()
   })
 
-  it('tem o botão de criar e ações por card', () => {
+  it('o card leva à configuração e tem criar/remover', () => {
     montar()
     expect(screen.getByRole('button', { name: /novo departamento/i })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /editar SUPORTE GERAL/i })).toBeInTheDocument()
+    // o card inteiro é clicável (vai para a tela de configuração)
+    expect(screen.getByRole('button', { name: /configurar SUPORTE GERAL/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /remover SUPORTE GERAL/i })).toBeInTheDocument()
   })
 })

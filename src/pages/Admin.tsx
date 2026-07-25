@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { Departamentos } from './admin/Departamentos'
+import { DepartamentoDetalhe } from './admin/DepartamentoDetalhe'
 import { Tags } from './admin/Tags'
 import { MensagensRapidas } from './admin/MensagensRapidas'
 import { ConfiguracoesBot } from './admin/ConfiguracoesBot'
@@ -14,6 +15,7 @@ export function Admin() {
         <Routes>
           <Route index element={<Navigate to="departamentos" replace />} />
           <Route path="departamentos" element={<Departamentos />} />
+          <Route path="departamentos/:id" element={<DepartamentoDetalhe />} />
           <Route path="tags" element={<Tags />} />
           <Route path="mensagens-rapidas" element={<MensagensRapidas />} />
           <Route path="horario" element={<HorarioFuncionamento />} />
