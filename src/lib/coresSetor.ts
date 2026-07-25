@@ -17,3 +17,13 @@ export function corSetor(nome: string) {
   for (let i = 0; i < nome.length; i++) h = (h * 31 + nome.charCodeAt(i)) >>> 0
   return PALETA[h % PALETA.length]
 }
+
+/**
+ * Cor do pill de uma tag. O admin pode escolher a cor (colunas `cor_fundo`/
+ * `cor_texto`); quando não escolheu, cai na cor automática pelo nome, como os
+ * setores. Assim tags antigas (sem cor) continuam legíveis.
+ */
+export function corTag(tag: { nome: string; cor_fundo?: string | null; cor_texto?: string | null }) {
+  if (tag.cor_fundo) return { bg: tag.cor_fundo, fg: tag.cor_texto || '#ffffff' }
+  return corSetor(tag.nome ?? '')
+}

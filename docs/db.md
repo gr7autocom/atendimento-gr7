@@ -47,8 +47,9 @@ Mídia via Cloudinary (padrão `scrap_anexos`/`tarefa_anexos` do painel).
 - `id`, `mensagem_id` FK (CASCADE), `public_id`, `url`, `tipo_mime`, `tamanho_bytes`, `nome_arquivo`, `created_at`
 
 ### `atendimento_tags`
-Catálogo de rótulos. CRUD em Admin.
+Catálogo de rótulos. CRUD em Admin. O atendente aplica a tag ao chamado (uma ou mais) via `atendimento_tag_vinculos`.
 - `id`, `nome` TEXT UNIQUE, `ordem INT`, `ativo BOOLEAN`, `created_at`, `updated_at`
+- `cor_fundo` TEXT (hex; nulo = cor automática pelo nome), `cor_texto` TEXT (hex; nulo = branco), `departamento_id` FK → `departamentos` (SET NULL, nullable — **nulo = todos os departamentos**; preenchido = tag específica de um setor). Migration aditiva `20260724160000`.
 - Seeds: `SUPORTE SISTEMA`, `NOTA FISCAL`, `RESOLVIDO POR LIGAÇÃO`, `ARQUIVO FISCAL`, `NÃO RELACIONADO A GR7`
 
 ### `atendimento_tag_vinculos`
