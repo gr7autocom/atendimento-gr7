@@ -7,7 +7,7 @@
 App único (`AppShell`): **barra do topo** (`BarraTopo`: marca à esquerda, notificações e menu do usuário à direita) e um **sidebar recolhido** à esquerda (`SidebarRecolhida`) que expande no hover, revisto em 2026-07-24. Os itens do menu aparecem **por papel**:
 
 - **Atendimentos** (`/inbox`) — todos os papéis.
-- **Departamentos, Tags, Motivos, Mensagens rápidas, Configurações BOT, Horário de Funcionamento, Usuários** (`/admin/*`) — **só admin** (`requireAdmin`).
+- **Departamentos, Tags, Mensagens rápidas, Configurações BOT, Horário de Funcionamento, Usuários** (`/admin/*`) — **só admin** (`requireAdmin`). Os **Motivos** deixaram de ter tela própria: são configurados dentro do card do departamento.
 
 O **suporte** vê só **Atendimentos** no menu; o **admin** vê tudo. Login compartilhado com o painel (mesmo Supabase); todos caem em `/inbox` ao entrar, e o admin acessa o resto pelo sidebar. As seções de admin, que eram abas em pílula, viraram **itens do menu, cada um com sua tela** (as rotas já existiam).
 
@@ -82,9 +82,8 @@ Sidebar com as abas abaixo. Detalhe de cada aba chega por prints ao longo do des
 |---|---|---|
 | **Dashboard** | cards de indicadores | placeholder (Fase 3) |
 | **Atendentes** (Usuários) | `usuarios` do painel em **cards com foto** (`foto_url` do painel, read-only) + filtros (nome/departamento/status); editar abre modal para marcar **departamentos** (vínculo atendente↔departamento). Sem criar/inativar/remover (isso é no painel). Horários de acesso por usuário: etapa futura | sim |
-| **Departamentos** | tabela com criar / editar / ativar / desativar / ordenar | sim |
+| **Departamentos** | grid de cards (número/nome/ativo + selo **Disponível/Fora de horário**); editar abre modal com **Motivos de finalização** e **Horário de atendimento** por departamento (vazio = usa o comercial) | sim |
 | **Tags** | CRUD de tags | sim |
-| **Motivos** | CRUD de motivos de finalização | sim |
 | **Mensagens rápidas** | grid full-width (palavra-chave/mensagem/departamento) + filtros; modal com **Departamento** (Todos ou um setor), palavra-chave e texto. No chat, `/` abre o seletor e insere trocando `{{agent.name}}`/`{{contact.name}}` | sim |
 | **Horário de Funcionamento** | **só o horário comercial** por dia (abre/fecha/atende). O **plantão virou janela por usuário**, editada no card do atendente (tela Atendentes). Fora do comercial, só acessa quem tem janela cobrindo a hora; reforçado no login e na RLS (`pode_atender_agora()`), admin sempre passa | sim |
 | **Configurações BOT** | edita os 12 textos do bot + flags (avaliação, nome do atendente, tempos) | sim |

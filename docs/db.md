@@ -58,8 +58,14 @@ Aplicação N:N de tags a um atendimento.
 - PK composta `(atendimento_id, tag_id)`
 
 ### `atendimento_motivos`
-Catálogo de motivos de finalização. CRUD em Admin.
-- `id`, `nome` TEXT UNIQUE, `ordem INT`, `ativo BOOLEAN`, `created_at`, `updated_at`
+Motivos de finalização, **por departamento** (revisto 2026-07-25). Configurados dentro do card do departamento (não há mais tela avulsa).
+- `id`, `nome` TEXT, `ordem INT`, `ativo BOOLEAN`, `created_at`, `updated_at`
+- `departamento_id` FK → `departamentos` (CASCADE). Migration `20260725160000`. No Finalizar aparecem só os do departamento do chamado. Motivos legados sem departamento (nulo) não aparecem.
+
+### `atendimento_departamento_horarios`
+Horário de atendimento **por departamento** (opcional). Configurado no card do departamento. Migration `20260725170000`.
+- `id`, `departamento_id` FK → `departamentos` (CASCADE), `dia_semana INT` (0-6), `hora_inicio TIME`, `hora_fim TIME`, `created_at`
+- **Vazio para um departamento = usa o horário comercial global.** Preenchido = o departamento está disponível só nessas faixas (helper `departamentoDisponivelAgora` em `src/lib/horario.ts`; fora delas o bot manda `fora_horario`).
 
 ### `atendimento_transferencias`
 Histórico de transferências.
