@@ -110,8 +110,8 @@ export function AtendenteDetalhe() {
       </Bloco>
 
       <Bloco
-        titulo="Horários de acesso"
-        descricao="Fora do horário comercial, o atendente só acessa o Atendimento dentro dessas faixas (plantão). Vazio = só no comercial. Para 24h, use De 00:00 e Até 00:00."
+        titulo="Horário de plantão"
+        descricao="Fora do horário comercial, o atendente só acessa o Atendimento dentro dessas faixas. Vazio = só no comercial. Para 24h, use De 00:00 e Até 00:00."
       >
         <GradeHorarios
           faixas={(horarios.lista.data ?? []).filter((f) => f.usuario_id === id)}

@@ -81,7 +81,7 @@ Sidebar com as abas abaixo. Detalhe de cada aba chega por prints ao longo do des
 | Aba | Tela | MVP |
 |---|---|---|
 | **Dashboard** | cards de indicadores | placeholder (Fase 3) |
-| **Atendentes** (Usuários) | `usuarios` do painel em **cards com foto** (`foto_url`, read-only) + filtros (nome/departamento/status). Clicar no card abre a **tela dedicada** `/admin/usuarios/:id` (largura total) com blocos **Departamentos que atende** e **Horários de acesso** (7 colunas por dia, HH:MM; o mesmo `GradeHorarios` do departamento). Sem criar/inativar/remover (isso é no painel) | sim |
+| **Atendentes** (Usuários) | `usuarios` do painel em **cards com foto** (`foto_url`, read-only) + filtros (nome/departamento/status). Clicar no card abre a **tela dedicada** `/admin/usuarios/:id` (largura total) com blocos **Departamentos que atende** e **Horário de plantão** (7 colunas por dia, HH:MM; o mesmo `GradeHorarios` do departamento). Sem criar/inativar/remover (isso é no painel) | sim |
 | **Departamentos** | grid de cards (número/nome/ativo + selo **Disponível/Fora de horário**). Clicar no card abre a **tela dedicada** `/admin/departamentos/:id` (largura total) com blocos **Dados**, **Horário de atendimento** (7 colunas por dia, De/Até em HH:MM; vazio = comercial) e **Motivos de finalização** (ordenáveis por setas, a ordem vale no Finalizar). O **modal** fica só para **criar** um departamento (número + nome) | sim |
 | **Tags** | CRUD de tags | sim |
 | **Mensagens rápidas** | grid full-width (palavra-chave/mensagem/departamento) + filtros; modal com **Departamento** (Todos ou um setor), palavra-chave e texto. No chat, `/` abre o seletor e insere trocando `{{agent.name}}`/`{{contact.name}}` | sim |
