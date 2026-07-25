@@ -6,7 +6,7 @@
 
 _(nada no momento)_
 
-**Próximo:** seguir o polimento das **telas de admin** pelos prints do Zintech — já concluídos Departamentos (com motivos e horário por setor), Tags, Horário, Atendentes e Mensagens rápidas; falta **Configurações BOT**. Integração **uazapi** segue adiada (depende de conta/número; preenche as métricas do dashboard hoje em 0).
+**Próximo:** o polimento das telas de admin está **concluído** (Departamentos, Tags, Mensagens rápidas, Horário, Atendentes, Configurações BOT e a casca da Conexão). O próximo grande bloco é a **integração uazapi** (adapter + webhook + envio + o QR real na aba Conexão), que **depende de conta/assinatura uazapi + número dedicado** (pré-requisito de negócio, ainda pendente).
 
 ## 📋 Próximos passos
 
@@ -24,6 +24,7 @@ _(nada no momento)_
 
 ## ✅ Concluído
 
+- 2026-07-25 — **Aba Conexão (casca da conexão do WhatsApp) + Horário comercial na grade + auditoria de copy.** Nova aba **Conexão** (`/admin/conexao`, abaixo de Configurações BOT): passos de "como conectar" + área do QR/status, na identidade dark. É **casca**: QR e sessão virão do adapter uazapi quando a integração entrar (hoje mostra Desconectado, botão desabilitado). A tela de **Horário comercial** passou para o mesmo padrão `GradeHorarios` (7 colunas, horário partido). **Copy** das telas de admin revista com a skill de copywriting: descrições de seção em tópicos no imperativo, ajuda do modal de mensagem rápida, mensagens de acesso e aviso de finalizado sem jargão. Build ok, testes 27/27.
 - 2026-07-25 — **Atendente em tela dedicada (mesmo padrão do departamento).** Editar um atendente deixou de ser modal e virou **tela própria** (`/admin/usuarios/:id`, largura total) com blocos **Departamentos que atende** e **Horários de acesso** (7 colunas por dia, HH:MM). Extraí o componente `GradeHorarios` compartilhado entre departamento e atendente (dedup). O card do grid navega para a tela. Validado no navegador (departamento + horário; sem regressão no departamento). Build ok, testes 27/27.
 - 2026-07-25 — **Departamento em tela dedicada (modal só para criar).** Editar um departamento deixou de ser um modal grande e virou uma **tela própria** (`/admin/departamentos/:id`) com blocos separados: **Dados**, **Horário de atendimento** (7 colunas por dia) e **Motivos de finalização**. O modal ficou reservado para **criar** (número + nome). Padrão a repetir nas edições complexas (Atendentes é o próximo). Validado no navegador (card → tela; faixa e motivos). Build ok, testes 27/27.
 - 2026-07-25 — **Motivos e horário por departamento.** Os motivos de finalização deixaram de ser globais e passaram a ser **por departamento**, configurados dentro do card (a tela avulsa "Motivos" saiu do sidebar). No **Finalizar** do chat aparecem só os motivos do departamento do chamado. Cada departamento também ganhou um **horário de atendimento** opcional (faixas De/Até por dia; vazio = usa o comercial), e o card mostra o selo **Disponível agora / Fora de horário** (calculado). Migrations aditivas `20260725160000` (`atendimento_motivos.departamento_id`) e `20260725170000` (tabela `atendimento_departamento_horarios`). Validado no navegador (criei "Resolvido"/"Sem resposta" em SUPORTE GERAL → aparecem só no Finalizar do #8; cards com o selo). Testes 27/27, build ok.

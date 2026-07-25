@@ -7,7 +7,7 @@
 App único (`AppShell`): **barra do topo** (`BarraTopo`: marca à esquerda, notificações e menu do usuário à direita) e um **sidebar recolhido** à esquerda (`SidebarRecolhida`) que expande no hover, revisto em 2026-07-24. Os itens do menu aparecem **por papel**:
 
 - **Atendimentos** (`/inbox`) — todos os papéis.
-- **Departamentos, Tags, Mensagens rápidas, Configurações BOT, Horário de Funcionamento, Usuários** (`/admin/*`) — **só admin** (`requireAdmin`). Os **Motivos** deixaram de ter tela própria: são configurados dentro do card do departamento.
+- **Departamentos, Tags, Mensagens rápidas, Configurações BOT, Conexão, Horário de Funcionamento, Usuários** (`/admin/*`) — **só admin** (`requireAdmin`). Os **Motivos** deixaram de ter tela própria: são configurados dentro do card do departamento.
 
 O **suporte** vê só **Atendimentos** no menu; o **admin** vê tudo. Login compartilhado com o painel (mesmo Supabase); todos caem em `/inbox` ao entrar, e o admin acessa o resto pelo sidebar. As seções de admin, que eram abas em pílula, viraram **itens do menu, cada um com sua tela** (as rotas já existiam).
 
@@ -87,6 +87,7 @@ Sidebar com as abas abaixo. Detalhe de cada aba chega por prints ao longo do des
 | **Mensagens rápidas** | grid full-width (palavra-chave/mensagem/departamento) + filtros; modal com **Departamento** (Todos ou um setor), palavra-chave e texto. No chat, `/` abre o seletor e insere trocando `{{agent.name}}`/`{{contact.name}}` | sim |
 | **Horário de Funcionamento** | **horário comercial** no mesmo padrão (`GradeHorarios`, 7 colunas por dia, HH:MM). Aceita **várias faixas por dia** (horário partido); dia sem faixa fica fechado. O **plantão** é por usuário, no card do atendente. Fora do comercial, só acessa quem tem plantão cobrindo a hora; reforçado no login e na RLS (`pode_atender_agora()`), admin sempre passa | sim |
 | **Configurações BOT** | edita os 12 textos do bot + flags (avaliação, nome do atendente, tempos) | sim |
+| **Conexão** | conexão do WhatsApp por QR Code (passos + área do QR/status). **Casca por ora:** QR/sessão vêm do adapter uazapi quando a integração entrar (hoje mostra estado Desconectado, botão desabilitado) | sim |
 | **Relatórios** | listagens / exportação | placeholder (Fase 3) |
 
 - **Dashboard e Relatórios** ficam como **placeholder** no MVP (menu existe, conteúdo real é Fase 3).

@@ -4,6 +4,7 @@ import { DepartamentoDetalhe } from './admin/DepartamentoDetalhe'
 import { Tags } from './admin/Tags'
 import { MensagensRapidas } from './admin/MensagensRapidas'
 import { ConfiguracoesBot } from './admin/ConfiguracoesBot'
+import { Conexao } from './admin/Conexao'
 import { HorarioFuncionamento } from './admin/HorarioFuncionamento'
 import { Usuarios } from './admin/Usuarios'
 import { AtendenteDetalhe } from './admin/AtendenteDetalhe'
@@ -21,6 +22,7 @@ export function Admin() {
           <Route path="mensagens-rapidas" element={<MensagensRapidas />} />
           <Route path="horario" element={<HorarioFuncionamento />} />
           <Route path="bot" element={<ConfiguracoesBot />} />
+          <Route path="conexao" element={<Conexao />} />
           <Route path="usuarios" element={<Usuarios />} />
           <Route path="usuarios/:id" element={<AtendenteDetalhe />} />
         </Routes>
