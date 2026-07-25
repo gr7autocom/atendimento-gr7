@@ -32,7 +32,7 @@ Trocar uazapi → outro provedor (ex.: Evolution API, ou a API oficial da Meta) 
 
 - **Receber:** `whatsapp-webhook` (endpoint público) recebe o webhook da uazapi → valida → `normalizarWebhook` → deduplica por `wa_message_id` → casa/cria `contato` + `atendimento` → grava `atendimento_mensagens` (`entrada`) → realtime atualiza a inbox → dispara lógica do bot.
 - **Enviar:** `whatsapp-send` chama a REST da uazapi (token) via `enviarMensagem`, grava mensagem `saida`, atualiza status pelo webhook de status.
-- **Conexão:** QR code + status de sessão expostos numa tela de Configurações → Conexão WhatsApp.
+- **Conexão:** QR code + status de sessão na aba **Conexão** (`/admin/conexao`). Uma **pílula de status na barra do topo** (`BarraTopo` + `useStatusBot`) mostra "Bot conectado/desconectado" para admin e atendente, para o time perceber quando a sessão cai. Hoje é casca (sempre desconectado); vira automático quando o adapter existir.
 
 ## Secrets (Supabase)
 

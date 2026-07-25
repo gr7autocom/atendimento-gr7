@@ -1,11 +1,43 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { NavLink } from 'react-router-dom'
+import { NavLink, Link } from 'react-router-dom'
 import { MessagesSquare, Bell, ChevronDown, LogOut, ArrowLeft } from 'lucide-react'
 import { useAuth } from '../lib/auth'
 import { usePermissao } from '../lib/permissoes'
+import { useStatusBot } from '../lib/useStatusBot'
 import { ITENS_NAV } from './SidebarRecolhida'
 import { Avatar } from './ui/Avatar'
 import { cn } from '../lib/utils'
+
+/** Pílula de status da conexão do WhatsApp, visível a admin e atendente. */
+function PilulaStatusBot({ isAdmin }: { isAdmin: boolean }) {
+  const { status } = useStatusBot()
+  const conectado = status === 'conectado'
+  const titulo = conectado
+    ? 'WhatsApp conectado. O bot está recebendo mensagens.'
+    : 'WhatsApp desconectado. As mensagens não chegam até reconectar.'
+
+  const pilula = (
+    <span
+      title={titulo}
+      className={cn(
+        'inline-flex items-center gap-1.5 h-6 pl-1.5 pr-2 rounded-full text-[11px] font-medium shrink-0',
+        conectado ? 'bg-[rgba(63,185,80,0.14)] text-ok' : 'bg-err-soft text-err'
+      )}
+    >
+      <span className={cn('w-1.5 h-1.5 rounded-full shrink-0', conectado ? 'bg-ok' : 'bg-err')} />
+      <span className="hidden sm:inline">Bot {conectado ? 'conectado' : 'desconectado'}</span>
+    </span>
+  )
+
+  // Admin pode agir: a pílula leva à tela de Conexão para reconectar.
+  return isAdmin ? (
+    <Link to="/admin/conexao" className="rounded-full focus:outline-none focus:ring-2 focus:ring-[color:var(--br-soft)]">
+      {pilula}
+    </Link>
+  ) : (
+    pilula
+  )
+}
 
 /**
  * Barra horizontal do topo, comum às duas cascas (Atendimento e Admin).
@@ -35,6 +67,7 @@ export function BarraTopo({ titulo, menu }: { titulo: string; menu?: ReactNode }
           <MessagesSquare size={15} className="text-white" />
         </div>
         <span className="text-[14px] font-semibold text-tx-1 truncate">{titulo}</span>
+        <PilulaStatusBot isAdmin={isAdmin} />
       </div>
 
       <div className="flex items-center gap-1.5">
