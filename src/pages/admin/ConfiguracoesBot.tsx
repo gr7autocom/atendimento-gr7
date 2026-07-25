@@ -55,10 +55,10 @@ export function ConfiguracoesBot() {
         <div className="px-4 py-3 border-b border-bd-1">
           <h2 className="text-[14px] font-semibold text-tx-1">Mensagens do bot</h2>
           <p className="text-[12px] text-tx-2 mt-0.5">
-            Na ordem em que o cliente recebe. Variáveis: <span className="dado">{'{empresa}'}</span>{' '}
-            <span className="dado">{'{contato}'}</span> <span className="dado">{'{protocolo}'}</span>{' '}
-            <span className="dado">{'{departamento}'}</span> <span className="dado">{'{atendente}'}</span>{' '}
-            <span className="dado">{'{horario}'}</span>. O menu de setores é montado sozinho.
+            Na ordem em que o cliente recebe. Variáveis: <span className="dado">{'{{empresa}}'}</span>{' '}
+            <span className="dado">{'{{contato}}'}</span> <span className="dado">{'{{protocolo}}'}</span>{' '}
+            <span className="dado">{'{{departamento}}'}</span> <span className="dado">{'{{atendente}}'}</span>{' '}
+            <span className="dado">{'{{horario}}'}</span>. O menu de setores é montado sozinho.
           </p>
         </div>
 

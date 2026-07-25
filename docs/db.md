@@ -70,7 +70,7 @@ Histórico de transferências.
 Textos prontos do atendente (`/`). CRUD em Admin. **Não confundir** com `bot_mensagens`.
 - `id`, `atalho` TEXT UNIQUE (ex.: `bomdia`, o que vem depois da `/`), `titulo` TEXT (não usado na UI, recebe o atalho), `texto` TEXT, `ativo BOOLEAN`, `created_at`, `updated_at`
 - `departamento_id` FK → `departamentos` (SET NULL, nullable — **nulo = todos**; preenchido = mensagem de um setor). Migration `20260725140000`.
-- No chat, o atendente digita `/` e escolhe uma aplicável (do setor do chamado ou "Todos"); ao inserir, `{{agent.name}}` vira o nome do atendente e `{{contact.name}}` o do contato (`src/lib/variaveis.ts`).
+- No chat, o atendente digita `/` e escolhe uma aplicável (do setor do chamado ou "Todos"); ao inserir, as variáveis são trocadas (`src/lib/variaveis.ts`).
 
 ### `atendimento_plantoes` / `atendimento_plantao_usuarios` (DEPRECATED)
 Modelo antigo de plantão global (turnos + plantonistas). **Substituído por `atendimento_usuario_horarios`** (plantão por usuário, revisto em 2026-07-25). As tabelas continuam existindo (sem DROP), mas **não são mais usadas** pela UI nem pela regra de acesso.
@@ -84,7 +84,7 @@ Horários de acesso (plantão) **por usuário**. CRUD no card do atendente (tela
 Mensagens **automáticas do bot** (chave-valor). Menu gerado dos departamentos (não fica aqui).
 - `id`, `chave` TEXT UNIQUE, `texto` TEXT, `ativo BOOLEAN`, `updated_at`
 - Chaves: `bem_vindo`, `instrucao_menu`, `opcao_invalida`, `voltar_menu`, `entrou_fila`, `encaminhado_padrao`, `plantao`, `fora_horario`, `encerramento`, `solicitar_avaliacao`, `agradecimento_avaliacao`, `avaliacao_invalida`
-- Placeholders: `{empresa}`, `{contato}`, `{protocolo}`, `{departamento}`, `{atendente}`, `{horario}`
+- Placeholders (padrão único do projeto, **chave dupla em português**): `{{empresa}}`, `{{contato}}`, `{{protocolo}}`, `{{departamento}}`, `{{atendente}}`, `{{horario}}`. As mensagens rápidas usam o mesmo conjunto.
 
 ### `atendimento_horarios`
 Horário comercial (MVP: global). CRUD na aba "Horário de Funcionamento".

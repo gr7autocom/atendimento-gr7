@@ -4,7 +4,7 @@
 
 ## Placeholders das mensagens
 
-Textos configuráveis em `bot_mensagens` (admin). Variáveis preenchidas na hora: `{empresa}`, `{contato}`, `{protocolo}`, `{departamento}`, `{atendente}`, `{horario}`. O **menu de departamentos é gerado automaticamente** dos departamentos ativos (não é texto fixo).
+Textos configuráveis em `bot_mensagens` (admin). Variáveis preenchidas na hora (padrão único do projeto, **chave dupla em português**): `{{empresa}}`, `{{contato}}`, `{{protocolo}}`, `{{departamento}}`, `{{atendente}}`, `{{horario}}`. O mesmo conjunto vale para as mensagens rápidas do atendente (`src/lib/variaveis.ts`). O **menu de departamentos é gerado automaticamente** dos departamentos ativos (não é texto fixo).
 
 ## Fluxo de entrada (mensagem do cliente chega)
 
@@ -69,21 +69,21 @@ finalizado         se avaliacao_ativa: bot pede nota 0-10 (janela tempo_avaliaca
 - **Plantão (revisto 2026-07-25):** deixou de ser turno global e passou a ser **janela de acesso por usuário** (`atendimento_usuario_horarios`, editada no card do atendente). Fora do comercial, quem tem uma janela cobrindo aquele horário é o plantonista e atende pela plataforma; sem ninguém de plantão, o bot só direciona (mensagem `fora_horario` com contatos de emergência), sem criar ticket. A trava vale também para acesso humano ao app: `pode_atender_agora()` na RLS + aviso no login. (ADR-09; tabelas `atendimento_plantoes`/`atendimento_plantao_usuarios` ficaram sem uso.)
 - **Encerramento pelo cliente:** `#sair` finaliza (registra `encerrado_por = 'cliente'`).
 - **Avaliação (opcional, `avaliacao_ativa`):** ao finalizar, bot pede nota 0-10 dentro de `tempo_avaliacao_min` (60).
-- **Nome do atendente:** se `enviar_nome_atendente`, respostas humanas saem prefixadas com `{atendente}`.
+- **Nome do atendente:** se `enviar_nome_atendente`, respostas humanas saem prefixadas com `{{atendente}}`.
 
 ## Textos default do bot (`bot_mensagens`, editáveis no admin)
 
 | Chave | Texto default |
 |---|---|
-| `bem_vindo` | "Olá! Aqui é o atendimento da {empresa}. É um prazer falar com você." |
+| `bem_vindo` | "Olá! Aqui é o atendimento da {{empresa}}. É um prazer falar com você." |
 | `instrucao_menu` | "Pra falar com o time certo, responda com o número da opção:" |
 | `opcao_invalida` | "Não achei essa opção. Responda com o número de uma das opções abaixo:" |
 | `voltar_menu` | "Digite #inicio pra voltar ao menu principal." |
-| `entrou_fila` | "Pronto, você está na fila de {departamento}. Protocolo {protocolo}. Assim que um atendente ficar livre, ele te responde por aqui. Pra encerrar antes, digite #sair." |
-| `encaminhado_padrao` | "Sem problema. Vou te encaminhar pro {departamento} e um atendente continua com você a partir daqui." |
+| `entrou_fila` | "Pronto, você está na fila de {{departamento}}. Protocolo {{protocolo}}. Assim que um atendente ficar livre, ele te responde por aqui. Pra encerrar antes, digite #sair." |
+| `encaminhado_padrao` | "Sem problema. Vou te encaminhar pro {{departamento}} e um atendente continua com você a partir daqui." |
 | `plantao` | "Nosso horário comercial já encerrou, mas tem plantão agora e a gente te atende. Responda com o número da opção:" |
-| `fora_horario` | "Estamos fora do horário de atendimento comercial. Funcionamos {horario}. Pra emergência, chame no WhatsApp: (o admin edita com os contatos e links)." |
-| `encerramento` | "Atendimento encerrado. Valeu pelo contato com a {empresa}. Se precisar, é só mandar outra mensagem." |
+| `fora_horario` | "Estamos fora do horário de atendimento comercial. Funcionamos {{horario}}. Pra emergência, chame no WhatsApp: (o admin edita com os contatos e links)." |
+| `encerramento` | "Atendimento encerrado. Valeu pelo contato com a {{empresa}}. Se precisar, é só mandar outra mensagem." |
 | `solicitar_avaliacao` | "De 0 a 10, que nota você dá pra este atendimento?" |
 | `agradecimento_avaliacao` | "Obrigado! Seu retorno ajuda a gente a melhorar." |
 | `avaliacao_invalida` | "Seu atendimento está sendo encerrado. Pra avaliar, envie um número de 0 a 10." |
@@ -94,4 +94,4 @@ finalizado         se avaliacao_ativa: bot pede nota 0-10 (janela tempo_avaliaca
 
 ## Fora do escopo (pós-MVP)
 
-Controle de acesso por horário (atendente só entra no comercial/plantão dele), palavras-chave, recado, controle de potenciais + timeouts, responder grupos, contatos de emergência estruturados, submenus (#voltar entre níveis).
+Palavras-chave, recado, controle de potenciais + timeouts, responder grupos, contatos de emergência estruturados, submenus (#voltar entre níveis). (O **controle de acesso por horário** saiu do pós-MVP: já implementado em 2026-07-25, ver ADR-09.)

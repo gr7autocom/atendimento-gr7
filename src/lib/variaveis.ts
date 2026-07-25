@@ -1,14 +1,18 @@
 /**
- * Variáveis das mensagens rápidas. Ao inserir a mensagem no chat, troca:
- *  - {{agent.name}}   → nome do atendente logado
- *  - {{contact.name}} → nome do contato do chamado
- * Tolerante a espaços dentro das chaves.
+ * Variáveis em mensagens (bot e mensagens rápidas). Padrão único do projeto:
+ * **chave dupla em português** — `{{atendente}}`, `{{contato}}`, `{{empresa}}`,
+ * `{{protocolo}}`, `{{departamento}}`, `{{horario}}`.
+ *
+ * Tolerante a espaços dentro das chaves. Chave conhecida com valor nulo vira
+ * string vazia; chave desconhecida (ex.: um `{{obs}}` digitado à toa) fica como
+ * está, para não apagar texto do usuário sem querer.
  */
 export function aplicarVariaveis(
   texto: string,
-  vars: { agente?: string | null; contato?: string | null }
+  vars: Record<string, string | null | undefined>
 ): string {
-  return texto
-    .replace(/\{\{\s*agent\.name\s*\}\}/gi, vars.agente ?? '')
-    .replace(/\{\{\s*contact\.name\s*\}\}/gi, vars.contato ?? '')
+  return texto.replace(/\{\{\s*([a-zA-Z_]+)\s*\}\}/g, (original, nome: string) => {
+    const chave = nome.toLowerCase()
+    return chave in vars ? (vars[chave] ?? '') : original
+  })
 }

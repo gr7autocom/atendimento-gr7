@@ -11,7 +11,7 @@ import {
   MoreVertical,
   Info,
 } from 'lucide-react'
-import { useMensagens, useAcoesAtendimento, type AtendimentoLista } from '../../lib/useInbox'
+import { useMensagens, useAcoesAtendimento, nomeEmpresa, type AtendimentoLista } from '../../lib/useInbox'
 import { useCrud } from '../../lib/useCrud'
 import { useUsuarios } from '../../lib/useVinculos'
 import { usePermissao } from '../../lib/permissoes'
@@ -171,7 +171,15 @@ export function Conversa({
 
   function inserirRapida(m: MsgRapida) {
     if (!atendimento) return
-    setTexto(aplicarVariaveis(m.texto, { agente: usuarioAtual?.nome ?? null, contato: nomeContato(atendimento) }))
+    setTexto(
+      aplicarVariaveis(m.texto, {
+        atendente: usuarioAtual?.nome ?? '',
+        contato: nomeContato(atendimento),
+        empresa: nomeEmpresa(atendimento.contato?.cliente) ?? '',
+        protocolo: String(atendimento.protocolo),
+        departamento: atendimento.departamento?.nome ?? '',
+      })
+    )
     setPickerOff(true)
     inputRef.current?.focus()
   }

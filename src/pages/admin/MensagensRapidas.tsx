@@ -202,8 +202,11 @@ export function MensagensRapidas() {
           className="flex flex-col gap-3"
         >
           <div className="rounded-[8px] border border-bd-1 bg-sf-2 px-3 py-2 text-[12px] text-tx-2">
-            Você pode usar variáveis no texto: <span className="dado text-tx-1">{'{{agent.name}}'}</span> (seu nome) e{' '}
-            <span className="dado text-tx-1">{'{{contact.name}}'}</span> (nome do contato).
+            Variáveis (trocadas ao inserir no chat): <span className="dado text-tx-1">{'{{atendente}}'}</span>{' '}
+            <span className="dado text-tx-1">{'{{contato}}'}</span>{' '}
+            <span className="dado text-tx-1">{'{{empresa}}'}</span>{' '}
+            <span className="dado text-tx-1">{'{{protocolo}}'}</span>{' '}
+            <span className="dado text-tx-1">{'{{departamento}}'}</span>.
           </div>
 
           <Selecao
