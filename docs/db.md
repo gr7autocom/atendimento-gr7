@@ -70,14 +70,13 @@ Histórico de transferências.
 Textos prontos do atendente (`/`). Catálogo global; CRUD em Admin. **Não confundir** com `bot_mensagens`.
 - `id`, `atalho` TEXT UNIQUE (ex.: `bomdia`), `titulo` TEXT, `texto` TEXT, `ativo BOOLEAN`, `created_at`, `updated_at`
 
-### `atendimento_plantoes`
-Turnos de plantão (fora do comercial). CRUD na aba Admin "Horário de Funcionamento".
-- `id`, `nome` TEXT (opcional, ex.: `Plantão noite`), `dia_semana INT` (0-6), `hora_inicio TIME`, `hora_fim TIME`, `ativo BOOLEAN`, `created_at`, `updated_at`
+### `atendimento_plantoes` / `atendimento_plantao_usuarios` (DEPRECATED)
+Modelo antigo de plantão global (turnos + plantonistas). **Substituído por `atendimento_usuario_horarios`** (plantão por usuário, revisto em 2026-07-25). As tabelas continuam existindo (sem DROP), mas **não são mais usadas** pela UI nem pela regra de acesso.
 
-### `atendimento_plantao_usuarios`
-Atendentes vinculados a cada turno de plantão.
-- `plantao_id` FK → `atendimento_plantoes` (CASCADE), `usuario_id` FK → `usuarios` (CASCADE), `created_at`
-- PK composta `(plantao_id, usuario_id)`
+### `atendimento_usuario_horarios`
+Horários de acesso (plantão) **por usuário**. CRUD no card do atendente (tela **Atendentes**).
+- `id`, `usuario_id` FK → `usuarios` (CASCADE), `dia_semana INT` (0-6), `hora_inicio TIME`, `hora_fim TIME`, `created_at`. Migration `20260725120000`.
+- Regra: fora do comercial, o atendente só acessa dentro de uma faixa sua. Convenção `00:00–00:00` = dia inteiro; `fim < início` = vira a noite.
 
 ### `bot_mensagens`
 Mensagens **automáticas do bot** (chave-valor). Menu gerado dos departamentos (não fica aqui).
@@ -110,6 +109,7 @@ Ver [bot.md](bot.md) (Seção 3). Resumo: `triagem` (menu) → `na_fila` (depart
 RLS **por dono** (revisto em 2026-07-24, migration `20260724150000`). Antes era por departamento; agora o departamento serve só para roteamento do bot e filtro da lista, não para a visão. Helper novo: `e_admin()` (perfil slug `admin`). `atende_departamento`/`e_plantonista` seguem definidos, mas não são mais usados na visibilidade.
 
 - `atendimentos`: SELECT se `e_admin()` **ou** `responsavel_id = current_user_id()` **ou** (`responsavel_id IS NULL` **e** `status <> 'triagem'`). Ou seja: **admin vê tudo**; atendente vê **os seus** + a **fila livre** (pendentes/potenciais de qualquer setor); ninguém vê o chamado que está na mão de outro atendente. Tickets em `triagem` (dep nulo, sem dono) não aparecem — conduzidos pela Edge Function (service role).
+- **Trava por hora** (revisto em 2026-07-25, migration `20260725130000`): as policies de `atendimentos` (SELECT/UPDATE) e o INSERT de `atendimento_mensagens` exigem também `pode_atender_agora()`. A função (SECURITY DEFINER) retorna `true` se **admin** **ou** comercial ainda não configurado **ou** agora dentro de um `atendimento_horarios` ativo **ou** dentro de uma faixa de `atendimento_usuario_horarios` do usuário (timezone `atendimento_config.timezone`, default `America/Sao_Paulo`). O login (`auth.tsx`) reforça a mesma regra com aviso amigável. Não afeta o painel (não usa `atendimentos`).
 - `atendimento_mensagens`/`atendimento_anexos`/`atendimento_tag_vinculos`/`atendimento_transferencias`: SELECT se o atendimento pai é visível pela **mesma regra** (admin / dono / fila livre).
 - Catálogos e config (`departamentos`, `atendimento_tags`, `atendimento_motivos`, `atendimento_mensagens_rapidas`, `atendimento_plantoes`, `atendimento_plantao_usuarios`, `bot_mensagens`, `atendimento_horarios`, `atendimento_config`): SELECT autenticado; escrita por `can('atendimento.config')`.
 - Ações novas do atendimento (slugs em `permissoes.capacidades`, **não** há tabela `acoes`): `atendimento.assumir`, `atendimento.responder`, `atendimento.finalizar`, `atendimento.transferir`, `atendimento.config`. No perfil `admin`, todas. No perfil `suporte`, as quatro de operação (sem `config`), concedidas na migration `20260724150000`. Manter em sincronia com `src/lib/acoes.ts`.

@@ -66,7 +66,7 @@ finalizado         se avaliacao_ativa: bot pede nota 0-10 (janela tempo_avaliaca
 - **Menu automático** dos departamentos ativos. (ADR-06)
 - **Janela de reabertura 3h:** dentro da janela reaproveita o ticket (volta pra fila do departamento, sem menu); passada, ticket novo. (ADR-07)
 - **Fallback de triagem:** 2 tentativas inválidas → encaminha ao departamento padrão. (ADR-08)
-- **Plantão:** fora do comercial, turno com atendente vinculado atende pela plataforma (fila de plantão). Sem atendente vinculado, o bot só direciona (mensagem `fora_horario` com contatos de emergência), sem criar ticket. (ADR-09)
+- **Plantão (revisto 2026-07-25):** deixou de ser turno global e passou a ser **janela de acesso por usuário** (`atendimento_usuario_horarios`, editada no card do atendente). Fora do comercial, quem tem uma janela cobrindo aquele horário é o plantonista e atende pela plataforma; sem ninguém de plantão, o bot só direciona (mensagem `fora_horario` com contatos de emergência), sem criar ticket. A trava vale também para acesso humano ao app: `pode_atender_agora()` na RLS + aviso no login. (ADR-09; tabelas `atendimento_plantoes`/`atendimento_plantao_usuarios` ficaram sem uso.)
 - **Encerramento pelo cliente:** `#sair` finaliza (registra `encerrado_por = 'cliente'`).
 - **Avaliação (opcional, `avaliacao_ativa`):** ao finalizar, bot pede nota 0-10 dentro de `tempo_avaliacao_min` (60).
 - **Nome do atendente:** se `enviar_nome_atendente`, respostas humanas saem prefixadas com `{atendente}`.

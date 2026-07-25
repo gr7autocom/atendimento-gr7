@@ -9,6 +9,9 @@
 - Departamentos e Tags reformulados: Departamentos em cards, e Tags com cor própria e escopo por departamento
 - O atendente agora aplica uma ou mais tags ao chamado direto no chat; as tags aparecem no card da conversa
 - O card da conversa passou a mostrar a empresa do contato quando há vínculo
+- Tela de Atendentes em cards com foto (a mesma do painel) e filtros por nome, departamento e status
+- Plantão agora é definido por atendente (Horários de Acesso no card), não mais numa lista única
+- Acesso ao Atendimento fora do horário comercial só para quem está de plantão; administradores sempre entram
 
 ---
 

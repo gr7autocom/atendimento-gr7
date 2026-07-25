@@ -81,12 +81,12 @@ Sidebar com as abas abaixo. Detalhe de cada aba chega por prints ao longo do des
 | Aba | Tela | MVP |
 |---|---|---|
 | **Dashboard** | cards de indicadores | placeholder (Fase 3) |
-| **Usuários** | lista dos `usuarios` do painel; por usuário, marcar **departamentos** (vínculo atendente↔departamento fica aqui) | sim |
+| **Atendentes** (Usuários) | `usuarios` do painel em **cards com foto** (`foto_url` do painel, read-only) + filtros (nome/departamento/status); editar abre modal para marcar **departamentos** (vínculo atendente↔departamento). Sem criar/inativar/remover (isso é no painel). Horários de acesso por usuário: etapa futura | sim |
 | **Departamentos** | tabela com criar / editar / ativar / desativar / ordenar | sim |
 | **Tags** | CRUD de tags | sim |
 | **Motivos** | CRUD de motivos de finalização | sim |
 | **Mensagens rápidas** | CRUD (atalho + título + texto) | sim |
-| **Horário de Funcionamento** | horário comercial por dia + turnos de **plantão** com atendentes vinculados + texto de fora de horário | sim |
+| **Horário de Funcionamento** | **só o horário comercial** por dia (abre/fecha/atende). O **plantão virou janela por usuário**, editada no card do atendente (tela Atendentes). Fora do comercial, só acessa quem tem janela cobrindo a hora; reforçado no login e na RLS (`pode_atender_agora()`), admin sempre passa | sim |
 | **Configurações BOT** | edita os 12 textos do bot + flags (avaliação, nome do atendente, tempos) | sim |
 | **Relatórios** | listagens / exportação | placeholder (Fase 3) |
 
