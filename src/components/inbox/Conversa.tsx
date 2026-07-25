@@ -56,7 +56,7 @@ function ItemMenu({
 }
 
 type Departamento = { id: string; nome: string; ativo: boolean }
-type Motivo = { id: string; nome: string; ativo: boolean }
+type Motivo = { id: string; nome: string; ativo: boolean; departamento_id?: string | null }
 type MsgRapida = { id: string; atalho: string; texto: string; ativo?: boolean; departamento_id?: string | null }
 
 function nomeContato(a: AtendimentoLista) {
@@ -542,11 +542,13 @@ export function Conversa({
             onChange={(e) => setMotivoId(e.target.value)}
           >
             <option value="">Selecionar</option>
-            {(motivos.lista.data ?? []).map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.nome}
-              </option>
-            ))}
+            {(motivos.lista.data ?? [])
+              .filter((m) => m.ativo !== false && m.departamento_id === atendimento.departamento_id)
+              .map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.nome}
+                </option>
+              ))}
           </Selecao>
           <div className="flex justify-end gap-2 pt-1">
             <Botao variante="fantasma" onClick={() => setModalFinalizar(false)}>

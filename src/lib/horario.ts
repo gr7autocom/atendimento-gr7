@@ -55,3 +55,19 @@ export function temAcessoAgora(opts: {
   if (opts.comercial.some((h) => h.ativo !== false && cobre(h))) return true
   return opts.janelas.some(cobre)
 }
+
+/**
+ * Um departamento está disponível agora? Usa as faixas próprias quando existem;
+ * senão, cai no horário comercial global.
+ */
+export function departamentoDisponivelAgora(opts: {
+  faixasDep: Faixa[]
+  comercial: Faixa[]
+  agora?: Date
+}): boolean {
+  const base = opts.faixasDep.length > 0 ? opts.faixasDep : opts.comercial
+  const d = opts.agora ?? new Date()
+  const dow = d.getDay()
+  const nowMin = d.getHours() * 60 + d.getMinutes()
+  return base.some((f) => f.ativo !== false && faixaCobre(f.dia_semana, f.hora_inicio, f.hora_fim, dow, nowMin))
+}

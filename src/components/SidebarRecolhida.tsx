@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { MessagesSquare, Network, Tag, Flag, Zap, Bot, Clock, Users } from 'lucide-react'
+import { MessagesSquare, Network, Tag, Zap, Bot, Clock, Users } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { usePermissao } from '../lib/permissoes'
 import { cn } from '../lib/utils'
@@ -10,7 +10,6 @@ export const ITENS_NAV: ItemNav[] = [
   { to: '/inbox', label: 'Atendimentos', icone: MessagesSquare, adminOnly: false },
   { to: '/admin/departamentos', label: 'Departamentos', icone: Network, adminOnly: true },
   { to: '/admin/tags', label: 'Tags', icone: Tag, adminOnly: true },
-  { to: '/admin/motivos', label: 'Motivos', icone: Flag, adminOnly: true },
   { to: '/admin/mensagens-rapidas', label: 'Mensagens rápidas', icone: Zap, adminOnly: true },
   { to: '/admin/bot', label: 'Configurações BOT', icone: Bot, adminOnly: true },
   { to: '/admin/horario', label: 'Horário de Funcionamento', icone: Clock, adminOnly: true },

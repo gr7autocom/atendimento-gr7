@@ -3,15 +3,27 @@ import { render, screen } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 vi.mock('../../lib/useCrud', () => ({
-  useCrud: () => ({
+  useCrud: (tabela: string) => ({
     lista: {
-      data: [
-        { id: '1', nome: 'SUPORTE GERAL', ordem: 1, ativo: true },
-        { id: '2', nome: 'ASSUNTOS FINANCEIROS', ordem: 3, ativo: false },
-      ],
+      data:
+        tabela === 'departamentos'
+          ? [
+              { id: '1', nome: 'SUPORTE GERAL', ordem: 1, ativo: true },
+              { id: '2', nome: 'ASSUNTOS FINANCEIROS', ordem: 3, ativo: false },
+            ]
+          : [],
       isLoading: false,
     },
     criar: { mutate: vi.fn() },
+    atualizar: { mutate: vi.fn() },
+    remover: { mutate: vi.fn() },
+  }),
+}))
+
+vi.mock('../../lib/useHorariosDepartamento', () => ({
+  useHorariosDepartamento: () => ({
+    lista: { data: [] },
+    adicionar: { mutate: vi.fn() },
     atualizar: { mutate: vi.fn() },
     remover: { mutate: vi.fn() },
   }),
