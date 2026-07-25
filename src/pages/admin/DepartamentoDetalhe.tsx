@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Plus, Pencil, Trash2, X } from 'lucide-react'
+import { ArrowLeft, Plus, Pencil, Trash2, X, ChevronUp, ChevronDown } from 'lucide-react'
 import { useCrud } from '../../lib/useCrud'
 import { useHorariosDepartamento } from '../../lib/useHorariosDepartamento'
 import { Botao } from '../../components/ui/Botao'
@@ -78,10 +78,19 @@ export function DepartamentoDetalhe() {
     motivosCrud.atualizar.mutate({ id: editando.id, valores: { nome: nomeEdit.trim() } })
     setEditando(null)
   }
+  // Reordena trocando o `ordem` com o vizinho; a ordem vale na lista e no Finalizar.
+  function moverMotivo(idx: number, dir: -1 | 1) {
+    const j = idx + dir
+    if (j < 0 || j >= motivosDe.length) return
+    const a = motivosDe[idx]
+    const b = motivosDe[j]
+    motivosCrud.atualizar.mutate({ id: a.id, valores: { ordem: b.ordem ?? j } })
+    motivosCrud.atualizar.mutate({ id: b.id, valores: { ordem: a.ordem ?? idx } })
+  }
 
   if (lista.isLoading) {
     return (
-      <div className="w-full max-w-5xl flex flex-col gap-3">
+      <div className="w-full flex flex-col gap-3">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-40" />
         <Skeleton className="h-40" />
@@ -90,7 +99,7 @@ export function DepartamentoDetalhe() {
   }
   if (!dep) {
     return (
-      <div className="w-full max-w-5xl">
+      <div className="w-full">
         <button
           type="button"
           onClick={() => navigate('/admin/departamentos')}
@@ -106,7 +115,7 @@ export function DepartamentoDetalhe() {
   const inativo = dep.ativo === false
 
   return (
-    <div className="w-full max-w-5xl flex flex-col gap-4">
+    <div className="w-full flex flex-col gap-4">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0">
           <button
@@ -151,7 +160,7 @@ export function DepartamentoDetalhe() {
         titulo="Horário de atendimento"
         descricao="Vazio = usa o horário comercial. Preenchido, o departamento fica disponível só nessas faixas. Para 24h, use De 00:00 e Até 00:00."
       >
-        <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-7 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
           {DIAS.map((nomeDia, dia) => {
             const faixas = faixasDe(dia)
             return (
@@ -167,12 +176,12 @@ export function DepartamentoDetalhe() {
                       hora_fim: '18:00',
                     })
                   }
-                  className="inline-flex items-center justify-center gap-1 h-7 rounded-[6px] border border-bd-2 text-[12px] text-br-2 hover:bg-br-soft transition-colors"
+                  className="inline-flex items-center justify-center gap-1 h-8 rounded-[6px] border border-bd-2 text-[12px] text-br-2 hover:bg-br-soft transition-colors"
                 >
-                  <Plus size={13} /> horário
+                  <Plus size={14} /> horário
                 </button>
                 {faixas.map((fx) => (
-                  <div key={fx.id} className="relative rounded-[6px] bg-sf-2 border border-bd-1 p-1.5 flex flex-col gap-1">
+                  <div key={fx.id} className="relative rounded-[6px] bg-sf-2 border border-bd-1 p-2 flex flex-col gap-1.5">
                     <button
                       type="button"
                       onClick={() => horariosDep.remover.mutate(fx.id)}
@@ -181,22 +190,22 @@ export function DepartamentoDetalhe() {
                     >
                       <X size={13} />
                     </button>
-                    <label className="flex items-center gap-1">
-                      <span className="text-[11px] text-tx-3 w-6">De</span>
+                    <label className="flex flex-col gap-0.5">
+                      <span className="text-[11px] text-tx-3">De</span>
                       <CampoHora
                         rotuloAcessivel={`Início ${nomeDia}`}
                         valor={fx.hora_inicio.slice(0, 5)}
                         aoSalvar={(v) => horariosDep.atualizar.mutate({ id: fx.id, valores: { hora_inicio: v } })}
-                        className="w-[64px]"
+                        className="w-full"
                       />
                     </label>
-                    <label className="flex items-center gap-1">
-                      <span className="text-[11px] text-tx-3 w-6">Até</span>
+                    <label className="flex flex-col gap-0.5">
+                      <span className="text-[11px] text-tx-3">Até</span>
                       <CampoHora
                         rotuloAcessivel={`Fim ${nomeDia}`}
                         valor={fx.hora_fim.slice(0, 5)}
                         aoSalvar={(v) => horariosDep.atualizar.mutate({ id: fx.id, valores: { hora_fim: v } })}
-                        className="w-[64px]"
+                        className="w-full"
                       />
                     </label>
                   </div>
@@ -230,13 +239,34 @@ export function DepartamentoDetalhe() {
           <p className="text-[13px] text-tx-3">Nenhum motivo ainda.</p>
         ) : (
           <div className="rounded-[8px] border border-bd-1 overflow-hidden">
-            {motivosDe.map((m) => (
+            {motivosDe.map((m, idx) => (
               <div
                 key={m.id}
                 className="flex items-center justify-between gap-2 px-3 py-2 border-b border-bd-1 last:border-b-0 hover:bg-sf-2 transition-colors"
               >
-                <span className="text-[13px] text-tx-1 truncate">{m.nome}</span>
+                <span className="flex items-center gap-2 min-w-0 text-[13px] text-tx-1">
+                  <span className="dado w-5 text-right text-tx-3 shrink-0">{idx + 1}</span>
+                  <span className="truncate">{m.nome}</span>
+                </span>
                 <div className="flex items-center gap-0.5 shrink-0">
+                  <button
+                    type="button"
+                    disabled={idx === 0}
+                    onClick={() => moverMotivo(idx, -1)}
+                    aria-label={`Subir ${m.nome}`}
+                    className="w-7 h-7 rounded-[6px] flex items-center justify-center text-tx-3 hover:text-tx-1 hover:bg-sf-2 disabled:opacity-30 disabled:pointer-events-none transition-colors"
+                  >
+                    <ChevronUp size={16} />
+                  </button>
+                  <button
+                    type="button"
+                    disabled={idx === motivosDe.length - 1}
+                    onClick={() => moverMotivo(idx, 1)}
+                    aria-label={`Descer ${m.nome}`}
+                    className="w-7 h-7 rounded-[6px] flex items-center justify-center text-tx-3 hover:text-tx-1 hover:bg-sf-2 disabled:opacity-30 disabled:pointer-events-none transition-colors"
+                  >
+                    <ChevronDown size={16} />
+                  </button>
                   <Botao
                     variante="fantasma"
                     tamanho="sm"
