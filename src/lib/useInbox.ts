@@ -27,6 +27,7 @@ export type AtendimentoLista = {
   ultima_mensagem_em: string
   contato: ContatoResumo | null
   departamento: { nome: string } | null
+  tags?: { tag: TagInfo | null }[] | null
 }
 
 export type Mensagem = {
@@ -39,7 +40,7 @@ export type Mensagem = {
 }
 
 const SELECT_ATENDIMENTO =
-  '*, contato:contatos(id, nome, nome_whatsapp, telefone, cliente_id, cliente:clientes(id, razao_social, nome_fantasia)), departamento:departamentos(nome)'
+  '*, contato:contatos(id, nome, nome_whatsapp, telefone, cliente_id, cliente:clientes(id, razao_social, nome_fantasia)), departamento:departamentos(nome), tags:atendimento_tag_vinculos(tag:atendimento_tags(id, nome, cor_fundo, cor_texto))'
 
 /** Clientes do painel, somente leitura, para vincular um contato à empresa. */
 export function useClientes(busca: string) {
@@ -121,6 +122,70 @@ export function useAtendimentos() {
     },
     refetchInterval: 10000,
   })
+}
+
+export type TagInfo = { id: string; nome: string; cor_fundo: string | null; cor_texto: string | null }
+export type TagAplicada = { tag_id: string; tag: TagInfo | null }
+
+/** Tags já aplicadas a um atendimento (com nome e cor, para exibir o pill). */
+export function useTagsDoAtendimento(atendimentoId: string | null) {
+  return useQuery({
+    queryKey: ['atendimento_tag_vinculos', atendimentoId],
+    enabled: !!atendimentoId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('atendimento_tag_vinculos')
+        .select('tag_id, tag:atendimento_tags(id, nome, cor_fundo, cor_texto)')
+        .eq('atendimento_id', atendimentoId as string)
+      if (error) throw error
+      return (data ?? []) as unknown as TagAplicada[]
+    },
+  })
+}
+
+/** Aplicar/remover tag no atendimento. A RLS já libera para quem tem
+ *  `atendimento.responder`; `aplicada_por` guarda quem marcou. */
+export function useAcoesTags() {
+  const qc = useQueryClient()
+  const invalidar = (atendimentoId: string) => {
+    qc.invalidateQueries({ queryKey: ['atendimento_tag_vinculos', atendimentoId] })
+    // A lista do inbox mostra os pills das tags no card; precisa recarregar.
+    qc.invalidateQueries({ queryKey: ['atendimentos'] })
+  }
+
+  const aplicar = useMutation({
+    mutationFn: async ({
+      atendimentoId,
+      tagId,
+      usuarioId,
+    }: {
+      atendimentoId: string
+      tagId: string
+      usuarioId: string | null
+    }) => {
+      const { error } = await supabase.from('atendimento_tag_vinculos').insert({
+        atendimento_id: atendimentoId,
+        tag_id: tagId,
+        aplicada_por: usuarioId,
+      } as never)
+      if (error) throw error
+    },
+    onSuccess: (_d, v) => invalidar(v.atendimentoId),
+  })
+
+  const remover = useMutation({
+    mutationFn: async ({ atendimentoId, tagId }: { atendimentoId: string; tagId: string }) => {
+      const { error } = await supabase
+        .from('atendimento_tag_vinculos')
+        .delete()
+        .eq('atendimento_id', atendimentoId)
+        .eq('tag_id', tagId)
+      if (error) throw error
+    },
+    onSuccess: (_d, v) => invalidar(v.atendimentoId),
+  })
+
+  return { aplicar, remover }
 }
 
 export function useMensagens(atendimentoId: string | null) {

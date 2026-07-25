@@ -14,8 +14,10 @@ import {
 import { useMensagens, useAcoesAtendimento, type AtendimentoLista } from '../../lib/useInbox'
 import { useCrud } from '../../lib/useCrud'
 import { useUsuarios } from '../../lib/useVinculos'
+import { usePermissao } from '../../lib/permissoes'
 import { AceitarPotencial } from './AceitarPotencial'
 import { PainelContato } from './PainelContato'
+import { SeletorTags, FaixaTagsAplicadas } from './TagsAtendimento'
 import { Modal } from '../ui/Modal'
 import { Botao } from '../ui/Botao'
 import { Selecao } from '../ui/Campo'
@@ -91,6 +93,7 @@ export function Conversa({
   const departamentos = useCrud<Departamento>('departamentos')
   const motivos = useCrud<Motivo>('atendimento_motivos')
   const usuarios = useUsuarios()
+  const { isAdmin } = usePermissao()
 
   const [texto, setTexto] = useState('')
   const [modalTransferir, setModalTransferir] = useState(false)
@@ -130,6 +133,8 @@ export function Conversa({
   const semDono = !atendimento.responsavel_id
   const finalizado = atendimento.status === 'finalizado'
   const semCadastro = !atendimento.contato?.cliente_id
+  // Tag é aplicada pelo atendente depois de pegar o chamado (ou pelo admin).
+  const podeEditarTags = !finalizado && (souResponsavel || isAdmin)
 
   function enviar(e: FormEvent) {
     e.preventDefault()
@@ -171,6 +176,13 @@ export function Conversa({
 
         {/* Desktop: ações inline + fechar */}
         <div className="hidden lg:flex items-center gap-1.5 shrink-0">
+          {podeEditarTags && (
+            <SeletorTags
+              atendimentoId={atendimento.id}
+              departamentoId={atendimento.departamento_id}
+              usuarioId={usuarioId}
+            />
+          )}
           {!finalizado && (
             <>
               {semDono &&
@@ -215,8 +227,16 @@ export function Conversa({
           )}
         </div>
 
-        {/* Mobile: ações no menu ⋮ */}
-        <div className="lg:hidden relative shrink-0" ref={menuRef}>
+        {/* Mobile: tag + ações no menu ⋮ */}
+        <div className="lg:hidden flex items-center gap-1 shrink-0">
+          {podeEditarTags && (
+            <SeletorTags
+              atendimentoId={atendimento.id}
+              departamentoId={atendimento.departamento_id}
+              usuarioId={usuarioId}
+            />
+          )}
+          <div className="relative" ref={menuRef}>
           <button
             type="button"
             onClick={() => setMenuAberto((v) => !v)}
@@ -261,8 +281,11 @@ export function Conversa({
               )}
             </div>
           )}
+          </div>
         </div>
       </header>
+
+      <FaixaTagsAplicadas atendimentoId={atendimento.id} podeEditar={podeEditarTags} />
 
       {/* Mobile: painel do contato em tela cheia (acessado por "Dados do atendimento") */}
       {mostrarDados && (

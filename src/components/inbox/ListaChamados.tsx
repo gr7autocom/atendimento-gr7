@@ -1,12 +1,12 @@
 import { useState } from 'react'
-import { Inbox as IconeInbox, Search, ListFilter, RotateCw, X } from 'lucide-react'
-import type { AtendimentoLista } from '../../lib/useInbox'
+import { Inbox as IconeInbox, Search, ListFilter, RotateCw, X, Building2 } from 'lucide-react'
+import { nomeEmpresa, type AtendimentoLista } from '../../lib/useInbox'
 import type { FiltroInbox } from '../../pages/Dashboard'
 import { useCrud } from '../../lib/useCrud'
 import { useUsuarios } from '../../lib/useVinculos'
 import { usePermissao } from '../../lib/permissoes'
 import { cn } from '../../lib/utils'
-import { corSetor } from '../../lib/coresSetor'
+import { corTag } from '../../lib/coresSetor'
 import { Avatar } from '../ui/Avatar'
 import { PontoStatus } from '../ui/Selo'
 import { Vazio, LinhasCarregando } from '../ui/Estados'
@@ -187,7 +187,10 @@ export function ListaChamados({
           lista.map((a) => {
             const ativo = selecionadoId === a.id
             const setor = a.departamento?.nome
-            const cor = setor ? corSetor(setor) : null
+            const empresa = nomeEmpresa(a.contato?.cliente)
+            const tags = (a.tags ?? [])
+              .map((t) => t.tag)
+              .filter((t): t is NonNullable<typeof t> => !!t)
             return (
               <button
                 key={a.id}
@@ -207,6 +210,12 @@ export function ListaChamados({
                     <span className="text-[13px] text-tx-1 font-medium truncate">{nomeContato(a)}</span>
                     <span className="dado text-[11px] text-tx-3 shrink-0">{hora(a.ultima_mensagem_em)}</span>
                   </div>
+                  {empresa && (
+                    <div className="flex items-center gap-1 mt-0.5 min-w-0">
+                      <Building2 size={12} className="text-tx-3 shrink-0" />
+                      <span className="text-[12px] text-tx-2 truncate">{empresa}</span>
+                    </div>
+                  )}
                   <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
                     <PontoStatus status={a.status} />
                     <span className="text-[12px] text-tx-2 italic truncate">{setor ?? 'Sem setor'}</span>
@@ -214,13 +223,22 @@ export function ListaChamados({
                   <div className="mt-1">
                     <span className="dado text-[11px] text-tx-3 truncate">{a.contato?.telefone ?? ''}</span>
                   </div>
-                  {setor && cor && (
-                    <span
-                      className="inline-flex items-center h-5 mt-1.5 px-1.5 rounded-[4px] text-[10px] font-semibold uppercase tracking-wide"
-                      style={{ background: cor.bg, color: cor.fg }}
-                    >
-                      {setor}
-                    </span>
+                  {tags.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-1 mt-1.5">
+                      {tags.map((t) => {
+                        const ct = corTag(t)
+                        return (
+                          <span
+                            key={t.id}
+                            title={t.nome}
+                            className="h-[18px] leading-[18px] px-1.5 rounded-[4px] text-[10px] font-semibold uppercase tracking-wide truncate max-w-[calc(50%-3px)]"
+                            style={{ background: ct.bg, color: ct.fg }}
+                          >
+                            {t.nome}
+                          </span>
+                        )
+                      })}
+                    </div>
                   )}
                 </div>
               </button>
