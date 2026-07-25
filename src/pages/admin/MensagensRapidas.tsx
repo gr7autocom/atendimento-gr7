@@ -80,7 +80,7 @@ export function MensagensRapidas() {
     <div className="w-full">
       <CabecalhoAdmin
         titulo="Mensagens rápidas"
-        descricao="Respostas prontas que o atendente aciona no chat digitando / seguido da palavra-chave. Podem valer para todos os departamentos ou um específico."
+        descricao="Respostas prontas. No chat, o atendente digita / e a palavra-chave para inserir. Valem para todos os departamentos ou um específico."
         acoes={
           <Botao variante="primario" tamanho="sm" onClick={abrirNovo} icone={<Plus size={15} />}>
             Nova mensagem

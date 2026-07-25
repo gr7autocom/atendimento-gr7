@@ -116,7 +116,7 @@ export function Tags() {
     <div className="w-full">
       <CabecalhoAdmin
         titulo="Tags"
-        descricao="Rótulos que o atendente aplica ao chamado. Podem valer para todos os departamentos ou um específico."
+        descricao="Rótulos que o atendente aplica ao chamado. Valem para todos os departamentos ou um específico."
         acoes={
           <>
             <div className="relative">

@@ -49,7 +49,7 @@ export function Departamentos() {
     <div className="w-full">
       <CabecalhoAdmin
         titulo="Departamentos"
-        descricao="Filas de atendimento. Clique em um para configurar motivos de finalização e horário de atendimento."
+        descricao="Cada departamento é uma fila. Clique em um para definir seus motivos e horário."
         acoes={
           <Botao variante="primario" tamanho="sm" onClick={abrirNovo} icone={<Plus size={15} />}>
             Novo departamento

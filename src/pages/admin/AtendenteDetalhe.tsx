@@ -7,22 +7,10 @@ import { Avatar } from '../../components/ui/Avatar'
 import { Selo } from '../../components/ui/Selo'
 import { Skeleton } from '../../components/ui/Estados'
 import { GradeHorarios } from '../../components/admin/GradeHorarios'
+import { Bloco } from '../../components/admin/Bloco'
 import { cn } from '../../lib/utils'
 
 type Departamento = { id: string; nome: string; ativo?: boolean }
-
-/** Bloco de seção da tela de detalhe. */
-function Bloco({ titulo, descricao, children }: { titulo: string; descricao?: string; children: React.ReactNode }) {
-  return (
-    <section className="rounded-[10px] border border-bd-1 bg-sf-1">
-      <div className="px-4 py-3 border-b border-bd-1">
-        <h2 className="text-[14px] font-semibold text-tx-1">{titulo}</h2>
-        {descricao && <p className="text-[12px] text-tx-2 mt-0.5">{descricao}</p>}
-      </div>
-      <div className="p-4">{children}</div>
-    </section>
-  )
-}
 
 export function AtendenteDetalhe() {
   const { id = '' } = useParams()
@@ -81,7 +69,10 @@ export function AtendenteDetalhe() {
         <Selo tom={usuario.ativo ? 'ok' : 'neutro'}>{usuario.ativo ? 'Ativo' : 'Inativo'}</Selo>
       </div>
 
-      <Bloco titulo="Departamentos que atende" descricao="Define quais filas o atendente enxerga.">
+      <Bloco
+        titulo="Departamentos que atende"
+        descricao="Marque os departamentos que o atendente atende. É isso que define as filas que ele vê."
+      >
         <div className="flex flex-wrap gap-1.5">
           {deps.map((d) => {
             const marcado = marcados.includes(d.id)
@@ -111,7 +102,11 @@ export function AtendenteDetalhe() {
 
       <Bloco
         titulo="Horário de plantão"
-        descricao="Fora do horário comercial, o atendente só acessa o Atendimento dentro dessas faixas. Vazio = só no comercial. Para 24h, use De 00:00 e Até 00:00."
+        topicos={[
+          'Defina as faixas em que o atendente atende fora do horário comercial.',
+          'Sem faixa definida, vale apenas o horário comercial.',
+          'Para plantão 24 horas, preencha De 00:00 e Até 00:00.',
+        ]}
       >
         <GradeHorarios
           faixas={(horarios.lista.data ?? []).filter((f) => f.usuario_id === id)}

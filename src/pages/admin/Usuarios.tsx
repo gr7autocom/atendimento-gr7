@@ -43,7 +43,7 @@ export function Usuarios() {
     <div className="w-full">
       <CabecalhoAdmin
         titulo="Atendentes"
-        descricao="A lista vem do painel. Clique em um atendente para definir os departamentos que ele atende e os horários de acesso. A foto é a mesma do painel."
+        descricao="Atendentes vêm do painel. Clique em um para definir os departamentos que ele atende e o plantão."
       />
 
       <div className="rounded-[10px] border border-bd-1 bg-sf-1 p-3 mb-4 grid grid-cols-1 sm:grid-cols-3 gap-3">

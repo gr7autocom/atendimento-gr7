@@ -27,11 +27,11 @@ async function resolverUsuario(
     .eq('auth_user_id', session.user.id)
     .maybeSingle()
   if (!data) {
-    return { kind: 'error', reason: 'Não há perfil ativo com este e-mail no sistema. Contate o administrador.' }
+    return { kind: 'error', reason: 'Este e-mail não tem acesso ao Atendimento. Fale com o administrador.' }
   }
   const u = data as unknown as UsuarioAutenticado
   if (!u.ativo || u.status === 'inativo') {
-    return { kind: 'error', reason: 'Sua conta está desativada. Contate o administrador.' }
+    return { kind: 'error', reason: 'Sua conta está desativada. Fale com o administrador.' }
   }
 
   // Trava de horário: admin sempre acessa. Atendente só dentro do horário
@@ -49,7 +49,7 @@ async function resolverUsuario(
       return {
         kind: 'error',
         reason:
-          'Acesso liberado apenas no horário comercial ou no seu horário de plantão. Fale com o administrador se precisar acessar agora.',
+          'Acesso liberado no horário comercial ou no seu plantão. Fale com o administrador se precisar entrar agora.',
       }
     }
   }

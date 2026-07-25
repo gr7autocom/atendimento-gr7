@@ -9,22 +9,10 @@ import { Modal } from '../../components/ui/Modal'
 import { Selo } from '../../components/ui/Selo'
 import { Skeleton } from '../../components/ui/Estados'
 import { GradeHorarios } from '../../components/admin/GradeHorarios'
+import { Bloco } from '../../components/admin/Bloco'
 
 type Departamento = { id: string; nome: string; ordem: number; ativo?: boolean }
 type Motivo = { id: string; nome: string; ordem?: number; ativo?: boolean; departamento_id?: string | null }
-
-/** Bloco de seção da tela de detalhe. */
-function Bloco({ titulo, descricao, children }: { titulo: string; descricao?: string; children: React.ReactNode }) {
-  return (
-    <section className="rounded-[10px] border border-bd-1 bg-sf-1">
-      <div className="px-4 py-3 border-b border-bd-1">
-        <h2 className="text-[14px] font-semibold text-tx-1">{titulo}</h2>
-        {descricao && <p className="text-[12px] text-tx-2 mt-0.5">{descricao}</p>}
-      </div>
-      <div className="p-4">{children}</div>
-    </section>
-  )
-}
 
 const campoNovo =
   'flex-1 h-9 px-3 text-sm rounded-[6px] bg-sf-2 border border-bd-2 text-tx-1 placeholder:text-tx-3 ' +
@@ -153,7 +141,11 @@ export function DepartamentoDetalhe() {
 
       <Bloco
         titulo="Horário de atendimento"
-        descricao="Vazio = usa o horário comercial. Preenchido, o departamento fica disponível só nessas faixas. Para 24h, use De 00:00 e Até 00:00."
+        topicos={[
+          'Defina as faixas em que o departamento fica disponível.',
+          'Sem faixa definida, o departamento segue o horário comercial.',
+          'Para atender 24 horas, preencha De 00:00 e Até 00:00.',
+        ]}
       >
         <GradeHorarios
           faixas={(horariosDep.lista.data ?? []).filter((f) => f.departamento_id === id)}
@@ -165,7 +157,10 @@ export function DepartamentoDetalhe() {
         />
       </Bloco>
 
-      <Bloco titulo="Motivos de finalização" descricao="Aparecem no Finalizar dos chamados deste departamento.">
+      <Bloco
+        titulo="Motivos de finalização"
+        descricao="Motivos que o atendente escolhe ao finalizar um chamado deste departamento. A ordem das setas vale no Finalizar."
+      >
         <div className="flex gap-2 mb-3">
           <input
             value={novoMotivo}

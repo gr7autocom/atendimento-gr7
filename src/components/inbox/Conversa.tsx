@@ -406,7 +406,7 @@ export function Conversa({
         <div className="shrink-0 border-t border-bd-1 bg-sf-1 px-4 py-3">
           <div className="mx-auto w-full max-w-[820px] flex items-center gap-2 text-[13px] text-tx-2">
             <CheckCheck size={15} className="text-ok shrink-0" />
-            Atendimento finalizado. Se o cliente voltar a falar, o chamado reabre pela regra de reabertura.
+            Atendimento finalizado. Se o cliente escrever de novo em até 3h, o chamado reabre sozinho.
           </div>
         </div>
       ) : (
