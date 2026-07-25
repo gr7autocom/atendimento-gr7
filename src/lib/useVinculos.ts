@@ -37,18 +37,26 @@ export function useVinculos(tabela: string, colA: string, colB: string) {
   return { lista, vincular, desvincular }
 }
 
-export type UsuarioLista = { id: string; nome: string; email: string }
+export type UsuarioLista = {
+  id: string
+  nome: string
+  email: string
+  foto_url: string | null
+  ativo: boolean
+}
 
-/** `usuarios` é tabela do painel: somente leitura aqui. */
-export function useUsuarios() {
+/**
+ * `usuarios` é tabela do painel: somente leitura aqui. Por padrão traz só os
+ * ativos (usado nos seletores de atendente); a tela de Atendentes passa
+ * `incluirInativos` para poder filtrar por status.
+ */
+export function useUsuarios(incluirInativos = false) {
   return useQuery({
-    queryKey: ['usuarios'],
+    queryKey: ['usuarios', incluirInativos],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('usuarios')
-        .select('id, nome, email')
-        .eq('ativo', true)
-        .order('nome')
+      let q = supabase.from('usuarios').select('id, nome, email, foto_url, ativo').order('nome')
+      if (!incluirInativos) q = q.eq('ativo', true)
+      const { data, error } = await q
       if (error) throw error
       return (data ?? []) as unknown as UsuarioLista[]
     },

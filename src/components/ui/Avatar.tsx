@@ -18,11 +18,14 @@ function tom(nome: string) {
 
 export function Avatar({
   nome,
+  fotoUrl,
   tamanho = 40,
   whatsapp = false,
   className,
 }: {
   nome: string
+  /** Foto do usuário (vem do painel). Sem foto, cai nas iniciais. */
+  fotoUrl?: string | null
   tamanho?: number
   whatsapp?: boolean
   className?: string
@@ -30,13 +33,25 @@ export function Avatar({
   const fonte = Math.round(tamanho * 0.4)
   return (
     <span className={cn('relative inline-flex shrink-0', className)} style={{ width: tamanho, height: tamanho }}>
-      <span
-        className={cn('w-full h-full rounded-full flex items-center justify-center font-semibold text-white', tom(nome))}
-        style={{ fontSize: fonte }}
-        aria-hidden="true"
-      >
-        {iniciais(nome)}
-      </span>
+      {fotoUrl ? (
+        <img
+          src={fotoUrl}
+          alt=""
+          className="w-full h-full rounded-full object-cover"
+          style={{ width: tamanho, height: tamanho }}
+        />
+      ) : (
+        <span
+          className={cn(
+            'w-full h-full rounded-full flex items-center justify-center font-semibold text-white',
+            tom(nome)
+          )}
+          style={{ fontSize: fonte }}
+          aria-hidden="true"
+        >
+          {iniciais(nome)}
+        </span>
+      )}
       {whatsapp && (
         <span
           className="absolute -bottom-0.5 -right-0.5 w-[14px] h-[14px] rounded-full bg-[#25d366] border-2 border-sf-1 flex items-center justify-center"

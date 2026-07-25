@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './supabase'
+import { temAcessoAgora, type Faixa } from './horario'
 import type { UsuarioAutenticado } from './types'
 
 type Status = 'loading' | 'authenticated' | 'unauthenticated' | 'unauthorized'
@@ -31,6 +32,26 @@ async function resolverUsuario(
   const u = data as unknown as UsuarioAutenticado
   if (!u.ativo || u.status === 'inativo') {
     return { kind: 'error', reason: 'Sua conta está desativada. Contate o administrador.' }
+  }
+
+  // Trava de horário: admin sempre acessa. Atendente só dentro do horário
+  // comercial ou de uma janela pessoal de plantão. Se o comercial nem foi
+  // configurado ainda, não trava (evita bloquear o time sem querer).
+  const isAdmin = u.permissao?.slug === 'admin'
+  if (!isAdmin) {
+    const [comercialRes, janelasRes] = await Promise.all([
+      supabase.from('atendimento_horarios').select('dia_semana, hora_inicio, hora_fim, ativo').eq('ativo', true),
+      supabase.from('atendimento_usuario_horarios').select('dia_semana, hora_inicio, hora_fim').eq('usuario_id', u.id),
+    ])
+    const comercial = (comercialRes.data ?? []) as Faixa[]
+    const janelas = (janelasRes.data ?? []) as Faixa[]
+    if (comercial.length > 0 && !temAcessoAgora({ isAdmin: false, comercial, janelas })) {
+      return {
+        kind: 'error',
+        reason:
+          'Acesso liberado apenas no horário comercial ou no seu horário de plantão. Fale com o administrador se precisar acessar agora.',
+      }
+    }
   }
   return { kind: 'ok', usuario: u }
 }
