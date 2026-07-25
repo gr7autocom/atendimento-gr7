@@ -17,6 +17,7 @@
 - Cada departamento pode ter um horário de atendimento próprio e mostra se está disponível ou fora de horário
 - Configurar um departamento agora abre uma tela própria (dados, horário e motivos), com mais espaço
 - Configurar um atendente também abre uma tela própria (departamentos e horários de acesso)
+- Horário comercial no mesmo formato de grade dos departamentos, agora com horário partido (várias faixas por dia)
 
 ---
 

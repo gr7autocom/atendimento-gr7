@@ -85,7 +85,7 @@ Sidebar com as abas abaixo. Detalhe de cada aba chega por prints ao longo do des
 | **Departamentos** | grid de cards (número/nome/ativo + selo **Disponível/Fora de horário**). Clicar no card abre a **tela dedicada** `/admin/departamentos/:id` (largura total) com blocos **Dados**, **Horário de atendimento** (7 colunas por dia, De/Até em HH:MM; vazio = comercial) e **Motivos de finalização** (ordenáveis por setas, a ordem vale no Finalizar). O **modal** fica só para **criar** um departamento (número + nome) | sim |
 | **Tags** | CRUD de tags | sim |
 | **Mensagens rápidas** | grid full-width (palavra-chave/mensagem/departamento) + filtros; modal com **Departamento** (Todos ou um setor), palavra-chave e texto. No chat, `/` abre o seletor e insere trocando `{{agent.name}}`/`{{contact.name}}` | sim |
-| **Horário de Funcionamento** | **só o horário comercial** por dia (abre/fecha/atende). O **plantão virou janela por usuário**, editada no card do atendente (tela Atendentes). Fora do comercial, só acessa quem tem janela cobrindo a hora; reforçado no login e na RLS (`pode_atender_agora()`), admin sempre passa | sim |
+| **Horário de Funcionamento** | **horário comercial** no mesmo padrão (`GradeHorarios`, 7 colunas por dia, HH:MM). Aceita **várias faixas por dia** (horário partido); dia sem faixa fica fechado. O **plantão** é por usuário, no card do atendente. Fora do comercial, só acessa quem tem plantão cobrindo a hora; reforçado no login e na RLS (`pode_atender_agora()`), admin sempre passa | sim |
 | **Configurações BOT** | edita os 12 textos do bot + flags (avaliação, nome do atendente, tempos) | sim |
 | **Relatórios** | listagens / exportação | placeholder (Fase 3) |
 
