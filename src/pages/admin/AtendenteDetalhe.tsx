@@ -71,7 +71,10 @@ export function AtendenteDetalhe() {
 
       <Bloco
         titulo="Departamentos que atende"
-        descricao="Marque os departamentos que o atendente atende. É isso que define as filas que ele vê."
+        topicos={[
+          'Marque os departamentos que este atendente atende.',
+          'Ele só vê as filas dos departamentos marcados.',
+        ]}
       >
         <div className="flex flex-wrap gap-1.5">
           {deps.map((d) => {

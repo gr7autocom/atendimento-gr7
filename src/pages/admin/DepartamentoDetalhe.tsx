@@ -159,7 +159,10 @@ export function DepartamentoDetalhe() {
 
       <Bloco
         titulo="Motivos de finalização"
-        descricao="Motivos que o atendente escolhe ao finalizar um chamado deste departamento. A ordem das setas vale no Finalizar."
+        topicos={[
+          'Defina os motivos que o atendente escolhe ao finalizar um chamado deste departamento.',
+          'Use as setas para definir a ordem em que os motivos aparecem na tela de Finalizar.',
+        ]}
       >
         <div className="flex gap-2 mb-3">
           <input
