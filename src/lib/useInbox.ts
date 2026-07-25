@@ -8,6 +8,7 @@ export type ContatoResumo = {
   nome: string | null
   nome_whatsapp: string | null
   telefone: string
+  cargo: string | null
   cliente_id: string | null
   cliente: EmpresaResumo | null
 }
@@ -40,7 +41,7 @@ export type Mensagem = {
 }
 
 const SELECT_ATENDIMENTO =
-  '*, contato:contatos(id, nome, nome_whatsapp, telefone, cliente_id, cliente:clientes(id, razao_social, nome_fantasia)), departamento:departamentos(nome), tags:atendimento_tag_vinculos(tag:atendimento_tags(id, nome, cor_fundo, cor_texto))'
+  '*, contato:contatos(id, nome, nome_whatsapp, telefone, cargo, cliente_id, cliente:clientes(id, razao_social, nome_fantasia)), departamento:departamentos(nome), tags:atendimento_tag_vinculos(tag:atendimento_tags(id, nome, cor_fundo, cor_texto))'
 
 /** Clientes do painel, somente leitura, para vincular um contato à empresa. */
 export function useClientes(busca: string) {
@@ -214,7 +215,7 @@ export function useAtualizarContato() {
       valores,
     }: {
       id: string
-      valores: { nome?: string | null; cliente_id?: string | null }
+      valores: { nome?: string | null; cargo?: string | null; cliente_id?: string | null }
     }) => {
       const { error } = await supabase.from('contatos').update(valores as never).eq('id', id)
       if (error) throw error

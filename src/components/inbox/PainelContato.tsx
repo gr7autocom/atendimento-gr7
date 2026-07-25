@@ -18,10 +18,12 @@ export function PainelContato({
 }) {
   const atualizar = useAtualizarContato()
   const [nome, setNome] = useState('')
+  const [cargo, setCargo] = useState('')
 
   useEffect(() => {
     setNome(atendimento?.contato?.nome ?? '')
-  }, [atendimento?.contato?.id, atendimento?.contato?.nome])
+    setCargo(atendimento?.contato?.cargo ?? '')
+  }, [atendimento?.contato?.id, atendimento?.contato?.nome, atendimento?.contato?.cargo])
 
   if (!atendimento) return null
 
@@ -50,7 +52,7 @@ export function PainelContato({
 
       <div className="p-5 flex flex-col gap-4">
         <div>
-          <div className="rotulo mb-1.5">Quem está falando</div>
+          <div className="rotulo mb-1.5">Nome</div>
           <Entrada
             value={nome}
             onChange={(e) => setNome(e.target.value)}
@@ -62,6 +64,21 @@ export function PainelContato({
             placeholder={contato?.nome_whatsapp ?? 'Nome do contato'}
             aria-label="Nome do contato"
             dica={`WhatsApp informou: ${contato?.nome_whatsapp || 'sem nome'}`}
+          />
+        </div>
+
+        <div>
+          <div className="rotulo mb-1.5">Cargo</div>
+          <Entrada
+            value={cargo}
+            onChange={(e) => setCargo(e.target.value)}
+            onBlur={() => {
+              if (contato && cargo.trim() !== (contato.cargo ?? '')) {
+                atualizar.mutate({ id: contato.id, valores: { cargo: cargo.trim() || null } })
+              }
+            }}
+            placeholder="Ex.: Financeiro"
+            aria-label="Cargo do contato"
           />
         </div>
 
