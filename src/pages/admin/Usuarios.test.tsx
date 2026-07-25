@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 
 vi.mock('../../lib/useVinculos', () => ({
   useUsuarios: () => ({
@@ -27,30 +28,30 @@ vi.mock('../../lib/useCrud', () => ({
   }),
 }))
 
-vi.mock('../../lib/useHorariosAcesso', () => ({
-  useHorariosAcesso: () => ({
-    lista: { data: [] },
-    adicionar: { mutate: vi.fn() },
-    atualizar: { mutate: vi.fn() },
-    remover: { mutate: vi.fn() },
-  }),
-}))
-
 import { Usuarios } from './Usuarios'
+
+function montar() {
+  render(
+    <MemoryRouter>
+      <Usuarios />
+    </MemoryRouter>
+  )
+}
 
 describe('Atendentes (cards)', () => {
   it('mostra só os ativos por padrão, com o departamento vinculado', () => {
-    render(<Usuarios />)
+    montar()
     expect(screen.getByText('Bruno Scoz')).toBeInTheDocument()
     // Iago está inativo; filtro padrão é "Ativos"
     expect(screen.queryByText('Iago Scandar')).not.toBeInTheDocument()
     // chip do departamento no card do Bruno (também aparece no filtro, por isso getAll)
     expect(screen.getAllByText('SUPORTE GERAL').length).toBeGreaterThan(0)
-    expect(screen.getByRole('button', { name: /editar Bruno Scoz/i })).toBeInTheDocument()
+    // o card leva à tela de configuração
+    expect(screen.getByRole('button', { name: /configurar Bruno Scoz/i })).toBeInTheDocument()
   })
 
   it('filtro de status Inativos mostra o atendente inativo', () => {
-    render(<Usuarios />)
+    montar()
     fireEvent.change(screen.getByLabelText('Status'), { target: { value: 'inativos' } })
     expect(screen.getByText('Iago Scandar')).toBeInTheDocument()
     expect(screen.queryByText('Bruno Scoz')).not.toBeInTheDocument()

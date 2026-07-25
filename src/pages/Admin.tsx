@@ -6,6 +6,7 @@ import { MensagensRapidas } from './admin/MensagensRapidas'
 import { ConfiguracoesBot } from './admin/ConfiguracoesBot'
 import { HorarioFuncionamento } from './admin/HorarioFuncionamento'
 import { Usuarios } from './admin/Usuarios'
+import { AtendenteDetalhe } from './admin/AtendenteDetalhe'
 
 /** A navegação entre as seções fica no sidebar; aqui só renderiza a tela da rota. */
 export function Admin() {
@@ -21,6 +22,7 @@ export function Admin() {
           <Route path="horario" element={<HorarioFuncionamento />} />
           <Route path="bot" element={<ConfiguracoesBot />} />
           <Route path="usuarios" element={<Usuarios />} />
+          <Route path="usuarios/:id" element={<AtendenteDetalhe />} />
         </Routes>
       </div>
     </div>

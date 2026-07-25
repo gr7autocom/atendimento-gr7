@@ -1,15 +1,14 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Plus, Pencil, Trash2, X, ChevronUp, ChevronDown } from 'lucide-react'
+import { ArrowLeft, Plus, Pencil, Trash2, ChevronUp, ChevronDown } from 'lucide-react'
 import { useCrud } from '../../lib/useCrud'
 import { useHorariosDepartamento } from '../../lib/useHorariosDepartamento'
 import { Botao } from '../../components/ui/Botao'
-import { Entrada, CampoHora } from '../../components/ui/Campo'
+import { Entrada } from '../../components/ui/Campo'
 import { Modal } from '../../components/ui/Modal'
 import { Selo } from '../../components/ui/Selo'
 import { Skeleton } from '../../components/ui/Estados'
-
-const DIAS = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
+import { GradeHorarios } from '../../components/admin/GradeHorarios'
 
 type Departamento = { id: string; nome: string; ordem: number; ativo?: boolean }
 type Motivo = { id: string; nome: string; ordem?: number; ativo?: boolean; departamento_id?: string | null }
@@ -58,10 +57,6 @@ export function DepartamentoDetalhe() {
   const motivosDe = (motivosCrud.lista.data ?? [])
     .filter((m) => m.departamento_id === id)
     .sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0))
-  const faixasDe = (dia: number) =>
-    (horariosDep.lista.data ?? [])
-      .filter((f) => f.departamento_id === id && f.dia_semana === dia)
-      .sort((a, b) => a.hora_inicio.localeCompare(b.hora_inicio))
 
   function salvarDados() {
     atualizar.mutate({ id, valores: { nome: nome.trim(), ordem: Number(numero || 0) } })
@@ -160,60 +155,14 @@ export function DepartamentoDetalhe() {
         titulo="Horário de atendimento"
         descricao="Vazio = usa o horário comercial. Preenchido, o departamento fica disponível só nessas faixas. Para 24h, use De 00:00 e Até 00:00."
       >
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
-          {DIAS.map((nomeDia, dia) => {
-            const faixas = faixasDe(dia)
-            return (
-              <div key={dia} className="rounded-[8px] border border-bd-1 bg-sf-0 p-2 flex flex-col gap-2">
-                <div className="text-[11px] font-semibold uppercase tracking-wide text-tx-2 text-center">{nomeDia}</div>
-                <button
-                  type="button"
-                  onClick={() =>
-                    horariosDep.adicionar.mutate({
-                      departamento_id: id,
-                      dia_semana: dia,
-                      hora_inicio: '08:00',
-                      hora_fim: '18:00',
-                    })
-                  }
-                  className="inline-flex items-center justify-center gap-1 h-8 rounded-[6px] border border-bd-2 text-[12px] text-br-2 hover:bg-br-soft transition-colors"
-                >
-                  <Plus size={14} /> horário
-                </button>
-                {faixas.map((fx) => (
-                  <div key={fx.id} className="relative rounded-[6px] bg-sf-2 border border-bd-1 p-2 flex flex-col gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => horariosDep.remover.mutate(fx.id)}
-                      aria-label={`Remover faixa de ${nomeDia}`}
-                      className="absolute top-1 right-1 w-5 h-5 rounded-[4px] flex items-center justify-center text-tx-3 hover:text-err hover:bg-err-soft transition-colors"
-                    >
-                      <X size={13} />
-                    </button>
-                    <label className="flex flex-col gap-0.5">
-                      <span className="text-[11px] text-tx-3">De</span>
-                      <CampoHora
-                        rotuloAcessivel={`Início ${nomeDia}`}
-                        valor={fx.hora_inicio.slice(0, 5)}
-                        aoSalvar={(v) => horariosDep.atualizar.mutate({ id: fx.id, valores: { hora_inicio: v } })}
-                        className="w-full"
-                      />
-                    </label>
-                    <label className="flex flex-col gap-0.5">
-                      <span className="text-[11px] text-tx-3">Até</span>
-                      <CampoHora
-                        rotuloAcessivel={`Fim ${nomeDia}`}
-                        valor={fx.hora_fim.slice(0, 5)}
-                        aoSalvar={(v) => horariosDep.atualizar.mutate({ id: fx.id, valores: { hora_fim: v } })}
-                        className="w-full"
-                      />
-                    </label>
-                  </div>
-                ))}
-              </div>
-            )
-          })}
-        </div>
+        <GradeHorarios
+          faixas={(horariosDep.lista.data ?? []).filter((f) => f.departamento_id === id)}
+          aoAdicionar={(dia) =>
+            horariosDep.adicionar.mutate({ departamento_id: id, dia_semana: dia, hora_inicio: '08:00', hora_fim: '18:00' })
+          }
+          aoAtualizar={(fid, valores) => horariosDep.atualizar.mutate({ id: fid, valores })}
+          aoRemover={(fid) => horariosDep.remover.mutate(fid)}
+        />
       </Bloco>
 
       <Bloco titulo="Motivos de finalização" descricao="Aparecem no Finalizar dos chamados deste departamento.">
