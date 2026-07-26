@@ -11,6 +11,7 @@ export type Usuario = {
   auth_user_id: string | null
   nome: string
   email: string
+  foto_url: string | null
   ativo: boolean
   status: 'ativo' | 'pendente' | 'inativo' | null
 }

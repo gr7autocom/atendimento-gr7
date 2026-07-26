@@ -87,7 +87,7 @@ export function BarraTopo({ titulo, menu }: { titulo: string; menu?: ReactNode }
             aria-expanded={aberto}
             className="flex items-center gap-2 h-8 pl-1 pr-1.5 rounded-[6px] hover:bg-sf-2 transition-colors duration-[120ms]"
           >
-            <Avatar nome={usuario?.nome ?? usuario?.email ?? '?'} tamanho={26} />
+            <Avatar nome={usuario?.nome ?? usuario?.email ?? '?'} fotoUrl={usuario?.foto_url} tamanho={26} />
             <span className="hidden sm:block text-[13px] text-tx-1 max-w-[140px] truncate">
               {usuario?.nome ?? 'Usuário'}
             </span>
@@ -127,7 +127,7 @@ export function BarraTopo({ titulo, menu }: { titulo: string; menu?: ReactNode }
             >
               <ArrowLeft size={18} />
             </button>
-            <Avatar nome={usuario?.nome ?? usuario?.email ?? '?'} tamanho={38} />
+            <Avatar nome={usuario?.nome ?? usuario?.email ?? '?'} fotoUrl={usuario?.foto_url} tamanho={38} />
             <div className="min-w-0">
               <div className="text-[14px] font-semibold text-tx-1 truncate">{usuario?.nome ?? 'Usuário'}</div>
               <div className="text-[12px] text-tx-3 truncate">{usuario?.permissao?.nome ?? usuario?.email}</div>
