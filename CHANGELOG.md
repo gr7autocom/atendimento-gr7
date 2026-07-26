@@ -20,6 +20,7 @@
 - Horário comercial no mesmo formato de grade dos departamentos, agora com horário partido (várias faixas por dia)
 - Contatos de uma empresa podem ser cadastrados na aba Contatos do cliente (painel), com cargo; o Atendimento reconhece quem fala por esse telefone
 - No painel do contato do atendimento agora dá para ver e editar o cargo de quem fala, e o campo do nome passou a se chamar "Nome"
+- A foto do usuário logado (a mesma do painel) aparece no menu do topo, no lugar das iniciais
 
 ---
 
