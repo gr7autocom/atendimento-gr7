@@ -54,6 +54,8 @@ Estados: `disconnected` → `connecting` → `connected`, e `hibernated` (sessã
 
 ## Fluxo técnico (Edge Functions, Deno)
 
+> **Esqueleto no código:** o adapter e as três Edge Functions já existem em `supabase/functions/` (modo mock por padrão, nada deployado). Passos de deploy e os pontos "A CONFIRMAR" em [../supabase/functions/README.md](../supabase/functions/README.md).
+
 - **Receber:** `whatsapp-webhook` (endpoint público) recebe o webhook da uazapi → valida → `normalizarWebhook` → deduplica por `wa_message_id` → casa/cria `contato` + `atendimento` → grava `atendimento_mensagens` (`entrada`) → realtime atualiza a inbox → dispara lógica do bot.
 - **Enviar:** `whatsapp-send` chama `/send/text` ou `/send/media` da uazapi (header `token`) via `enviarMensagem`, grava mensagem `saida`, atualiza status pelo webhook de status.
 - **Conexão:** `whatsapp-conexao` chama `/instance/connect` (QR/pairing) e `/instance/status` para a aba **Conexão** (`/admin/conexao`) — o token fica na Edge Function, nunca no frontend. Uma **pílula de status na barra do topo** (`BarraTopo` + `useStatusBot`) mostra "Bot conectado/desconectado" para admin e atendente, para o time perceber quando a sessão cai. Hoje é casca (sempre desconectado); vira automático quando o adapter existir.
