@@ -6,18 +6,17 @@
 
 _(nada no momento)_
 
-**Próximo:** o polimento das telas de admin está **concluído** (Departamentos, Tags, Mensagens rápidas, Horário, Atendentes, Configurações BOT e a casca da Conexão). O próximo grande bloco é a **integração uazapi** (adapter + webhook + envio + o QR real na aba Conexão), que **depende de conta/assinatura uazapi + número dedicado** (pré-requisito de negócio, ainda pendente).
+**Próximo:** o polimento das telas de admin está **concluído** e o **esqueleto da uazapi** já existe em `supabase/functions/` (adapter + 3 Edge Functions em modo mock). Sem depender das chaves dá para adiantar o **fluxo do bot** e **ligar a aba Conexão/pílula** ao driver mock. A **integração real** depende de conta/assinatura uazapi + número dedicado (pré-requisito de negócio, ainda pendente).
 
 ## 📋 Próximos passos
 
 ### Implementação (o que falta)
 
-1. [ ] (P0) **Plano 4 — Admin:** Configurações BOT (12 textos + flags), Horário de Funcionamento (comercial + plantão + plantonistas + msg fora de horário), Usuários (vínculo atendente↔departamento)
-2. [ ] (P0) **Inbox:** filas (Meus/Pendentes/Potenciais) · conversa · painel do contato · Assumir/Responder/Transferir/Finalizar · **adapter mock + bot simulado** (sem uazapi)
-3. [ ] (P1) **Etapa de design:** identidade visual **própria** do Atendimento (ADR-10), repolindo admin + inbox. Feita depois das telas, por decisão do cliente
-4. [ ] (P2) **Integração uazapi:** adapter real + webhook + envio (Seção 5 do design, adiada) — **depende de conta uazapi + número**
+1. [ ] (P1) **Fluxo do bot:** triagem, menu automático, roteamento, fora de horário e reabertura na Edge Function `whatsapp-webhook`, testável com o driver mock (ver [docs/bot.md](docs/bot.md))
+2. [ ] (P2) **Ligar a aba Conexão + pílula de status** ao `whatsapp-conexao` (por ora em modo mock: QR fake + status; vira real quando as chaves entrarem)
+3. [ ] (P2) **Integração uazapi real:** esqueleto pronto em `supabase/functions/`; falta fechar os "A CONFIRMAR" (payload do webhook, id na resposta de envio), o deploy e a configuração do webhook — **depende de conta uazapi + número**
 
-### Pré-requisitos externos (negócio — bloqueiam o passo 5)
+### Pré-requisitos externos (negócio — bloqueiam a integração real)
 
 - [ ] Conta/assinatura uazapi ativa + número de WhatsApp dedicado conectado (QR)
 - [ ] Confirmar reputação de estabilidade/uptime da uazapi antes de assinar

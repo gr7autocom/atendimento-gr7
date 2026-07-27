@@ -8,7 +8,7 @@ Substitui a dependência da Zintech, entregando o que faltava: **vínculo com a 
 
 ## Status
 
-🟡 **Em planejamento / design** — implementação ainda não iniciada. Ver [PROGRESSO.md](PROGRESSO.md).
+🟢 **MVP em implementação.** Base navegável pronta com dados reais: login, admin (departamentos, tags, mensagens rápidas, horários, atendentes, config do bot, aba Conexão) e inbox (filas, conversa, painel do contato, assumir/responder/transferir/finalizar). Falta a **integração real com a uazapi** — esqueleto pronto em `supabase/functions/`, aguardando conta + número. Ver [PROGRESSO.md](PROGRESSO.md).
 
 ## Stack
 
