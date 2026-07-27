@@ -86,7 +86,7 @@ Sidebar com as abas abaixo. Detalhe de cada aba chega por prints ao longo do des
 | **Tags** | CRUD de tags | sim |
 | **Mensagens rápidas** | grid full-width (palavra-chave/mensagem/departamento) + filtros; modal com **Departamento** (Todos ou um setor), palavra-chave e texto. No chat, `/` abre o seletor e insere trocando `{{agent.name}}`/`{{contact.name}}` | sim |
 | **Horário de Funcionamento** | **horário comercial** no mesmo padrão (`GradeHorarios`, 7 colunas por dia, HH:MM). Aceita **várias faixas por dia** (horário partido); dia sem faixa fica fechado. O **plantão** é por usuário, no card do atendente. Fora do comercial, só acessa quem tem plantão cobrindo a hora; reforçado no login e na RLS (`pode_atender_agora()`), admin sempre passa | sim |
-| **Configurações BOT** | edita os 12 textos do bot + flags (avaliação, nome do atendente, tempos) | sim |
+| **Configurações BOT** | bloco **Comportamento** (nome do bot, controle de potenciais, tempos e toggles: avaliação, nome do atendente, motivo ao finalizar, #sair) + bloco **Mensagens automáticas** (12 textos em 2 colunas, agrupados em Gerais/Atendimento, um só Salvar) | sim |
 | **Conexão** | conexão do WhatsApp por QR Code (passos + área do QR/status). **Casca por ora:** QR/sessão vêm do adapter uazapi quando a integração entrar (hoje mostra estado Desconectado, botão desabilitado) | sim |
 | **Relatórios** | listagens / exportação | placeholder (Fase 3) |
 

@@ -101,6 +101,7 @@ Horário comercial (MVP: global). CRUD na aba "Horário de Funcionamento".
 Ajustes globais chave-valor.
 - `chave` TEXT PK, `valor` TEXT, `updated_at`
 - Seeds: `janela_reabertura_horas = '3'`, `timezone = 'America/Sao_Paulo'`, `departamento_padrao_id`, `max_tentativas_menu = '2'`, `enviar_nome_atendente = 'true'`, `avaliacao_ativa = 'true'`, `tempo_avaliacao_min = '60'`
+- Chaves adicionais escritas pela tela **Configurações BOT** (2026-07-27, sem migration, via upsert): `nome_bot`, `controle_potenciais` (`nunca`/`novos_contatos`/`sem_atendimento`), `solicitar_motivo_finalizar`, `permitir_cliente_finalizar`
 
 ## Ciclo de vida e fluxo do bot
 

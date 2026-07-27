@@ -90,8 +90,10 @@ finalizado         se avaliacao_ativa: bot pede nota 0-10 (janela tempo_avaliaca
 
 ## Configurações que afetam o bot (`atendimento_config`)
 
-`janela_reabertura_horas` (3), `timezone` (America/Sao_Paulo), `departamento_padrao_id`, `max_tentativas_menu` (2), `enviar_nome_atendente` (true), `avaliacao_ativa` (true), `tempo_avaliacao_min` (60).
+`janela_reabertura_horas` (3), `timezone` (America/Sao_Paulo), `departamento_padrao_id`, `max_tentativas_menu` (2), `enviar_nome_atendente` (true), `avaliacao_ativa` (true), `tempo_avaliacao_min` (60), `nome_bot`, `controle_potenciais` (`nunca`/`novos_contatos`/`sem_atendimento`), `solicitar_motivo_finalizar` (true), `permitir_cliente_finalizar` (true).
+
+As quatro últimas foram adicionadas na tela Configurações BOT (2026-07-27), gravadas em `atendimento_config` sem migration. Ficam armazenadas e passam a valer quando o bot/uazapi rodar.
 
 ## Fora do escopo (pós-MVP)
 
-Palavras-chave, recado, controle de potenciais + timeouts, responder grupos, contatos de emergência estruturados, submenus (#voltar entre níveis). (O **controle de acesso por horário** saiu do pós-MVP: já implementado em 2026-07-25, ver ADR-09.)
+Palavras-chave, recado, timeouts do Zintech (prazo para virar potencial/recado), responder grupos, contatos de emergência estruturados, submenus (#voltar entre níveis). O **controle de potenciais** já é **configurável** na tela Configurações BOT (armazenado; a regra de roteamento roda quando o bot entrar). (O **controle de acesso por horário** saiu do pós-MVP: já implementado em 2026-07-25, ver ADR-09.)

@@ -4,6 +4,14 @@
 
 ---
 
+## 2026-07-27 — Tela de Configurações do bot
+
+- A tela de Configurações do bot foi reorganizada no padrão das demais telas de admin, em largura total
+- Novos ajustes: nome do bot, controle de potenciais, solicitar motivo ao finalizar e permitir o cliente finalizar com #sair
+- As mensagens automáticas agora ficam em duas colunas, agrupadas em Gerais e Atendimento, com um único botão para salvar
+
+---
+
 ## 2026-07-25 — Tags no atendimento e telas de admin
 
 - Departamentos e Tags reformulados: Departamentos em cards, e Tags com cor própria e escopo por departamento
