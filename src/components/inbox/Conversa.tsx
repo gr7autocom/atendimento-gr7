@@ -15,6 +15,7 @@ import {
   useMensagens,
   useEventos,
   useAcoesAtendimento,
+  useParticipantes,
   nomeEmpresa,
   type AtendimentoLista,
   type EventoAtendimento,
@@ -132,6 +133,7 @@ export function Conversa({
 }) {
   const mensagens = useMensagens(atendimento?.id ?? null)
   const eventos = useEventos(atendimento?.id ?? null)
+  const participantesChamado = useParticipantes(atendimento?.id ?? null)
   const { assumir, responder, finalizar, transferir } = useAcoesAtendimento()
   const departamentos = useCrud<Departamento>('departamentos')
   const motivos = useCrud<Motivo>('atendimento_motivos')
@@ -178,6 +180,9 @@ export function Conversa({
 
   const souResponsavel = atendimento.responsavel_id === usuarioId
   const semDono = !atendimento.responsavel_id
+  const souParticipante = (participantesChamado.lista.data ?? []).some((p) => p.usuario_id === usuarioId)
+  // Pode responder: o dono, um chamado sem dono (assume ao responder), ou um participante.
+  const podeResponder = souResponsavel || semDono || souParticipante
   const finalizado = atendimento.status === 'finalizado'
   const semCadastro = !atendimento.contato?.cliente_id
   // Tag é aplicada pelo atendente depois de pegar o chamado (ou pelo admin).
@@ -535,8 +540,8 @@ export function Conversa({
               <Botao
                 variante="primario"
                 type="submit"
-                disabled={!texto.trim() || (!souResponsavel && !semDono)}
-                title={!souResponsavel && !semDono ? 'Este chamado é de outro atendente' : undefined}
+                disabled={!texto.trim() || !podeResponder}
+                title={!podeResponder ? 'Este chamado é de outro atendente' : undefined}
                 icone={<Send size={15} />}
               >
                 Enviar

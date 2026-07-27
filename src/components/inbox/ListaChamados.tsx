@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Inbox as IconeInbox, Search, ListFilter, RotateCw, X, Building2 } from 'lucide-react'
-import { nomeEmpresa, type AtendimentoLista } from '../../lib/useInbox'
+import { nomeEmpresa, useMeusAtendimentosParticipante, type AtendimentoLista } from '../../lib/useInbox'
 import type { FiltroInbox } from '../../pages/Dashboard'
 import { useCrud } from '../../lib/useCrud'
 import { useUsuarios } from '../../lib/useVinculos'
@@ -54,6 +54,8 @@ export function ListaChamados({
   const departamentos = useCrud<Departamento>('departamentos', 'ordem')
   const usuarios = useUsuarios()
   const { isAdmin } = usePermissao()
+  const participo = useMeusAtendimentosParticipante(usuarioId)
+  const participoIds = participo.data ?? new Set<string>()
 
   const setorFiltro = filtro.departamentoId ?? ''
   const atendenteFiltro = filtro.atendenteId
@@ -67,8 +69,12 @@ export function ListaChamados({
   // Admin enxerga tudo: em "Ativos" vê os de todos os atendentes, não só os dele.
   const base = atendimentos.filter((a) => a.status !== 'finalizado')
   const semCadastro = (a: AtendimentoLista) => !a.contato?.cliente_id
+  // Sou participante deste chamado (mas não o responsável)?
+  const participoDe = (a: AtendimentoLista) => a.responsavel_id !== usuarioId && participoIds.has(a.id)
   const listas: Record<Fila, AtendimentoLista[]> = {
-    ativos: base.filter((a) => (isAdmin ? !!a.responsavel_id : a.responsavel_id === usuarioId)),
+    ativos: base.filter((a) =>
+      isAdmin ? !!a.responsavel_id : a.responsavel_id === usuarioId || participoIds.has(a.id)
+    ),
     pendentes: base.filter((a) => a.status === 'na_fila' && !a.responsavel_id && !semCadastro(a)),
     potenciais: base.filter((a) => !a.responsavel_id && semCadastro(a)),
   }
@@ -219,6 +225,11 @@ export function ListaChamados({
                   <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
                     <PontoStatus status={a.status} />
                     <span className="text-[12px] text-tx-2 italic truncate">{setor ?? 'Sem setor'}</span>
+                    {participoDe(a) && (
+                      <span className="shrink-0 inline-flex items-center h-[16px] px-1.5 rounded-[4px] bg-br-soft text-br-2 text-[10px] font-semibold uppercase tracking-wide">
+                        Participo
+                      </span>
+                    )}
                   </div>
                   <div className="mt-1">
                     <span className="dado text-[11px] text-tx-3 truncate">{a.contato?.telefone ?? ''}</span>

@@ -252,6 +252,99 @@ export function useAtualizarContato() {
   })
 }
 
+/**
+ * Contadores do contato para o cabeçalho do painel: total de atendimentos e de
+ * mensagens trocadas (todas as conversas dele). Conta pelo que a RLS deixa ver
+ * (admin vê tudo; atendente vê os seus + a fila livre).
+ */
+export function useContadoresContato(contatoId: string | null) {
+  return useQuery({
+    queryKey: ['contadores_contato', contatoId],
+    enabled: !!contatoId,
+    queryFn: async () => {
+      const [at, msg] = await Promise.all([
+        supabase
+          .from('atendimentos')
+          .select('id', { count: 'exact', head: true })
+          .eq('contato_id', contatoId as string),
+        supabase
+          .from('atendimento_mensagens')
+          .select('id, atendimento:atendimentos!inner(contato_id)', { count: 'exact', head: true })
+          .eq('atendimento.contato_id', contatoId as string),
+      ])
+      return { atendimentos: at.count ?? 0, mensagens: msg.count ?? 0 }
+    },
+  })
+}
+
+export type Participante = {
+  id: string
+  usuario_id: string
+  usuario: { id: string; nome: string; foto_url: string | null } | null
+}
+
+/**
+ * Participantes de um atendimento: atendentes adicionados além do responsável,
+ * para conversar no mesmo chamado. Adicionar/remover só pelo responsável ou
+ * admin (garantido pela RLS). Ver docs/db.md.
+ */
+export function useParticipantes(atendimentoId: string | null) {
+  const qc = useQueryClient()
+  const invalidar = () => qc.invalidateQueries({ queryKey: ['participantes', atendimentoId] })
+
+  const lista = useQuery({
+    queryKey: ['participantes', atendimentoId],
+    enabled: !!atendimentoId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('atendimento_participantes')
+        // desambigua a FK: há usuario_id e adicionado_por apontando para usuarios
+        .select('id, usuario_id, usuario:usuarios!usuario_id(id, nome, foto_url), created_at')
+        .eq('atendimento_id', atendimentoId as string)
+        .order('created_at')
+      if (error) throw error
+      return (data ?? []) as unknown as Participante[]
+    },
+  })
+
+  const adicionar = useMutation({
+    mutationFn: async (usuarioId: string) => {
+      const { error } = await supabase
+        .from('atendimento_participantes')
+        .insert({ atendimento_id: atendimentoId, usuario_id: usuarioId } as never)
+      if (error) throw error
+    },
+    onSuccess: invalidar,
+  })
+
+  const remover = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('atendimento_participantes').delete().eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: invalidar,
+  })
+
+  return { lista, adicionar, remover }
+}
+
+/** Ids dos atendimentos em que o usuário logado entra como participante (não dono). */
+export function useMeusAtendimentosParticipante(usuarioId: string | null) {
+  return useQuery({
+    queryKey: ['meus_participante', usuarioId],
+    enabled: !!usuarioId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('atendimento_participantes')
+        .select('atendimento_id')
+        .eq('usuario_id', usuarioId as string)
+      if (error) throw error
+      return new Set((data ?? []).map((r) => (r as { atendimento_id: string }).atendimento_id))
+    },
+    refetchInterval: 15000,
+  })
+}
+
 export function useAcoesAtendimento() {
   const qc = useQueryClient()
   const invalidar = () => {
