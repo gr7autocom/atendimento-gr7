@@ -31,3 +31,11 @@ export function extrairCnpj(texto: string): string | null {
   const m = (texto ?? '').match(/\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2}/)
   return m ? m[0].replace(/\D/g, '') : null
 }
+
+/** Nota de avaliação (0 a 10) numa mensagem livre; null se não achar. */
+export function extrairNota(texto: string): number | null {
+  const m = (texto ?? '').match(/\b(10|[0-9])\b/)
+  if (!m) return null
+  const n = Number(m[1])
+  return n >= 0 && n <= 10 ? n : null
+}

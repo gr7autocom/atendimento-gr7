@@ -5,6 +5,7 @@ import { aplicarVariaveis } from '../_shared/bot/variaveis.ts'
 import {
   ehComandoSair,
   extrairCnpj,
+  extrairNota,
   interpretarEscolha,
   montarMenu,
   type Departamento,
@@ -70,6 +71,20 @@ async function acharTicketAberto(sb: any, contatoId: string): Promise<Ticket | n
     .eq('contato_id', contatoId)
     .in('status', ['triagem', 'na_fila', 'em_atendimento'])
     .order('created_at', { ascending: false })
+    .limit(1)
+  return (data && data[0]) || null
+}
+
+/** Ticket recém-finalizado aguardando a nota de avaliação do cliente. */
+async function acharTicketAvaliacao(sb: any, contatoId: string) {
+  const { data } = await sb
+    .from('atendimentos')
+    .select('id, protocolo, avaliacao_solicitada_em')
+    .eq('contato_id', contatoId)
+    .eq('status', 'finalizado')
+    .not('avaliacao_solicitada_em', 'is', null)
+    .is('avaliacao', null)
+    .order('finalizado_em', { ascending: false })
     .limit(1)
   return (data && data[0]) || null
 }
@@ -177,6 +192,34 @@ Deno.serve(async (req: Request) => {
     const aplica = (chave: string, empresa?: string | null, departamento?: string | null) =>
       aplicarVariaveis(msgs[chave] ?? '', vars(nomeContato, ticket, empresa, departamento))
     const menuTexto = () => `${aplica('instrucao_menu')}\n${montarMenu(deps)}`
+
+    // Avaliação: se há um atendimento recém-finalizado aguardando a nota, a
+    // mensagem é interpretada como a avaliação (dentro do prazo configurado).
+    const ticketAval = await acharTicketAvaliacao(sb, contato.id)
+    if (ticketAval) {
+      const min = Number(cfg['tempo_avaliacao_min'] ?? '60')
+      const limite = new Date(ticketAval.avaliacao_solicitada_em).getTime() + min * 60000
+      if (Date.now() < limite) {
+        await gravarEntrada(sb, ticketAval.id, evento.wa_message_id, evento.corpo)
+        const v = (chave: string) =>
+          aplicarVariaveis(msgs[chave] ?? '', {
+            contato: nomeContato,
+            empresa: '',
+            protocolo: String(ticketAval.protocolo ?? ''),
+            departamento: '',
+            atendente: '',
+            horario: '',
+          })
+        const nota = extrairNota(evento.corpo ?? '')
+        if (nota === null) {
+          await enviarBot(sb, driver, evento.telefone, ticketAval.id, [v('avaliacao_invalida')])
+        } else {
+          await sb.from('atendimentos').update({ avaliacao: nota, etapa_bot: null }).eq('id', ticketAval.id)
+          await enviarBot(sb, driver, evento.telefone, ticketAval.id, [v('agradecimento_avaliacao')])
+        }
+        return respostaJson({ ok: true, avaliacao: nota })
+      }
+    }
 
     let ticket = await acharTicketAberto(sb, contato.id)
 
