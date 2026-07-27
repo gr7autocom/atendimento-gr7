@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Plus, Pencil, Trash2, ChevronUp, ChevronDown } from 'lucide-react'
+import { ArrowLeft, Plus, Pencil, Trash2, ChevronUp, ChevronDown, FileText, Clock, ListChecks } from 'lucide-react'
 import { useCrud } from '../../lib/useCrud'
 import { useHorariosDepartamento } from '../../lib/useHorariosDepartamento'
 import { Botao } from '../../components/ui/Botao'
@@ -9,10 +9,17 @@ import { Modal } from '../../components/ui/Modal'
 import { Selo } from '../../components/ui/Selo'
 import { Skeleton } from '../../components/ui/Estados'
 import { GradeHorarios } from '../../components/admin/GradeHorarios'
-import { Bloco } from '../../components/admin/Bloco'
+import { Abas, PainelAba, type AbaItem } from '../../components/admin/Abas'
 
 type Departamento = { id: string; nome: string; ordem: number; ativo?: boolean }
 type Motivo = { id: string; nome: string; ordem?: number; ativo?: boolean; departamento_id?: string | null }
+type Aba = 'dados' | 'horario' | 'motivos'
+
+const ABAS: AbaItem<Aba>[] = [
+  { id: 'dados', label: 'Dados', icone: FileText },
+  { id: 'horario', label: 'Horário', icone: Clock },
+  { id: 'motivos', label: 'Motivos', icone: ListChecks },
+]
 
 const campoNovo =
   'flex-1 h-9 px-3 text-sm rounded-[6px] bg-sf-2 border border-bd-2 text-tx-1 placeholder:text-tx-3 ' +
@@ -27,6 +34,7 @@ export function DepartamentoDetalhe() {
 
   const dep = (lista.data ?? []).find((d) => d.id === id) ?? null
 
+  const [aba, setAba] = useState<Aba>('dados')
   const [nome, setNome] = useState('')
   const [numero, setNumero] = useState('')
   const [novoMotivo, setNovoMotivo] = useState('')
@@ -125,45 +133,46 @@ export function DepartamentoDetalhe() {
         </button>
       </div>
 
-      <Bloco titulo="Dados">
-        <div className="flex flex-wrap items-end gap-3">
-          <div className="w-24">
-            <Entrada rotulo="Número" type="number" min={1} value={numero} onChange={(e) => setNumero(e.target.value)} />
-          </div>
-          <div className="flex-1 min-w-[200px]">
-            <Entrada rotulo="Nome" value={nome} onChange={(e) => setNome(e.target.value)} />
-          </div>
-          <Botao variante="primario" tamanho="sm" onClick={salvarDados}>
-            Salvar
-          </Botao>
-        </div>
-      </Bloco>
+      <Abas abas={ABAS} ativo={aba} aoSelecionar={setAba} />
 
-      <Bloco
-        titulo="Horário de atendimento"
-        topicos={[
-          'Defina as faixas em que o departamento fica disponível.',
-          'Sem faixa definida, o departamento segue o horário comercial.',
-          'Para atender 24 horas, preencha De 00:00 e Até 00:00.',
-        ]}
-      >
-        <GradeHorarios
-          faixas={(horariosDep.lista.data ?? []).filter((f) => f.departamento_id === id)}
-          aoAdicionar={(dia) =>
-            horariosDep.adicionar.mutate({ departamento_id: id, dia_semana: dia, hora_inicio: '08:00', hora_fim: '18:00' })
-          }
-          aoAtualizar={(fid, valores) => horariosDep.atualizar.mutate({ id: fid, valores })}
-          aoRemover={(fid) => horariosDep.remover.mutate(fid)}
-        />
-      </Bloco>
-
-      <Bloco
-        titulo="Motivos de finalização"
-        topicos={[
-          'Defina os motivos que o atendente escolhe ao finalizar um chamado deste departamento.',
-          'Use as setas para definir a ordem em que os motivos aparecem na tela de Finalizar.',
-        ]}
-      >
+      {aba === 'dados' ? (
+        <PainelAba>
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="w-24">
+              <Entrada rotulo="Número" type="number" min={1} value={numero} onChange={(e) => setNumero(e.target.value)} />
+            </div>
+            <div className="flex-1 min-w-[200px]">
+              <Entrada rotulo="Nome" value={nome} onChange={(e) => setNome(e.target.value)} />
+            </div>
+            <Botao variante="primario" tamanho="sm" onClick={salvarDados}>
+              Salvar
+            </Botao>
+          </div>
+        </PainelAba>
+      ) : aba === 'horario' ? (
+        <PainelAba
+          topicos={[
+            'Defina as faixas em que o departamento fica disponível.',
+            'Sem faixa definida, o departamento segue o horário comercial.',
+            'Para atender 24 horas, preencha De 00:00 e Até 00:00.',
+          ]}
+        >
+          <GradeHorarios
+            faixas={(horariosDep.lista.data ?? []).filter((f) => f.departamento_id === id)}
+            aoAdicionar={(dia) =>
+              horariosDep.adicionar.mutate({ departamento_id: id, dia_semana: dia, hora_inicio: '08:00', hora_fim: '18:00' })
+            }
+            aoAtualizar={(fid, valores) => horariosDep.atualizar.mutate({ id: fid, valores })}
+            aoRemover={(fid) => horariosDep.remover.mutate(fid)}
+          />
+        </PainelAba>
+      ) : (
+        <PainelAba
+          topicos={[
+            'Defina os motivos que o atendente escolhe ao finalizar um chamado deste departamento.',
+            'Use as setas para definir a ordem em que os motivos aparecem na tela de Finalizar.',
+          ]}
+        >
         <div className="flex gap-2 mb-3">
           <input
             value={novoMotivo}
@@ -238,7 +247,8 @@ export function DepartamentoDetalhe() {
             ))}
           </div>
         )}
-      </Bloco>
+        </PainelAba>
+      )}
 
       <Modal titulo="Editar motivo" aberto={!!editando} onFechar={() => setEditando(null)}>
         <form

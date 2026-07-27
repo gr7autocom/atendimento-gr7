@@ -71,7 +71,7 @@ export function Usuarios() {
       {usuarios.isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-48" />
+            <Skeleton key={i} className="h-28" />
           ))}
         </div>
       ) : filtrados.length === 0 ? (
@@ -99,32 +99,41 @@ export function Usuarios() {
                   }
                 }}
                 aria-label={`Configurar ${u.nome}`}
-                className="group flex flex-col items-center text-center cursor-pointer rounded-[10px] border border-bd-1 bg-sf-1 p-4 transition-colors hover:border-bd-2 focus:outline-none focus:ring-2 focus:ring-[color:var(--br-soft)]"
+                className="group flex flex-col text-left cursor-pointer rounded-[10px] border border-bd-1 bg-sf-1 p-3.5 transition-colors hover:border-bd-2 focus:outline-none focus:ring-2 focus:ring-[color:var(--br-soft)]"
               >
-                <Avatar nome={u.nome} fotoUrl={u.foto_url} tamanho={72} />
-                <p className="mt-2.5 text-sm font-medium text-tx-1 truncate max-w-full">{u.nome}</p>
-                <p className="text-[12px] text-tx-3 truncate max-w-full">{u.email}</p>
-                <Selo tom={u.ativo ? 'ok' : 'neutro'} className="mt-1.5">
-                  {u.ativo ? 'Ativo' : 'Inativo'}
-                </Selo>
-
-                <div className="mt-3 pt-3 w-full border-t border-bd-1 flex flex-wrap justify-center gap-1">
-                  {setores.length === 0 ? (
-                    <span className="text-[12px] text-tx-3">Sem departamento</span>
-                  ) : (
-                    setores.map((id) => (
-                      <span
-                        key={id}
-                        className="inline-flex items-center h-5 px-1.5 rounded-[4px] bg-sf-2 border border-bd-2 text-[10px] font-medium uppercase tracking-wide text-tx-2 truncate max-w-full"
-                      >
-                        {nomeDep(id)}
-                      </span>
-                    ))
-                  )}
+                <div className="flex items-start gap-3">
+                  <div className="shrink-0">
+                    <Avatar nome={u.nome} fotoUrl={u.foto_url} tamanho={40} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-tx-1 truncate" title={u.nome}>
+                      {u.nome}
+                    </p>
+                    <p className="text-[12px] text-tx-3 truncate" title={u.email}>
+                      {u.email}
+                    </p>
+                  </div>
+                  <Selo tom={u.ativo ? 'ok' : 'neutro'}>{u.ativo ? 'Ativo' : 'Inativo'}</Selo>
                 </div>
 
-                <div className="mt-2 inline-flex items-center gap-1 text-[12px] text-tx-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Pencil size={13} /> Configurar
+                <div className="flex items-center justify-between gap-2 mt-3 pt-3 border-t border-bd-1">
+                  <div className="flex flex-wrap items-center gap-1 min-w-0">
+                    {setores.length === 0 ? (
+                      <span className="text-[12px] text-tx-3">Sem departamento</span>
+                    ) : (
+                      setores.map((id) => (
+                        <span
+                          key={id}
+                          className="inline-flex items-center h-5 px-1.5 rounded-[4px] bg-sf-2 border border-bd-2 text-[10px] font-medium uppercase tracking-wide text-tx-2 truncate max-w-full"
+                        >
+                          {nomeDep(id)}
+                        </span>
+                      ))
+                    )}
+                  </div>
+                  <span className="shrink-0 inline-flex items-center gap-1 text-[12px] text-tx-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                    <Pencil size={14} /> Configurar
+                  </span>
                 </div>
               </div>
             )

@@ -1,15 +1,15 @@
 import { useEffect, useState } from 'react'
 import { Settings2, Headset, UserPlus } from 'lucide-react'
 import { useBotMensagens, useConfig } from '../../lib/useConfig'
-import { cn } from '../../lib/utils'
 import { Botao } from '../../components/ui/Botao'
 import { AreaTexto, Entrada, Selecao } from '../../components/ui/Campo'
 import { LinhasCarregando } from '../../components/ui/Estados'
 import { CabecalhoAdmin } from '../../components/admin/CabecalhoAdmin'
+import { Abas, type AbaItem } from '../../components/admin/Abas'
 
 type Aba = 'geral' | 'atendimento' | 'potenciais'
 
-const ABAS: { id: Aba; label: string; icone: typeof Settings2 }[] = [
+const ABAS: AbaItem<Aba>[] = [
   { id: 'geral', label: 'Geral', icone: Settings2 },
   { id: 'atendimento', label: 'Atendimento', icone: Headset },
   { id: 'potenciais', label: 'Potenciais', icone: UserPlus },
@@ -165,26 +165,7 @@ export function ConfiguracoesBot() {
         descricao="Defina como o bot se apresenta ao cliente e o que ele faz antes de passar para um atendente."
       />
 
-      <div className="flex flex-wrap gap-1">
-        {ABAS.map((a) => {
-          const Icone = a.icone
-          const ativo = aba === a.id
-          return (
-            <button
-              key={a.id}
-              type="button"
-              onClick={() => setAba(a.id)}
-              className={cn(
-                'flex items-center gap-2 h-9 px-3.5 rounded-[8px] text-[13px] font-medium transition-colors duration-[120ms]',
-                ativo ? 'bg-br-1 text-white' : 'text-tx-2 hover:text-tx-1 hover:bg-sf-2'
-              )}
-            >
-              <Icone size={15} />
-              {a.label}
-            </button>
-          )
-        })}
-      </div>
+      <Abas abas={ABAS} ativo={aba} aoSelecionar={setAba} />
 
       <div className="rounded-[10px] border border-bd-1 bg-sf-1 p-5">
         {mensagens.isLoading ? (

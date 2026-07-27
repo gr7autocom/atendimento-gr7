@@ -1,5 +1,6 @@
+import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Building2, Clock } from 'lucide-react'
 import { useCrud } from '../../lib/useCrud'
 import { useVinculos, useUsuarios } from '../../lib/useVinculos'
 import { useHorariosAcesso } from '../../lib/useHorariosAcesso'
@@ -7,10 +8,16 @@ import { Avatar } from '../../components/ui/Avatar'
 import { Selo } from '../../components/ui/Selo'
 import { Skeleton } from '../../components/ui/Estados'
 import { GradeHorarios } from '../../components/admin/GradeHorarios'
-import { Bloco } from '../../components/admin/Bloco'
+import { Abas, PainelAba, type AbaItem } from '../../components/admin/Abas'
 import { cn } from '../../lib/utils'
 
 type Departamento = { id: string; nome: string; ativo?: boolean }
+type Aba = 'departamentos' | 'plantao'
+
+const ABAS: AbaItem<Aba>[] = [
+  { id: 'departamentos', label: 'Departamentos', icone: Building2 },
+  { id: 'plantao', label: 'Plantão', icone: Clock },
+]
 
 export function AtendenteDetalhe() {
   const { id = '' } = useParams()
@@ -19,6 +26,7 @@ export function AtendenteDetalhe() {
   const departamentos = useCrud<Departamento>('departamentos', 'ordem')
   const vinculos = useVinculos('atendente_departamentos', 'usuario_id', 'departamento_id')
   const horarios = useHorariosAcesso()
+  const [aba, setAba] = useState<Aba>('departamentos')
 
   const usuario = (usuarios.data ?? []).find((u) => u.id === id) ?? null
   const deps = departamentos.lista.data ?? []
@@ -69,57 +77,59 @@ export function AtendenteDetalhe() {
         <Selo tom={usuario.ativo ? 'ok' : 'neutro'}>{usuario.ativo ? 'Ativo' : 'Inativo'}</Selo>
       </div>
 
-      <Bloco
-        titulo="Departamentos que atende"
-        topicos={[
-          'Marque os departamentos que este atendente atende.',
-          'Ele só vê as filas dos departamentos marcados.',
-        ]}
-      >
-        <div className="flex flex-wrap gap-1.5">
-          {deps.map((d) => {
-            const marcado = marcados.includes(d.id)
-            return (
-              <button
-                key={d.id}
-                type="button"
-                aria-pressed={marcado}
-                onClick={() =>
-                  marcado
-                    ? vinculos.desvincular.mutate({ usuario_id: id, departamento_id: d.id })
-                    : vinculos.vincular.mutate({ usuario_id: id, departamento_id: d.id })
-                }
-                className={cn(
-                  'h-8 px-3 rounded-[6px] text-[13px] border transition-colors duration-[120ms]',
-                  marcado
-                    ? 'bg-br-soft text-br-2 border-transparent font-medium'
-                    : 'bg-sf-2 text-tx-2 border-bd-2 hover:text-tx-1 hover:border-bd-3'
-                )}
-              >
-                {d.nome}
-              </button>
-            )
-          })}
-        </div>
-      </Bloco>
+      <Abas abas={ABAS} ativo={aba} aoSelecionar={setAba} />
 
-      <Bloco
-        titulo="Horário de plantão"
-        topicos={[
-          'Defina as faixas em que o atendente atende fora do horário comercial.',
-          'Sem faixa definida, vale apenas o horário comercial.',
-          'Para plantão 24 horas, preencha De 00:00 e Até 00:00.',
-        ]}
-      >
-        <GradeHorarios
-          faixas={(horarios.lista.data ?? []).filter((f) => f.usuario_id === id)}
-          aoAdicionar={(dia) =>
-            horarios.adicionar.mutate({ usuario_id: id, dia_semana: dia, hora_inicio: '18:00', hora_fim: '22:00' })
-          }
-          aoAtualizar={(fid, valores) => horarios.atualizar.mutate({ id: fid, valores })}
-          aoRemover={(fid) => horarios.remover.mutate(fid)}
-        />
-      </Bloco>
+      {aba === 'departamentos' ? (
+        <PainelAba
+          topicos={[
+            'Marque os departamentos que este atendente atende.',
+            'Ele só vê as filas dos departamentos marcados.',
+          ]}
+        >
+          <div className="flex flex-wrap gap-1.5">
+            {deps.map((d) => {
+              const marcado = marcados.includes(d.id)
+              return (
+                <button
+                  key={d.id}
+                  type="button"
+                  aria-pressed={marcado}
+                  onClick={() =>
+                    marcado
+                      ? vinculos.desvincular.mutate({ usuario_id: id, departamento_id: d.id })
+                      : vinculos.vincular.mutate({ usuario_id: id, departamento_id: d.id })
+                  }
+                  className={cn(
+                    'h-8 px-3 rounded-[6px] text-[13px] border transition-colors duration-[120ms]',
+                    marcado
+                      ? 'bg-br-soft text-br-2 border-transparent font-medium'
+                      : 'bg-sf-2 text-tx-2 border-bd-2 hover:text-tx-1 hover:border-bd-3'
+                  )}
+                >
+                  {d.nome}
+                </button>
+              )
+            })}
+          </div>
+        </PainelAba>
+      ) : (
+        <PainelAba
+          topicos={[
+            'Defina as faixas em que o atendente atende fora do horário comercial.',
+            'Sem faixa definida, vale apenas o horário comercial.',
+            'Para plantão 24 horas, preencha De 00:00 e Até 00:00.',
+          ]}
+        >
+          <GradeHorarios
+            faixas={(horarios.lista.data ?? []).filter((f) => f.usuario_id === id)}
+            aoAdicionar={(dia) =>
+              horarios.adicionar.mutate({ usuario_id: id, dia_semana: dia, hora_inicio: '18:00', hora_fim: '22:00' })
+            }
+            aoAtualizar={(fid, valores) => horarios.atualizar.mutate({ id: fid, valores })}
+            aoRemover={(fid) => horarios.remover.mutate(fid)}
+          />
+        </PainelAba>
+      )}
     </div>
   )
 }
