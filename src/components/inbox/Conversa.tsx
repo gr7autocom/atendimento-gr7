@@ -498,7 +498,7 @@ export function Conversa({
           </Selecao>
           <Selecao
             rotulo="Atendente"
-            dica="Sem escolher ninguém, o chamado volta para a fila do departamento."
+            dica="Sem escolher ninguém, volta para a fila do departamento para qualquer atendente assumir."
             value={destinoUsuario}
             onChange={(e) => setDestinoUsuario(e.target.value)}
           >
@@ -515,7 +515,14 @@ export function Conversa({
             </Botao>
             <Botao
               variante="primario"
-              disabled={!destinoDep && !destinoUsuario}
+              disabled={
+                !(
+                  (destinoDep && destinoDep !== atendimento.departamento_id) ||
+                  (destinoUsuario
+                    ? destinoUsuario !== atendimento.responsavel_id
+                    : !!atendimento.responsavel_id)
+                )
+              }
               onClick={() => {
                 transferir.mutate({
                   id: atendimento.id,
