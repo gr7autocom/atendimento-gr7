@@ -10,6 +10,13 @@ import {
   montarMenu,
   type Departamento,
 } from '../_shared/bot/fluxo.ts'
+import {
+  estaAberto,
+  momentoNoFuso,
+  resumoComercial,
+  temPlantonista,
+  type Faixa,
+} from '../_shared/bot/horario.ts'
 
 // Webhook público: recebe os eventos da uazapi e roda o fluxo do bot. Responde
 // 200 rápido. Roda com service role, ignorando a RLS de propósito. Ver docs/bot.md.
@@ -60,6 +67,35 @@ async function carregarDepartamentos(sb: any): Promise<Departamento[]> {
     .eq('ativo', true)
     .order('ordem')
   return (data ?? []) as Departamento[]
+}
+
+// `atendimento_horarios` (comercial) tem coluna `ativo`; `atendimento_usuario_horarios`
+// (janelas de plantão) não — daí o parâmetro para não pedir coluna inexistente.
+async function carregarFaixas(sb: any, tabela: string, comAtivo: boolean): Promise<Faixa[]> {
+  const cols = comAtivo ? 'dia_semana, hora_inicio, hora_fim, ativo' : 'dia_semana, hora_inicio, hora_fim'
+  const { data } = await sb.from(tabela).select(cols)
+  return (data ?? []) as Faixa[]
+}
+
+/**
+ * Ticket recém-finalizado que ficou sem a formalização da nota: reabrível.
+ * `avaliacao_solicitada_em` não-nulo garante que foi o atendente quem finalizou
+ * com a avaliação ativa (o #sair e a avaliação desligada não marcam esse campo);
+ * `avaliacao` nula garante que o cliente não deu a nota. Ver docs/bot.md.
+ */
+async function acharTicketReabertura(sb: any, contatoId: string, janelaHoras: number) {
+  const limite = new Date(Date.now() - janelaHoras * 3600_000).toISOString()
+  const { data } = await sb
+    .from('atendimentos')
+    .select('id, protocolo, departamento_id')
+    .eq('contato_id', contatoId)
+    .eq('status', 'finalizado')
+    .gte('finalizado_em', limite)
+    .is('avaliacao', null)
+    .not('avaliacao_solicitada_em', 'is', null)
+    .order('finalizado_em', { ascending: false })
+    .limit(1)
+  return (data && data[0]) || null
 }
 
 const SELECT_TICKET = 'id, protocolo, status, tentativas_menu, departamento_id, etapa_bot'
@@ -223,14 +259,53 @@ Deno.serve(async (req: Request) => {
 
     let ticket = await acharTicketAberto(sb, contato.id)
 
-    // Novo contato: se não tem cadastro, pede identificação antes do menu.
     if (!ticket) {
+      // Continuação recente sem a nota formalizada: reabre o MESMO chamado (sem
+      // menu), em vez de abrir outro. Fora dessa condição, é chamado novo.
+      const janelaHoras = Number(cfg['janela_reabertura_horas'] ?? '3')
+      const reab = await acharTicketReabertura(sb, contato.id, janelaHoras)
+      if (reab) {
+        await sb
+          .from('atendimentos')
+          .update({ status: 'na_fila', responsavel_id: null, etapa_bot: null, ultima_mensagem_em: agora() })
+          .eq('id', reab.id)
+        await gravarEntrada(sb, reab.id, evento.wa_message_id, evento.corpo)
+        return respostaJson({ ok: true, reaberto: true, protocolo: reab.protocolo })
+      }
+
+      // Chamado novo: decide pelo horário (comercial / plantão / fora).
+      const [comercial, janelas] = await Promise.all([
+        carregarFaixas(sb, 'atendimento_horarios', true),
+        carregarFaixas(sb, 'atendimento_usuario_horarios', false),
+      ])
+      const momento = momentoNoFuso(cfg['timezone'] ?? 'America/Sao_Paulo', new Date())
+      const aberto = estaAberto(comercial, momento)
+      const plantao = !aberto && temPlantonista(janelas, momento)
+
+      if (!aberto && !plantao) {
+        // Fora do comercial e sem plantonista: só direciona, não cria ticket.
+        await driver.enviarMensagem(evento.telefone, {
+          tipo: 'texto',
+          texto: aplicarVariaveis(msgs['fora_horario'] ?? '', {
+            contato: nomeContato,
+            empresa: '',
+            protocolo: '',
+            departamento: '',
+            atendente: '',
+            horario: resumoComercial(comercial),
+          }),
+        })
+        return respostaJson({ ok: true, fora_horario: true })
+      }
+
+      // Saudação do plantão substitui a boas-vindas; o resto do fluxo é igual.
       const conhecido = !!contato.cliente_id
       ticket = await criarTicketTriagem(sb, contato.id, conhecido ? 'menu' : 'identificacao')
       await gravarEntrada(sb, ticket.id, evento.wa_message_id, evento.corpo)
+      const saudacao = plantao ? aplica('plantao') : aplica('bem_vindo')
       await enviarBot(sb, driver, evento.telefone, ticket.id,
-        conhecido ? [aplica('bem_vindo'), menuTexto()] : [aplica('bem_vindo'), aplica('pedir_identificacao')])
-      return respostaJson({ ok: true, protocolo: ticket.protocolo })
+        conhecido ? [saudacao, menuTexto()] : [saudacao, aplica('pedir_identificacao')])
+      return respostaJson({ ok: true, protocolo: ticket.protocolo, plantao })
     }
 
     await gravarEntrada(sb, ticket.id, evento.wa_message_id, evento.corpo)

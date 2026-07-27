@@ -2,7 +2,7 @@
 
 > **Status: aprovado (Seção 3 do design, 2026-07-23).** O bot roda na Edge Function do webhook e trabalha **por ticket**: cada chamado é um ticket; ao encerrar, finaliza. Estados alinhados a [db.md](db.md): `triagem` → `na_fila` → `em_atendimento` → `finalizado`.
 >
-> **Implementado (2026-07-27, modo mock, deployado):** o `whatsapp-webhook` já roda o fluxo — boas-vindas + menu, **identificação do potencial antes do menu com auto-vínculo por CNPJ**, fila, opção inválida (limite → padrão), `#sair`, e **avaliação ao finalizar** (Fase 2). Sub-estado da conversa em `atendimentos.etapa_bot` (`identificacao` | `menu` | `avaliacao`). **Falta:** fora de horário/plantão pela agenda e reabertura em 3h. Como não há uazapi, o envio é mock (mensagens gravadas, não saem no WhatsApp).
+> **Implementado (2026-07-27, modo mock, deployado):** o `whatsapp-webhook` já roda o fluxo — boas-vindas + menu, **identificação do potencial antes do menu com auto-vínculo por CNPJ**, fila, opção inválida (limite → padrão), `#sair`, **avaliação ao finalizar** (Fase 2), e **decisão por horário/plantão + reabertura em 3h** (lógica pura em `_shared/bot/horario.ts`). Sub-estado da conversa em `atendimentos.etapa_bot` (`identificacao` | `menu` | `avaliacao`). Como não há uazapi, o envio é mock (mensagens gravadas, não saem no WhatsApp).
 
 ## Placeholders das mensagens
 
@@ -66,7 +66,7 @@ finalizado         se avaliacao_ativa: bot pede nota 0-10 (janela tempo_avaliaca
 
 - **Assumir:** fila compartilhada; clicar "Assumir" vira dono. **Responder já assume** se ninguém pegou. (ADR-05)
 - **Menu automático** dos departamentos ativos. (ADR-06)
-- **Janela de reabertura 3h:** dentro da janela reaproveita o ticket (volta pra fila do departamento, sem menu); passada, ticket novo. (ADR-07)
+- **Janela de reabertura 3h:** só reabre quando o atendimento foi **finalizado pelo atendente e a nota ficou pendente** (`avaliacao_solicitada_em` preenchido, `avaliacao` nula). Nesse caso, uma nova mensagem em até 3h reaproveita o mesmo ticket (volta pra fila do departamento, sem menu). Nota dada, `#sair` ou avaliação desligada = atendimento concluído → ticket novo, independente da hora. Entre 0 e `tempo_avaliacao_min` a mensagem ainda é lida como nota; desse limite até 3h, reabre. (ADR-07)
 - **Fallback de triagem:** 2 tentativas inválidas → encaminha ao departamento padrão. (ADR-08)
 - **Plantão (revisto 2026-07-25):** deixou de ser turno global e passou a ser **janela de acesso por usuário** (`atendimento_usuario_horarios`, editada no card do atendente). Fora do comercial, quem tem uma janela cobrindo aquele horário é o plantonista e atende pela plataforma; sem ninguém de plantão, o bot só direciona (mensagem `fora_horario` com contatos de emergência), sem criar ticket. A trava vale também para acesso humano ao app: `pode_atender_agora()` na RLS + aviso no login. (ADR-09; tabelas `atendimento_plantoes`/`atendimento_plantao_usuarios` ficaram sem uso.)
 - **Encerramento pelo cliente:** `#sair` finaliza (registra `encerrado_por = 'cliente'`).

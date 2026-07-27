@@ -111,7 +111,7 @@ Ajustes globais chave-valor.
 
 ## Ciclo de vida e fluxo do bot
 
-Ver [bot.md](bot.md) (Seção 3). Resumo: `triagem` (menu) → `na_fila` (departamento ou plantão) → `em_atendimento` (assumir/responder) → `finalizado` (+ avaliação opcional). Reabertura em 3h volta pra fila do departamento.
+Ver [bot.md](bot.md) (Seção 3). Resumo: `triagem` (menu) → `na_fila` (departamento ou plantão) → `em_atendimento` (assumir/responder) → `finalizado` (+ avaliação opcional). Reabertura em 3h (só quando a nota ficou pendente) volta pra fila do departamento.
 
 ## Reconhecimento de cliente (E.164) + vínculo manual
 
