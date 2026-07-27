@@ -189,6 +189,34 @@ export function useAcoesTags() {
   return { aplicar, remover }
 }
 
+export type EventoAtendimento = {
+  id: string
+  tipo: string
+  ator_usuario_id: string | null
+  alvo_usuario_id: string | null
+  dados: Record<string, unknown> | null
+  created_at: string
+}
+
+/** Eventos internos do atendimento (abertura, assumir, transferir, encerrar...).
+ *  Renderizados como pílulas centralizadas no chat; o cliente nunca os vê. */
+export function useEventos(atendimentoId: string | null) {
+  return useQuery({
+    queryKey: ['atendimento_eventos', atendimentoId],
+    enabled: !!atendimentoId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('atendimento_eventos')
+        .select('id, tipo, ator_usuario_id, alvo_usuario_id, dados, created_at')
+        .eq('atendimento_id', atendimentoId as string)
+        .order('created_at')
+      if (error) throw error
+      return (data ?? []) as unknown as EventoAtendimento[]
+    },
+    refetchInterval: 10000,
+  })
+}
+
 export function useMensagens(atendimentoId: string | null) {
   return useQuery({
     queryKey: ['atendimento_mensagens', atendimentoId],
@@ -229,6 +257,7 @@ export function useAcoesAtendimento() {
   const invalidar = () => {
     qc.invalidateQueries({ queryKey: ['atendimentos'] })
     qc.invalidateQueries({ queryKey: ['atendimento_mensagens'] })
+    qc.invalidateQueries({ queryKey: ['atendimento_eventos'] })
   }
 
   const assumir = useMutation({

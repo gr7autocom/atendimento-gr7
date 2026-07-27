@@ -11,7 +11,14 @@ import {
   MoreVertical,
   Info,
 } from 'lucide-react'
-import { useMensagens, useAcoesAtendimento, nomeEmpresa, type AtendimentoLista } from '../../lib/useInbox'
+import {
+  useMensagens,
+  useEventos,
+  useAcoesAtendimento,
+  nomeEmpresa,
+  type AtendimentoLista,
+  type EventoAtendimento,
+} from '../../lib/useInbox'
 import { useCrud } from '../../lib/useCrud'
 import { useUsuarios } from '../../lib/useVinculos'
 import { usePermissao } from '../../lib/permissoes'
@@ -82,6 +89,38 @@ function diaLabel(iso: string) {
   return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
+const PILULA_COR: Record<'ok' | 'err' | 'neutro', string> = {
+  ok: 'bg-ok/15 text-ok',
+  err: 'bg-err/15 text-err',
+  neutro: 'bg-sf-2 text-tx-2 border border-bd-1',
+}
+
+/** Texto e cor da pílula de evento (mensagem de sistema, só o atendente vê). */
+function descreverEvento(
+  e: EventoAtendimento,
+  nomeUsuario: (id: string | null) => string,
+  nomeDep: (id: unknown) => string
+): { texto: string; cor: 'ok' | 'err' | 'neutro' } | null {
+  switch (e.tipo) {
+    case 'atendimento_aberto':
+      return { texto: `Atendimento #${String(e.dados?.protocolo ?? '')}`, cor: 'ok' }
+    case 'fim_bot':
+      return { texto: 'Fim das mensagens com o bot', cor: 'err' }
+    case 'assumido':
+      return { texto: `${nomeUsuario(e.alvo_usuario_id)} assumiu o atendimento`, cor: 'neutro' }
+    case 'saiu_atendimento':
+      return { texto: `${nomeUsuario(e.alvo_usuario_id)} não faz mais parte deste atendimento`, cor: 'neutro' }
+    case 'transferido_departamento':
+      return { texto: `Transferido para ${nomeDep(e.dados?.para)}`, cor: 'neutro' }
+    case 'finalizado':
+      return { texto: 'Atendimento encerrado', cor: 'err' }
+    case 'reaberto':
+      return { texto: 'Atendimento reaberto', cor: 'ok' }
+    default:
+      return null
+  }
+}
+
 export function Conversa({
   atendimento,
   usuarioId,
@@ -92,6 +131,7 @@ export function Conversa({
   aoFechar?: () => void
 }) {
   const mensagens = useMensagens(atendimento?.id ?? null)
+  const eventos = useEventos(atendimento?.id ?? null)
   const { assumir, responder, finalizar, transferir } = useAcoesAtendimento()
   const departamentos = useCrud<Departamento>('departamentos')
   const motivos = useCrud<Motivo>('atendimento_motivos')
@@ -183,6 +223,15 @@ export function Conversa({
     setPickerOff(true)
     inputRef.current?.focus()
   }
+
+  const nomeUsuario = (id: string | null) => (usuarios.data ?? []).find((u) => u.id === id)?.nome ?? 'Alguém'
+  const nomeDep = (id: unknown) => (departamentos.lista.data ?? []).find((d) => d.id === id)?.nome ?? 'outro setor'
+
+  // Linha do tempo: mensagens + eventos internos, ordenados por horário.
+  const itens = [
+    ...(mensagens.data ?? []).map((m) => ({ kind: 'msg' as const, at: m.created_at, m })),
+    ...(eventos.data ?? []).map((e) => ({ kind: 'evt' as const, at: e.created_at, e })),
+  ].sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0))
 
   return (
     <div className="flex-1 flex flex-col min-w-0 min-h-0 bg-sf-0">
@@ -348,7 +397,7 @@ export function Conversa({
           <div className="mx-auto w-full max-w-[820px]">
             <LinhasCarregando linhas={3} />
           </div>
-        ) : (mensagens.data ?? []).length === 0 ? (
+        ) : itens.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center gap-3 text-center">
             <div className="w-12 h-12 rounded-full bg-sf-1 border border-bd-1 flex items-center justify-center">
               <MessagesSquare size={22} className="text-bd-3" />
@@ -359,19 +408,43 @@ export function Conversa({
           <div className="mx-auto w-full max-w-[820px] flex flex-col gap-1.5">
             {(() => {
               let ultimoDia = ''
-              return (mensagens.data ?? []).map((m) => {
-                const entrada = m.direcao === 'entrada'
-                const bot = m.origem === 'bot'
-                const dia = diaChave(m.created_at)
+              return itens.map((item) => {
+                const dia = diaChave(item.at)
                 const novoDia = dia !== ultimoDia
                 ultimoDia = dia
+                const separador = novoDia && (
+                  <div className="self-center my-2 px-2.5 h-6 inline-flex items-center rounded-full bg-sf-2 border border-bd-1 text-[11px] text-tx-3">
+                    {diaLabel(item.at)}
+                  </div>
+                )
+
+                if (item.kind === 'evt') {
+                  const d = descreverEvento(item.e, nomeUsuario, nomeDep)
+                  return (
+                    <Fragment key={item.e.id}>
+                      {separador}
+                      {d && (
+                        <div className="self-center my-1">
+                          <span
+                            className={cn(
+                              'px-3 h-6 inline-flex items-center rounded-full text-[11px] font-medium',
+                              PILULA_COR[d.cor]
+                            )}
+                          >
+                            {d.texto}
+                          </span>
+                        </div>
+                      )}
+                    </Fragment>
+                  )
+                }
+
+                const m = item.m
+                const entrada = m.direcao === 'entrada'
+                const bot = m.origem === 'bot'
                 return (
                   <Fragment key={m.id}>
-                    {novoDia && (
-                      <div className="self-center my-2 px-2.5 h-6 inline-flex items-center rounded-full bg-sf-2 border border-bd-1 text-[11px] text-tx-3">
-                        {diaLabel(m.created_at)}
-                      </div>
-                    )}
+                    {separador}
                     <div
                       className={cn(
                         'max-w-[76%] px-3 py-2 text-[13px] leading-relaxed shadow-sm',
