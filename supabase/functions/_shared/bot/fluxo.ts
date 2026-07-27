@@ -22,3 +22,12 @@ export function interpretarEscolha(
 export function ehComandoSair(texto: string): boolean {
   return (texto ?? '').trim().toLowerCase() === '#sair'
 }
+
+/**
+ * Extrai os 14 dígitos de um CNPJ de uma mensagem livre (com ou sem máscara).
+ * Retorna só os dígitos, ou null se não achar um CNPJ no texto.
+ */
+export function extrairCnpj(texto: string): string | null {
+  const m = (texto ?? '').match(/\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2}/)
+  return m ? m[0].replace(/\D/g, '') : null
+}

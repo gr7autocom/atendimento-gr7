@@ -69,6 +69,10 @@ const MSG: Record<string, { label: string; dica: string }> = {
     label: 'Pedir identificação',
     dica: 'Enviada a um contato sem cadastro, antes do menu (nome + empresa + CNPJ).',
   },
+  identificacao_vinculada: {
+    label: 'Identificação vinculada',
+    dica: 'Enviada quando o CNPJ do cliente casa com a base e o vínculo é feito sozinho.',
+  },
 }
 
 const MSGS_GERAIS = ['bem_vindo', 'instrucao_menu', 'voltar_menu', 'opcao_invalida']
@@ -82,7 +86,7 @@ const MSGS_ATENDIMENTO = [
   'agradecimento_avaliacao',
   'avaliacao_invalida',
 ]
-const MSGS_POTENCIAIS = ['pedir_identificacao']
+const MSGS_POTENCIAIS = ['pedir_identificacao', 'identificacao_vinculada']
 
 /** Valores usados enquanto a chave ainda não foi salva no banco. */
 const PADROES: Record<string, string> = {
@@ -269,7 +273,7 @@ export function ConfiguracoesBot() {
                 </p>
               </div>
               <LegendaVariaveis />
-              <div className="lg:max-w-2xl">
+              <div className="grid gap-4 lg:grid-cols-2 items-start">
                 {MSGS_POTENCIAIS.map((chave) => (
                   <CampoMensagem key={chave} chave={chave} />
                 ))}
