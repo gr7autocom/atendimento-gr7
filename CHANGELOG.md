@@ -12,6 +12,8 @@
 - A conversa mostra mensagens de sistema (abertura, fim do bot, quem assumiu ou saiu, encerramento) para o time acompanhar o histórico; o cliente não as vê
 - Transferir agora permite soltar o chamado de volta para a fila sem escolher ninguém, para qualquer atendente assumir
 - A tela de Configurações do bot foi reorganizada em abas (Geral, Atendimento, Potenciais), em largura total, com nome do bot e mais ajustes
+- O painel de informações do contato foi reorganizado: protocolo em destaque, contadores de atendimentos e mensagens, e seções que abrem e fecham (a primeira, Informações)
+- Um atendimento pode ter mais de um atendente: o responsável (ou um admin) inclui colegas para acompanhar e responder o mesmo chamado; quem é incluído vê a conversa na aba Ativos com o selo "Participo"
 - Fora do horário comercial, o bot avisa que está fora de expediente e não abre chamado; havendo plantão, o atendimento segue normalmente
 - Se o cliente volta em até 3 horas após um atendimento que não chegou a ser avaliado, o bot retoma o mesmo protocolo em vez de abrir outro
 - As telas de Departamento e Atendente passaram a usar abas (como a de Configurações do bot), e o card de atendente ficou mais compacto, no mesmo formato do card de departamento

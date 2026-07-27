@@ -109,6 +109,12 @@ Ajustes globais chave-valor.
 - Seeds: `janela_reabertura_horas = '3'`, `timezone = 'America/Sao_Paulo'`, `departamento_padrao_id`, `max_tentativas_menu = '2'`, `enviar_nome_atendente = 'true'`, `avaliacao_ativa = 'true'`, `tempo_avaliacao_min = '60'`
 - Chaves adicionais escritas pela tela **Configurações BOT** (2026-07-27, sem migration, via upsert): `nome_bot`, `controle_potenciais` (`nunca`/`novos_contatos`/`sem_atendimento`), `solicitar_motivo_finalizar`, `permitir_cliente_finalizar`
 
+### `atendimento_participantes`
+Colaboração multi-atendente: além do responsável, outros atendentes entram no chamado para **ver e responder**. Migration `20260727160000`.
+- `id`, `atendimento_id` FK → `atendimentos` (CASCADE), `usuario_id` FK → `usuarios` (CASCADE), `adicionado_por` FK → `usuarios` (SET NULL), `created_at`. UNIQUE(`atendimento_id`, `usuario_id`).
+- **Duas FKs para `usuarios`** (`usuario_id` e `adicionado_por`): ao embutir o usuário no PostgREST, desambiguar com `usuarios!usuario_id`.
+- Helper `e_participante(atendimento_id)` (SECURITY DEFINER). Adicionar/remover só pelo **responsável ou admin**; finalizar/transferir **não** são liberados ao participante (a policy de UPDATE de `atendimentos` fica intacta).
+
 ## Ciclo de vida e fluxo do bot
 
 Ver [bot.md](bot.md) (Seção 3). Resumo: `triagem` (menu) → `na_fila` (departamento ou plantão) → `em_atendimento` (assumir/responder) → `finalizado` (+ avaliação opcional). Reabertura em 3h (só quando a nota ficou pendente) volta pra fila do departamento.
@@ -126,7 +132,8 @@ RLS **por dono** (revisto em 2026-07-24, migration `20260724150000`). Antes era 
 
 - `atendimentos`: SELECT se `e_admin()` **ou** `responsavel_id = current_user_id()` **ou** (`responsavel_id IS NULL` **e** `status <> 'triagem'`). Ou seja: **admin vê tudo**; atendente vê **os seus** + a **fila livre** (pendentes/potenciais de qualquer setor); ninguém vê o chamado que está na mão de outro atendente. Tickets em `triagem` (dep nulo, sem dono) não aparecem — conduzidos pela Edge Function (service role).
 - **Trava por hora** (revisto em 2026-07-25, migration `20260725130000`): as policies de `atendimentos` (SELECT/UPDATE) e o INSERT de `atendimento_mensagens` exigem também `pode_atender_agora()`. A função (SECURITY DEFINER) retorna `true` se **admin** **ou** comercial ainda não configurado **ou** agora dentro de um `atendimento_horarios` ativo **ou** dentro de uma faixa de `atendimento_usuario_horarios` do usuário (timezone `atendimento_config.timezone`, default `America/Sao_Paulo`). O login (`auth.tsx`) reforça a mesma regra com aviso amigável. Não afeta o painel (não usa `atendimentos`).
-- `atendimento_mensagens`/`atendimento_anexos`/`atendimento_tag_vinculos`/`atendimento_transferencias`: SELECT se o atendimento pai é visível pela **mesma regra** (admin / dono / fila livre).
+- `atendimento_mensagens`/`atendimento_anexos`/`atendimento_tag_vinculos`/`atendimento_transferencias`/`atendimento_eventos`: SELECT se o atendimento pai é visível pela **mesma regra** (admin / dono / fila livre / **participante**).
+- **Participante (migration `20260727160000`):** o predicado de visibilidade das tabelas `atendimento_*` ganhou `OR e_participante(atendimento_id)` — quem é participante **vê e responde** (INSERT em `atendimento_mensagens`). O UPDATE de `atendimentos` **não** foi tocado, então participante não finaliza nem transfere. Só **adiciona** acesso; ninguém perdeu visibilidade.
 - Catálogos e config (`departamentos`, `atendimento_tags`, `atendimento_motivos`, `atendimento_mensagens_rapidas`, `atendimento_plantoes`, `atendimento_plantao_usuarios`, `bot_mensagens`, `atendimento_horarios`, `atendimento_config`): SELECT autenticado; escrita por `can('atendimento.config')`.
 - Ações novas do atendimento (slugs em `permissoes.capacidades`, **não** há tabela `acoes`): `atendimento.assumir`, `atendimento.responder`, `atendimento.finalizar`, `atendimento.transferir`, `atendimento.config`. No perfil `admin`, todas. No perfil `suporte`, as quatro de operação (sem `config`), concedidas na migration `20260724150000`. Manter em sincronia com `src/lib/acoes.ts`.
 - Edge Functions (webhook/envio/bot) usam **service role** (ignoram RLS).
