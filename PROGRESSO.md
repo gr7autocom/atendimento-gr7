@@ -6,15 +6,14 @@
 
 _(nada no momento)_
 
-**Próximo:** o **fluxo do bot** está implementado no `whatsapp-webhook` e **deployado** (boas-vindas, menu dos setores, identificação do potencial com **auto-vínculo por CNPJ**, fila, `#sair` e **avaliação ao finalizar**), tudo em **modo mock** (sem uazapi, as mensagens ficam gravadas mas não saem no WhatsApp). Faltam pendências do bot (fora de horário/plantão, reabertura em 3h), ligar a aba Conexão/pílula ao mock, e a **integração real** (conta uazapi + número, envio de fato).
+**Próximo:** o **fluxo do bot** está implementado no `whatsapp-webhook` e **deployado**, completo no modo mock (boas-vindas, menu, identificação com auto-vínculo por CNPJ, fila, `#sair`, avaliação ao finalizar, **fora de horário/plantão e reabertura em 3h**). Faltam ligar a aba Conexão/pílula ao mock e a **integração real** (conta uazapi + número, envio de fato).
 
 ## 📋 Próximos passos
 
 ### Implementação (o que falta)
 
-1. [ ] (P1) **Bot — pendências:** fora de horário/plantão (enviar `fora_horario`/`plantao` pela agenda) e reabertura em 3h (mensagem nova de contato finalizado reabre o ticket em vez de criar outro)
-2. [ ] (P2) **Ligar a aba Conexão + pílula de status** ao `whatsapp-conexao` (por ora em modo mock: QR fake + status; vira real quando as chaves entrarem)
-3. [ ] (P2) **Integração uazapi real:** fechar os "A CONFIRMAR" (payload real do webhook, id na resposta de envio), **enviar de verdade** (bot + respostas do atendente) e configurar o webhook na uazapi — **depende de conta uazapi + número**
+1. [ ] (P2) **Ligar a aba Conexão + pílula de status** ao `whatsapp-conexao` (por ora em modo mock: QR fake + status; vira real quando as chaves entrarem)
+2. [ ] (P2) **Integração uazapi real:** fechar os "A CONFIRMAR" (payload real do webhook, id na resposta de envio), **enviar de verdade** (bot + respostas do atendente) e configurar o webhook na uazapi — **depende de conta uazapi + número**
 
 ### Pré-requisitos externos (negócio — bloqueiam a integração real)
 
@@ -23,6 +22,8 @@ _(nada no momento)_
 
 ## ✅ Concluído
 
+- 2026-07-27 — **Bot: fora de horário/plantão + reabertura em 3h.** Ao abrir chamado novo, o `whatsapp-webhook` decide pelo horário no fuso da config: dentro do comercial manda boas-vindas; fora do comercial com plantonista de janela ativa manda a saudação de plantão; fora e sem plantonista manda `fora_horario` e **não cria ticket**. Reabertura: cliente que volta em até `janela_reabertura_horas` (3h) de um atendimento **finalizado pelo atendente sem a nota formalizada** (`avaliacao_solicitada_em` preenchido, `avaliacao` nula) reabre o **mesmo** protocolo (volta pra fila, sem menu, pílula "reaberto"); nota dada, `#sair` ou avaliação desligada → chamado novo. Lógica pura em `_shared/bot/horario.ts` (fuso via `Intl`, faixas, resumo do comercial). Sem migration. Validado e2e no Supabase compartilhado (reabre vs novo; caminho comercial). Testes 40/40, build ok. Docs `bot.md`/`db.md` sincronizadas.
+- 2026-07-27 — **Telas de admin em abas + card de atendente em linha.** **Departamento** (Dados · Horário · Motivos) e **Atendente** (Departamentos · Plantão) trocaram as seções empilhadas por **abas**, no padrão do Configurações do bot; componente compartilhado `components/admin/Abas.tsx` (o Configurações do bot também migrou para ele). O **card da lista de Atendentes** foi refeito no layout compacto em linha do card de Departamento (avatar à esquerda, nome + e-mail ao lado, selo de status no canto, departamentos no rodapé), no lugar do formato vertical centralizado. Validado no navegador. Testes 40/40, build ok.
 - 2026-07-27 — **Avaliação ao finalizar (Fase 2 do bot).** Ao finalizar pelo atendente (com avaliação ativa), o bot pede a nota (trigger `BEFORE UPDATE` grava `solicitar_avaliacao` e marca `avaliacao_solicitada_em` + `etapa_bot='avaliacao'`). O `whatsapp-webhook` trata a resposta dentro do prazo (`tempo_avaliacao_min`): nota 0-10 grava `atendimentos.avaliacao` e agradece; sem nota, manda `avaliacao_invalida`. Não pede quando o cliente encerrou com `#sair`. Migration `20260727150000`. Validado por POST (finalizar → pedido; "obrigado" → inválida; "9" → gravada + agradecimento). Build ok, testes 27/27.
 - 2026-07-27 — **Mensagens de sistema no chat (base do histórico).** Eventos internos do atendimento viram **pílulas centralizadas** na conversa (só o atendente vê): "Atendimento #NNN" (verde), "Fim das mensagens com o bot" (vermelho), "X assumiu"/"X não faz mais parte", transferência de setor, encerrado, reaberto. Tabela nova `atendimento_eventos` gravada por **trigger** no `atendimentos` (captura de qualquer origem), RLS por dono; frontend com `useEventos` mesclando mensagens+eventos por horário. Migration `20260727140000`. Validado no navegador. Build ok, testes 27/27.
 - 2026-07-27 — **Transferir para a fila sem atribuir.** O botão Transferir passou a habilitar quando "manter o departamento + deixar na fila" solta um chamado **com dono** de volta para a fila (`na_fila`, sem dono) para qualquer atendente assumir; só fica desabilitado quando nada muda. Sem mudança no backend (a RPC já fazia o certo). Validado no navegador. Build ok, testes 27/27.
