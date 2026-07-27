@@ -63,6 +63,7 @@ As três abas são **exclusivas**: um chamado aparece em uma só, nunca duplicad
 ### Coluna 2 — Conversa
 - Cabeçalho: contato + protocolo + ações (buscar na conversa, tags, transferir, finalizar).
 - Thread com bolhas por origem (cliente / atendente / bot), status de entrega, mídia (Cloudinary), auto-scroll.
+- **Mensagens de sistema** (eventos) como **pílulas centralizadas**, internas (o cliente não vê): "Atendimento #NNN", "Fim das mensagens com o bot", "X assumiu"/"X não faz mais parte", transferência, encerrado, reaberto. Base do histórico (`atendimento_eventos`, ver [db.md](db.md)).
 - Rodapé: **Assumir** (ou responder já assume), campo de resposta, **`/` mensagens rápidas**, anexo, enviar.
 - **Transferir:** modal com departamento e/ou atendente (registra em `atendimento_transferencias`).
 - **Finalizar:** modal que pede o **motivo** (catálogo).
@@ -86,7 +87,7 @@ Sidebar com as abas abaixo. Detalhe de cada aba chega por prints ao longo do des
 | **Tags** | CRUD de tags | sim |
 | **Mensagens rápidas** | grid full-width (palavra-chave/mensagem/departamento) + filtros; modal com **Departamento** (Todos ou um setor), palavra-chave e texto. No chat, `/` abre o seletor e insere trocando `{{agent.name}}`/`{{contact.name}}` | sim |
 | **Horário de Funcionamento** | **horário comercial** no mesmo padrão (`GradeHorarios`, 7 colunas por dia, HH:MM). Aceita **várias faixas por dia** (horário partido); dia sem faixa fica fechado. O **plantão** é por usuário, no card do atendente. Fora do comercial, só acessa quem tem plantão cobrindo a hora; reforçado no login e na RLS (`pode_atender_agora()`), admin sempre passa | sim |
-| **Configurações BOT** | bloco **Comportamento** (nome do bot, controle de potenciais, tempos e toggles: avaliação, nome do atendente, motivo ao finalizar, #sair) + bloco **Mensagens automáticas** (12 textos em 2 colunas, agrupados em Gerais/Atendimento, um só Salvar) | sim |
+| **Configurações BOT** | **abas** (Geral · Atendimento · Potenciais) com rodapé Descartar/Salvar. **Geral**: comportamento (nome do bot, tempos, toggles) + mensagens gerais. **Atendimento**: mensagens de atendimento. **Potenciais**: controle de potenciais + mensagens de identificação (pedir/vinculada). Mensagens em 2 colunas | sim |
 | **Conexão** | conexão do WhatsApp por QR Code (passos + área do QR/status). **Casca por ora:** QR/sessão vêm do adapter uazapi quando a integração entrar (hoje mostra estado Desconectado, botão desabilitado) | sim |
 | **Relatórios** | listagens / exportação | placeholder (Fase 3) |
 

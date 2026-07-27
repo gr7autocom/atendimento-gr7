@@ -54,7 +54,7 @@ Estados: `disconnected` → `connecting` → `connected`, e `hibernated` (sessã
 
 ## Fluxo técnico (Edge Functions, Deno)
 
-> **Esqueleto no código:** o adapter e as três Edge Functions já existem em `supabase/functions/` (modo mock por padrão, nada deployado). Passos de deploy e os pontos "A CONFIRMAR" em [../supabase/functions/README.md](../supabase/functions/README.md).
+> **No código (modo mock):** o adapter e as três Edge Functions existem em `supabase/functions/`. O **`whatsapp-webhook` roda o bot (Fase 1+2) e está deployado** no Supabase compartilhado — boas-vindas, menu, identificação do potencial + auto-vínculo por CNPJ, fila, `#sair` e avaliação ao finalizar (ver [bot.md](bot.md)). Tudo em **modo mock**: o driver mock aceita um payload no formato do `EventoNormalizado`, então dá para simular por POST (endpoint protegido por `WEBHOOK_SECRET`). **A CONFIRMAR** continua: o **payload real** que a uazapi envia (o que o `normalizarWebhook` do driver uazapi vai parsear) e o corpo do configurar-webhook. Passos de deploy em [../supabase/functions/README.md](../supabase/functions/README.md).
 
 - **Receber:** `whatsapp-webhook` (endpoint público) recebe o webhook da uazapi → valida → `normalizarWebhook` → deduplica por `wa_message_id` → casa/cria `contato` + `atendimento` → grava `atendimento_mensagens` (`entrada`) → realtime atualiza a inbox → dispara lógica do bot.
 - **Enviar:** `whatsapp-send` chama `/send/text` ou `/send/media` da uazapi (header `token`) via `enviarMensagem`, grava mensagem `saida`, atualiza status pelo webhook de status.

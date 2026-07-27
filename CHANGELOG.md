@@ -4,11 +4,14 @@
 
 ---
 
-## 2026-07-27 — Tela de Configurações do bot
+## 2026-07-27 — Bot de atendimento, histórico e configurações
 
-- A tela de Configurações do bot foi reorganizada no padrão das demais telas de admin, em largura total
-- Novos ajustes: nome do bot, controle de potenciais, solicitar motivo ao finalizar e permitir o cliente finalizar com #sair
-- As mensagens automáticas agora ficam em duas colunas, agrupadas em Gerais e Atendimento, com um único botão para salvar
+- O bot conduz o atendimento pelo WhatsApp: dá boas-vindas, mostra o menu de setores, coloca na fila e encerra com #sair (ainda em teste interno, sem número conectado)
+- Cliente sem cadastro é convidado a se identificar antes do menu; se manda o CNPJ, o sistema já vincula a empresa sozinho
+- Ao finalizar, o bot pede uma nota de 0 a 10 e registra a avaliação do atendimento
+- A conversa mostra mensagens de sistema (abertura, fim do bot, quem assumiu ou saiu, encerramento) para o time acompanhar o histórico; o cliente não as vê
+- Transferir agora permite soltar o chamado de volta para a fila sem escolher ninguém, para qualquer atendente assumir
+- A tela de Configurações do bot foi reorganizada em abas (Geral, Atendimento, Potenciais), em largura total, com nome do bot e mais ajustes
 
 ---
 

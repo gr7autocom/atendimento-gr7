@@ -36,12 +36,18 @@ Identidade do cliente no WhatsApp (o **telefone é a identidade**).
 - **O painel também escreve nesta tabela** desde 2026-07-25: a aba "Contatos" do cadastro de cliente lista/edita os contatos por `cliente_id`. Escrita liberada para `can('atendimento.responder') OR can('cliente.editar')` (migration `20260725190000`). O painel nunca faz DELETE: remover contato de uma empresa por lá é `cliente_id = NULL`, para não derrubar os atendimentos em cascata.
 
 ### `atendimentos` (tickets)
-- `id`, `protocolo BIGINT IDENTITY UNIQUE`, `contato_id` FK → `contatos`, `departamento_id` FK → `departamentos` (nullable até escolher), `responsavel_id` FK → `usuarios` (nullable), `motivo_id` FK → `atendimento_motivos` (nullable, ao Finalizar), `plantao_id` FK → `atendimento_plantoes` (nullable — marca ticket criado em plantão), `status` TEXT CHECK (`triagem` | `na_fila` | `em_atendimento` | `finalizado`), `canal` TEXT default `'whatsapp'`, `tentativas_menu INT default 0`, `avaliacao INT` (nullable, 0-10), `avaliacao_solicitada_em TIMESTAMPTZ`, `encerrado_por TEXT` (`atendente` | `cliente`, nullable), `aberto_em`, `assumido_em`, `finalizado_em`, `ultima_mensagem_em`, `created_at`, `updated_at`
+- `id`, `protocolo BIGINT IDENTITY UNIQUE`, `contato_id` FK → `contatos`, `departamento_id` FK → `departamentos` (nullable até escolher), `responsavel_id` FK → `usuarios` (nullable), `motivo_id` FK → `atendimento_motivos` (nullable, ao Finalizar), `plantao_id` FK → `atendimento_plantoes` (nullable — marca ticket criado em plantão), `status` TEXT CHECK (`triagem` | `na_fila` | `em_atendimento` | `finalizado`), `canal` TEXT default `'whatsapp'`, `tentativas_menu INT default 0`, `etapa_bot TEXT` (sub-estado do bot em triagem: `identificacao` | `menu` | `avaliacao`; migration `20260727130000`), `avaliacao INT` (nullable, 0-10), `avaliacao_solicitada_em TIMESTAMPTZ`, `encerrado_por TEXT` (`atendente` | `cliente`, nullable), `aberto_em`, `assumido_em`, `finalizado_em`, `ultima_mensagem_em`, `created_at`, `updated_at`
 - Índices: `contato_id`, `departamento_id`, `responsavel_id`, `status`, `plantao_id`, `ultima_mensagem_em`
+- **Triggers do bot** (migrations `20260727140000`/`20260727150000`): `registrar_evento_atendimento` (grava `atendimento_eventos` nas mudanças de dono/status/departamento) e `solicitar_avaliacao_ao_finalizar` (ao finalizar pelo atendente com avaliação ativa, grava `solicitar_avaliacao` e marca `avaliacao_solicitada_em`/`etapa_bot='avaliacao'`).
 
 ### `atendimento_mensagens`
 - `id`, `atendimento_id` FK (CASCADE), `direcao` TEXT (`entrada` | `saida`), `origem` TEXT (`cliente` | `atendente` | `bot`), `corpo` TEXT, `remetente_usuario_id` FK → `usuarios` (nullable), `wa_message_id` TEXT, `status` TEXT (`enviado` | `entregue` | `lido` | `falhou`), `created_at`
 - Índices: `atendimento_id`; UNIQUE parcial em `wa_message_id`
+
+### `atendimento_eventos`
+Eventos internos do atendimento (base do histórico). Renderizados como **pílulas centralizadas** no chat do operador; **nunca vão para o cliente**. Migration `20260727140000`.
+- `id`, `atendimento_id` FK (CASCADE), `tipo` TEXT (`atendimento_aberto` | `fim_bot` | `assumido` | `saiu_atendimento` | `transferido_departamento` | `finalizado` | `reaberto`), `ator_usuario_id` FK → `usuarios` (nullable — quem fez; nulo = bot/sistema), `alvo_usuario_id` FK → `usuarios` (nullable — participante do evento), `dados` JSONB (ex.: `protocolo`, `de`/`para`), `created_at`
+- Gravado pelo trigger `registrar_evento_atendimento` no `atendimentos`; SELECT pela mesma regra por dono das mensagens.
 
 ### `atendimento_anexos`
 Mídia via Cloudinary (padrão `scrap_anexos`/`tarefa_anexos` do painel).
@@ -90,7 +96,7 @@ Horários de acesso (plantão) **por usuário**. CRUD no card do atendente (tela
 ### `bot_mensagens`
 Mensagens **automáticas do bot** (chave-valor). Menu gerado dos departamentos (não fica aqui).
 - `id`, `chave` TEXT UNIQUE, `texto` TEXT, `ativo BOOLEAN`, `updated_at`
-- Chaves: `bem_vindo`, `instrucao_menu`, `opcao_invalida`, `voltar_menu`, `entrou_fila`, `encaminhado_padrao`, `plantao`, `fora_horario`, `encerramento`, `solicitar_avaliacao`, `agradecimento_avaliacao`, `avaliacao_invalida`
+- Chaves: `bem_vindo`, `instrucao_menu`, `opcao_invalida`, `voltar_menu`, `entrou_fila`, `encaminhado_padrao`, `plantao`, `fora_horario`, `encerramento`, `solicitar_avaliacao`, `agradecimento_avaliacao`, `avaliacao_invalida`, `pedir_identificacao` (potencial sem cadastro, antes do menu — migration `20260727120000`), `identificacao_vinculada` (confirma o auto-vínculo por CNPJ — migration `20260727130000`)
 - Placeholders (padrão único do projeto, **chave dupla em português**): `{{empresa}}`, `{{contato}}`, `{{protocolo}}`, `{{departamento}}`, `{{atendente}}`, `{{horario}}`. As mensagens rápidas usam o mesmo conjunto.
 
 ### `atendimento_horarios`
@@ -127,6 +133,7 @@ RLS **por dono** (revisto em 2026-07-24, migration `20260724150000`). Antes era 
 - **Transferência é RPC, não UPDATE direto:** `transferir_atendimento(p_atendimento_id, p_departamento_id, p_usuario_id, p_observacao)` (SECURITY DEFINER). Motivo: o PostgREST executa `UPDATE ... RETURNING` e o Postgres exige que a **linha nova** satisfaça a policy de SELECT; ao mandar o chamado para um departamento que o usuário não atende, ele deixa de enxergá-la e o banco recusa (42501). A função valida acesso pela regra por dono (admin / dono / fila livre) + `can('atendimento.transferir')` e grava o histórico na mesma transação.
 - `atendimentos` aceita INSERT de quem tem `can('atendimento.responder')`.
 - **Criação manual é RPC, não INSERT direto:** `criar_atendimento(p_telefone, p_nome, p_cliente_id, p_contato_id, p_departamento_id, p_responsavel_id)` (SECURITY DEFINER). Mesmo motivo da transferência (o `INSERT ... RETURNING` esbarra na policy de SELECT ao criar já atribuído a outro atendente/departamento). Acha ou cria o contato pelo telefone e cria o atendimento na mesma transação: sem atendente nasce `na_fila` (pendente), com atendente `em_atendimento`. Usada pelo modal **Criar atendimento** enquanto não há uazapi.
+- **Match de cliente por CNPJ:** `atendimento_buscar_cliente_por_cnpj(p_digitos)` (SECURITY DEFINER, migration `20260727130000`) devolve o cliente cujo CNPJ normalizado (só dígitos) bate com `p_digitos`. Usada pelo bot no `whatsapp-webhook` para o auto-vínculo do potencial pelo CNPJ.
 
 ## Reaproveitamento do painel (read-only)
 

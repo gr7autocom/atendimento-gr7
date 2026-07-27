@@ -1,6 +1,8 @@
 # Bot e ciclo de vida do ticket — GR7 Atendimento
 
 > **Status: aprovado (Seção 3 do design, 2026-07-23).** O bot roda na Edge Function do webhook e trabalha **por ticket**: cada chamado é um ticket; ao encerrar, finaliza. Estados alinhados a [db.md](db.md): `triagem` → `na_fila` → `em_atendimento` → `finalizado`.
+>
+> **Implementado (2026-07-27, modo mock, deployado):** o `whatsapp-webhook` já roda o fluxo — boas-vindas + menu, **identificação do potencial antes do menu com auto-vínculo por CNPJ**, fila, opção inválida (limite → padrão), `#sair`, e **avaliação ao finalizar** (Fase 2). Sub-estado da conversa em `atendimentos.etapa_bot` (`identificacao` | `menu` | `avaliacao`). **Falta:** fora de horário/plantão pela agenda e reabertura em 3h. Como não há uazapi, o envio é mock (mensagens gravadas, não saem no WhatsApp).
 
 ## Placeholders das mensagens
 
