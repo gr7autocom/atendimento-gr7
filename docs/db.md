@@ -115,6 +115,13 @@ Colaboração multi-atendente: além do responsável, outros atendentes entram n
 - **Duas FKs para `usuarios`** (`usuario_id` e `adicionado_por`): ao embutir o usuário no PostgREST, desambiguar com `usuarios!usuario_id`.
 - Helper `e_participante(atendimento_id)` (SECURITY DEFINER). Adicionar/remover só pelo **responsável ou admin**; finalizar/transferir **não** são liberados ao participante (a policy de UPDATE de `atendimentos` fica intacta).
 
+### `atendimento_tarefas`
+Vínculo entre um atendimento/contato e uma **tarefa avulsa** aberta pelo atendente direto do chat (a tarefa mora em `tarefas`, do painel; aqui só guardamos de qual chamado/contato ela nasceu). Migration `20260728120000`.
+- `id`, `tarefa_id` FK → `tarefas` (CASCADE, **UNIQUE**), `atendimento_id` FK → `atendimentos` (CASCADE), `contato_id` FK → `contatos` (CASCADE), `criado_por` FK → `usuarios` (SET NULL), `created_at`.
+- RLS: **SELECT** autenticado (`USING true` — o vínculo em si não é sensível; a tarefa/atendimento têm suas próprias policies); **INSERT** com `criado_por = current_user_id()`.
+- A criação da tarefa passa pela RLS de `tarefas` do painel (`WITH CHECK can('tarefa.criar')`, capacidade de admin/vendas/suporte). A tarefa nasce `de_projeto:false`, etapa **Pendente**, `cliente_id` = empresa do contato (auto), e é notificada por `notify-assignment` quando o responsável não é o criador.
+- **Embed no PostgREST:** `tarefas` tem 2 FKs para `etapas` (`etapa_id`, `etapa_antes_pausa_id`) e 2 para `usuarios` (`responsavel_id`, `criado_por_id`) → desambiguar com `etapas!etapa_id` e `usuarios!responsavel_id`.
+
 ## Ciclo de vida e fluxo do bot
 
 Ver [bot.md](bot.md) (Seção 3). Resumo: `triagem` (menu) → `na_fila` (departamento ou plantão) → `em_atendimento` (assumir/responder) → `finalizado` (+ avaliação opcional). Reabertura em 3h (só quando a nota ficou pendente) volta pra fila do departamento.
@@ -146,5 +153,7 @@ RLS **por dono** (revisto em 2026-07-24, migration `20260724150000`). Antes era 
 
 - `clientes` — match/vínculo por telefone. Read-only no MVP.
 - `usuarios` — atendentes/responsáveis/plantonistas.
-- `permissoes.capacidades` (`text[]`) / `can()` — permissões (sem tabela `acoes`).
+- `permissoes.capacidades` (`text[]`) / `can()` — permissões (sem tabela `acoes`). Inclui `tarefa.criar` (usada pela aba Tarefas).
+- `tarefas` — **escrita** (única exceção ao read-only): a aba Tarefas cria tarefa avulsa (`insert`, `de_projeto:false`); o vínculo fica em `atendimento_tarefas`. O andamento é no painel.
+- `etapas` / `prioridades` — catálogos lidos pelo formulário de tarefa (etapa inicial "Pendente", prioridades por `nivel`).
 - `notificacoes` — **não alterar no MVP**.

@@ -4,6 +4,15 @@
 
 ---
 
+## 2026-07-28 — Tarefas no atendimento
+
+- No painel do contato, o atendente agora abre uma tarefa direto do chat, na seção Tarefas: informa o título e, se quiser, descrição, responsável, prazo e prioridade
+- A tarefa vai para o painel de implantação, onde a equipe dá andamento; o atendimento só abre e acompanha
+- A tarefa já nasce vinculada à empresa do contato (quando há empresa cadastrada) e atribuída a quem abriu, dá para deixar em aberto ou escolher outro responsável
+- A seção lista as tarefas já abertas para aquele contato, com status e prioridade, sem editar por aqui
+
+---
+
 ## 2026-07-27 — Bot de atendimento, histórico e configurações
 
 - O bot conduz o atendimento pelo WhatsApp: dá boas-vindas, mostra o menu de setores, coloca na fila e encerra com #sair (ainda em teste interno, sem número conectado)
