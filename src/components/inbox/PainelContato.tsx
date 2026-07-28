@@ -4,6 +4,7 @@ import {
   useAtualizarContato,
   useContadoresContato,
   useParticipantes,
+  useTarefasDoContato,
   nomeEmpresa,
   type AtendimentoLista,
 } from '../../lib/useInbox'
@@ -12,6 +13,7 @@ import { Entrada } from '../ui/Campo'
 import { Skeleton } from '../ui/Estados'
 import { SecaoContato } from './SecaoContato'
 import { ParticipantesContato } from './ParticipantesContato'
+import { TarefasContato } from './TarefasContato'
 
 function nomeContato(a: AtendimentoLista) {
   return a.contato?.nome || a.contato?.nome_whatsapp || a.contato?.telefone || 'Sem nome'
@@ -58,6 +60,7 @@ export function PainelContato({
   const [copiado, setCopiado] = useState(false)
   const contadores = useContadoresContato(atendimento?.contato?.id ?? null)
   const participantes = useParticipantes(atendimento?.id ?? null)
+  const tarefas = useTarefasDoContato(atendimento?.contato?.id ?? null)
 
   useEffect(() => {
     setNome(atendimento?.contato?.nome ?? '')
@@ -148,6 +151,10 @@ export function PainelContato({
             <div className="dado text-[13px] text-tx-1">{contato?.telefone}</div>
           </div>
         </div>
+      </SecaoContato>
+
+      <SecaoContato titulo="Tarefas" contagem={tarefas.data?.length ?? 0}>
+        <TarefasContato atendimento={atendimento} />
       </SecaoContato>
 
       <SecaoContato

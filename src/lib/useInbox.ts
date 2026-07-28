@@ -328,6 +328,132 @@ export function useParticipantes(atendimentoId: string | null) {
   return { lista, adicionar, remover }
 }
 
+// ===== Tarefas avulsas abertas a partir do atendimento =====
+// O atendente cria uma tarefa avulsa (tabela `tarefas`, do painel) direto do
+// chat; o andamento é no painel. `atendimento_tarefas` guarda o vínculo para
+// listar aqui o que já foi aberto para o contato. Ver docs/db.md.
+
+export type Prioridade = { id: string; nome: string; nivel: number }
+
+/** Catálogos para o formulário de tarefa: prioridades e a etapa inicial (Pendente). */
+export function useCatalogosTarefa() {
+  return useQuery({
+    queryKey: ['catalogos_tarefa'],
+    staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      const [prio, etp] = await Promise.all([
+        supabase.from('prioridades').select('id, nome, nivel').eq('ativo', true).order('nivel'),
+        supabase.from('etapas').select('id, nome, ordem').eq('ativo', true).order('ordem'),
+      ])
+      if (prio.error) throw prio.error
+      if (etp.error) throw etp.error
+      const etapas = (etp.data ?? []) as { id: string; nome: string; ordem: number }[]
+      const pendente = etapas.find((e) => e.nome.toLowerCase() === 'pendente') ?? etapas[0] ?? null
+      return {
+        prioridades: (prio.data ?? []) as unknown as Prioridade[],
+        etapaPendenteId: pendente?.id ?? null,
+      }
+    },
+  })
+}
+
+export type TarefaDoContato = {
+  id: string
+  created_at: string
+  tarefa: {
+    id: string
+    codigo: number
+    titulo: string
+    prazo_entrega: string | null
+    etapa: { nome: string } | null
+    prioridade: { nome: string; nivel: number } | null
+    responsavel: { nome: string } | null
+  } | null
+}
+
+/** Tarefas avulsas abertas para este contato (só leitura; andamento no painel). */
+export function useTarefasDoContato(contatoId: string | null) {
+  return useQuery({
+    queryKey: ['tarefas_contato', contatoId],
+    enabled: !!contatoId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('atendimento_tarefas')
+        .select(
+          // desambigua FKs: tarefas tem etapa_id e etapa_antes_pausa_id (→ etapas),
+          // e responsavel_id e criado_por_id (→ usuarios).
+          'id, created_at, tarefa:tarefas(id, codigo, titulo, prazo_entrega, etapa:etapas!etapa_id(nome), prioridade:prioridades(nome, nivel), responsavel:usuarios!responsavel_id(nome))'
+        )
+        .eq('contato_id', contatoId as string)
+        .order('created_at', { ascending: false })
+      if (error) throw error
+      return (data ?? []) as unknown as TarefaDoContato[]
+    },
+  })
+}
+
+/**
+ * Cria uma tarefa avulsa (insert em `tarefas`) e grava o vínculo em
+ * `atendimento_tarefas`. Nasce em "Pendente", com o cliente do contato (auto) e
+ * `de_projeto:false`. Notifica o atribuído quando não for o próprio criador,
+ * pela mesma Edge Function do painel.
+ */
+export function useCriarTarefa() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (p: {
+      atendimentoId: string
+      contatoId: string
+      clienteId: string | null
+      titulo: string
+      descricao: string | null
+      responsavelId: string | null
+      prazoIso: string | null
+      prioridadeId: string | null
+      etapaPendenteId: string | null
+      criadoPorId: string
+    }) => {
+      const { data, error } = await supabase
+        .from('tarefas')
+        .insert({
+          titulo: p.titulo,
+          descricao: p.descricao,
+          responsavel_id: p.responsavelId,
+          prazo_entrega: p.prazoIso,
+          prioridade_id: p.prioridadeId,
+          cliente_id: p.clienteId,
+          etapa_id: p.etapaPendenteId,
+          criado_por_id: p.criadoPorId,
+          de_projeto: false,
+          updated_at: new Date().toISOString(),
+        } as never)
+        .select('id')
+        .single()
+      if (error) throw error
+      const tarefaId = (data as { id: string }).id
+
+      const { error: errVinc } = await supabase.from('atendimento_tarefas').insert({
+        tarefa_id: tarefaId,
+        atendimento_id: p.atendimentoId,
+        contato_id: p.contatoId,
+        criado_por: p.criadoPorId,
+      } as never)
+      if (errVinc) throw errVinc
+
+      if (p.responsavelId && p.responsavelId !== p.criadoPorId) {
+        // Notificação é best-effort; não bloqueia a criação se falhar.
+        await supabase.functions
+          .invoke('notify-assignment', { body: { tarefa_id: tarefaId, responsavel_id: p.responsavelId } })
+          .catch(() => {})
+      }
+      return tarefaId
+    },
+    onSuccess: (_id, v) => {
+      qc.invalidateQueries({ queryKey: ['tarefas_contato', v.contatoId] })
+    },
+  })
+}
+
 /** Ids dos atendimentos em que o usuário logado entra como participante (não dono). */
 export function useMeusAtendimentosParticipante(usuarioId: string | null) {
   return useQuery({

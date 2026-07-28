@@ -6,4 +6,7 @@ export const ACOES_ATENDIMENTO = [
   'atendimento.config',
 ] as const
 
-export type AcaoId = (typeof ACOES_ATENDIMENTO)[number]
+/** Capacidades do painel que o Atendimento também consulta (mesma conta/permissão). */
+export const ACOES_PAINEL = ['tarefa.criar'] as const
+
+export type AcaoId = (typeof ACOES_ATENDIMENTO)[number] | (typeof ACOES_PAINEL)[number]
