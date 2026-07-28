@@ -6,10 +6,11 @@
 
 ## 2026-07-28 — Tarefas no atendimento
 
-- No painel do contato, o atendente agora abre uma tarefa direto do chat, na seção Tarefas: informa o título e, se quiser, descrição, responsável, prazo e prioridade
+- No painel do contato, o atendente agora abre uma tarefa direto do chat, na seção Tarefas: informa o título e, se quiser, descrição, responsável, prioridade, início previsto e prazo de entrega
 - A tarefa vai para o painel de implantação, onde a equipe dá andamento; o atendimento só abre e acompanha
 - A tarefa já nasce vinculada à empresa do contato (quando há empresa cadastrada) e atribuída a quem abriu, dá para deixar em aberto ou escolher outro responsável
-- A seção lista as tarefas já abertas para aquele contato, com status e prioridade, sem editar por aqui
+- A seção lista as tarefas abertas por aquele contato, mostrando as 3 mais recentes com status e prioridade; havendo mais, um "Ver mais" leva ao painel
+- Tarefas criadas direto no painel não aparecem aqui: a lista mostra só o que foi aberto pelo atendimento
 
 ---
 

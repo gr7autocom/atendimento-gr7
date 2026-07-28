@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, CalendarClock, Building2, Loader2 } from 'lucide-react'
+import { Plus, CalendarClock, Building2, Loader2, ExternalLink } from 'lucide-react'
 import {
   useCatalogosTarefa,
   useCriarTarefa,
@@ -16,6 +16,11 @@ import { Selo } from '../ui/Selo'
 import { Modal } from '../ui/Modal'
 import { Entrada, AreaTexto, Selecao } from '../ui/Campo'
 import { Skeleton } from '../ui/Estados'
+
+/** Quantas tarefas a lista mostra antes do "Ver mais". */
+const LIMITE_LISTA = 3
+/** Tela de Tarefas do painel de implantação (para o "Ver mais"). */
+const URL_TAREFAS_PAINEL = 'https://implantacao.gr7autocom.com.br/tarefas'
 
 /** Tom do selo da etapa pelo nome (mesmas etapas do painel). */
 function tomEtapa(nome: string | undefined): 'neutro' | 'marca' | 'ok' | 'err' {
@@ -71,9 +76,11 @@ function ItemTarefa({ item }: { item: TarefaDoContato }) {
 /**
  * Conteúdo da seção "Tarefas" do painel do contato. O atendente abre uma tarefa
  * avulsa (formulário num modal, já que o painel é estreito) que passa a ser
- * trabalhada no painel de implantação; aqui a lista é só leitura. O botão de
- * criar só aparece para quem tem `tarefa.criar` (a RLS de `tarefas` também
- * barra). Ver docs/db.md.
+ * trabalhada no painel de implantação; aqui a lista é só leitura e mostra as
+ * mais recentes (o restante fica no painel, via "Ver mais"). O botão de criar só
+ * aparece para quem tem `tarefa.criar` (a RLS de `tarefas` também barra). A lista
+ * vem por `atendimento_tarefas` (só o que foi aberto pelo chat) — tarefa criada
+ * direto no painel não aparece aqui. Ver docs/db.md.
  */
 export function TarefasContato({ atendimento }: { atendimento: AtendimentoLista }) {
   const usuario = useUsuarioAtual()
@@ -91,11 +98,13 @@ export function TarefasContato({ atendimento }: { atendimento: AtendimentoLista 
   const [titulo, setTitulo] = useState('')
   const [descricao, setDescricao] = useState('')
   const [responsavelId, setResponsavelId] = useState<string>(usuario?.id ?? '')
-  const [prazoData, setPrazoData] = useState('')
-  const [prazoHora, setPrazoHora] = useState('')
   const [prioridadeId, setPrioridadeId] = useState('')
+  const [inicio, setInicio] = useState('')
+  const [prazo, setPrazo] = useState('')
 
   const tarefas = lista.data ?? []
+  const visiveis = tarefas.slice(0, LIMITE_LISTA)
+  const temMais = tarefas.length > LIMITE_LISTA
   const inputBase =
     'dado h-9 px-2.5 text-sm rounded-[6px] bg-sf-2 border border-bd-2 text-tx-1 hover:border-bd-3 ' +
     'focus:border-br-1 focus:outline-none focus:ring-2 focus:ring-[color:var(--br-soft)] transition-colors duration-[120ms]'
@@ -104,16 +113,15 @@ export function TarefasContato({ atendimento }: { atendimento: AtendimentoLista 
     setTitulo('')
     setDescricao('')
     setResponsavelId(usuario?.id ?? '')
-    setPrazoData('')
-    setPrazoHora('')
     setPrioridadeId('')
+    setInicio('')
+    setPrazo('')
     criar.reset()
     setAberto(true)
   }
 
   function salvar() {
     if (!titulo.trim() || !contato) return
-    const prazoIso = prazoData ? new Date(`${prazoData}T${prazoHora || '18:00'}:00`).toISOString() : null
     criar.mutate(
       {
         atendimentoId: atendimento.id,
@@ -122,7 +130,8 @@ export function TarefasContato({ atendimento }: { atendimento: AtendimentoLista 
         titulo: titulo.trim().toUpperCase(),
         descricao: descricao.trim() || null,
         responsavelId: responsavelId || null,
-        prazoIso,
+        inicioIso: inicio ? new Date(inicio).toISOString() : null,
+        prazoIso: prazo ? new Date(prazo).toISOString() : null,
         prioridadeId: prioridadeId || null,
         etapaPendenteId: catalogos.data?.etapaPendenteId ?? null,
         criadoPorId: usuario!.id,
@@ -152,9 +161,20 @@ export function TarefasContato({ atendimento }: { atendimento: AtendimentoLista 
         </p>
       ) : (
         <div className="flex flex-col gap-2">
-          {tarefas.map((item) => (
+          {visiveis.map((item) => (
             <ItemTarefa key={item.id} item={item} />
           ))}
+          {temMais && (
+            <a
+              href={URL_TAREFAS_PAINEL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-1.5 h-8 rounded-[6px] border border-bd-2 bg-sf-2 text-[12px] text-tx-2 hover:text-tx-1 hover:bg-sf-3 transition-colors duration-[120ms]"
+            >
+              Ver mais no painel
+              <ExternalLink size={13} className="shrink-0" />
+            </a>
+          )}
         </div>
       )}
 
@@ -175,40 +195,20 @@ export function TarefasContato({ atendimento }: { atendimento: AtendimentoLista 
             placeholder="O que precisa ser feito (opcional)"
             aria-label="Descrição da tarefa"
           />
-          <Selecao
-            rotulo="Responsável"
-            value={responsavelId}
-            onChange={(e) => setResponsavelId(e.target.value)}
-            aria-label="Responsável"
-          >
-            <option value="">Em aberto (sem responsável)</option>
-            {(usuarios.data ?? []).map((u) => (
-              <option key={u.id} value={u.id}>
-                {u.nome}
-              </option>
-            ))}
-          </Selecao>
           <div className="grid grid-cols-2 gap-3">
-            <label className="flex flex-col gap-1.5">
-              <span className="text-[13px] text-tx-2">Prazo</span>
-              <div className="flex items-center gap-2">
-                <input
-                  type="date"
-                  value={prazoData}
-                  onChange={(e) => setPrazoData(e.target.value)}
-                  aria-label="Data do prazo"
-                  className={`${inputBase} flex-1 min-w-0`}
-                />
-                <input
-                  type="time"
-                  value={prazoHora}
-                  onChange={(e) => setPrazoHora(e.target.value)}
-                  aria-label="Hora do prazo"
-                  disabled={!prazoData}
-                  className={`${inputBase} disabled:opacity-45`}
-                />
-              </div>
-            </label>
+            <Selecao
+              rotulo="Responsável"
+              value={responsavelId}
+              onChange={(e) => setResponsavelId(e.target.value)}
+              aria-label="Responsável"
+            >
+              <option value="">Em aberto (sem responsável)</option>
+              {(usuarios.data ?? []).map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.nome}
+                </option>
+              ))}
+            </Selecao>
             <Selecao
               rotulo="Prioridade"
               value={prioridadeId}
@@ -222,6 +222,28 @@ export function TarefasContato({ atendimento }: { atendimento: AtendimentoLista 
                 </option>
               ))}
             </Selecao>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <label className="flex flex-col gap-1.5">
+              <span className="text-[13px] text-tx-2">Início previsto</span>
+              <input
+                type="datetime-local"
+                value={inicio}
+                onChange={(e) => setInicio(e.target.value)}
+                aria-label="Início previsto"
+                className={`${inputBase} w-full min-w-0`}
+              />
+            </label>
+            <label className="flex flex-col gap-1.5">
+              <span className="text-[13px] text-tx-2">Prazo de entrega</span>
+              <input
+                type="datetime-local"
+                value={prazo}
+                onChange={(e) => setPrazo(e.target.value)}
+                aria-label="Prazo de entrega"
+                className={`${inputBase} w-full min-w-0`}
+              />
+            </label>
           </div>
 
           {empresa && (

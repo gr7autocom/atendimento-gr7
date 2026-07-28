@@ -371,11 +371,13 @@ export type TarefaDoContato = {
   } | null
 }
 
-/** Tarefas avulsas abertas para este contato (só leitura; andamento no painel). */
+/** Tarefas avulsas abertas para este contato (só leitura; andamento no painel).
+ *  Faz refetch periódico para refletir mudanças de status feitas no painel. */
 export function useTarefasDoContato(contatoId: string | null) {
   return useQuery({
     queryKey: ['tarefas_contato', contatoId],
     enabled: !!contatoId,
+    refetchInterval: 30000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('atendimento_tarefas')
@@ -408,6 +410,7 @@ export function useCriarTarefa() {
       titulo: string
       descricao: string | null
       responsavelId: string | null
+      inicioIso: string | null
       prazoIso: string | null
       prioridadeId: string | null
       etapaPendenteId: string | null
@@ -419,6 +422,8 @@ export function useCriarTarefa() {
           titulo: p.titulo,
           descricao: p.descricao,
           responsavel_id: p.responsavelId,
+          // sem início informado: omite para o banco usar o default now()
+          inicio_previsto: p.inicioIso ?? undefined,
           prazo_entrega: p.prazoIso,
           prioridade_id: p.prioridadeId,
           cliente_id: p.clienteId,
