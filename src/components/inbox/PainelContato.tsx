@@ -73,7 +73,7 @@ export function PainelContato({
   const cls =
     variante === 'cheia'
       ? 'w-full h-full overflow-y-auto bg-sf-1'
-      : 'hidden lg:block lg:w-[272px] shrink-0 bg-sf-1 lg:border-l border-bd-1 overflow-y-auto'
+      : 'hidden lg:block lg:w-[320px] shrink-0 bg-sf-1 lg:border-l border-bd-1 overflow-y-auto'
 
   function copiarProtocolo() {
     navigator.clipboard?.writeText(String(atendimento!.protocolo))
