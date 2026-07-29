@@ -335,24 +335,20 @@ export function useParticipantes(atendimentoId: string | null) {
 
 export type Prioridade = { id: string; nome: string; nivel: number }
 
-/** Catálogos para o formulário de tarefa: prioridades e a etapa inicial (Pendente). */
+/** Prioridades para o formulário de tarefa. Etapa inicial, categoria e
+ *  classificação são resolvidas pela RPC no banco, não aqui. */
 export function useCatalogosTarefa() {
   return useQuery({
     queryKey: ['catalogos_tarefa'],
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
-      const [prio, etp] = await Promise.all([
-        supabase.from('prioridades').select('id, nome, nivel').eq('ativo', true).order('nivel'),
-        supabase.from('etapas').select('id, nome, ordem').eq('ativo', true).order('ordem'),
-      ])
-      if (prio.error) throw prio.error
-      if (etp.error) throw etp.error
-      const etapas = (etp.data ?? []) as { id: string; nome: string; ordem: number }[]
-      const pendente = etapas.find((e) => e.nome.toLowerCase() === 'pendente') ?? etapas[0] ?? null
-      return {
-        prioridades: (prio.data ?? []) as unknown as Prioridade[],
-        etapaPendenteId: pendente?.id ?? null,
-      }
+      const { data, error } = await supabase
+        .from('prioridades')
+        .select('id, nome, nivel')
+        .eq('ativo', true)
+        .order('nivel')
+      if (error) throw error
+      return { prioridades: (data ?? []) as unknown as Prioridade[] }
     },
   })
 }
@@ -395,10 +391,12 @@ export function useTarefasDoContato(contatoId: string | null) {
 }
 
 /**
- * Cria uma tarefa avulsa (insert em `tarefas`) e grava o vínculo em
- * `atendimento_tarefas`. Nasce em "Pendente", com o cliente do contato (auto) e
- * `de_projeto:false`. Notifica o atribuído quando não for o próprio criador,
- * pela mesma Edge Function do painel.
+ * Cria a tarefa avulsa e o vínculo com o atendimento pela RPC
+ * `criar_tarefa_atendimento`, que faz as duas gravações numa transação só (antes
+ * eram dois inserts soltos: falha no segundo deixava tarefa órfã no painel).
+ * A RPC também exige empresa vinculada e define etapa "Pendente", categoria
+ * "Outros" e classificação "Solicitações de cliente". Notifica o atribuído
+ * quando não for o próprio criador, pela mesma Edge Function do painel.
  */
 export function useCriarTarefa() {
   const qc = useQueryClient()
@@ -406,44 +404,28 @@ export function useCriarTarefa() {
     mutationFn: async (p: {
       atendimentoId: string
       contatoId: string
-      clienteId: string | null
       titulo: string
       descricao: string | null
       responsavelId: string | null
       inicioIso: string | null
       prazoIso: string | null
       prioridadeId: string | null
-      etapaPendenteId: string | null
       criadoPorId: string
     }) => {
-      const { data, error } = await supabase
-        .from('tarefas')
-        .insert({
-          titulo: p.titulo,
-          descricao: p.descricao,
-          responsavel_id: p.responsavelId,
-          // sem início informado: omite para o banco usar o default now()
-          inicio_previsto: p.inicioIso ?? undefined,
-          prazo_entrega: p.prazoIso,
-          prioridade_id: p.prioridadeId,
-          cliente_id: p.clienteId,
-          etapa_id: p.etapaPendenteId,
-          criado_por_id: p.criadoPorId,
-          de_projeto: false,
-          updated_at: new Date().toISOString(),
-        } as never)
-        .select('id')
-        .single()
-      if (error) throw error
-      const tarefaId = (data as { id: string }).id
-
-      const { error: errVinc } = await supabase.from('atendimento_tarefas').insert({
-        tarefa_id: tarefaId,
-        atendimento_id: p.atendimentoId,
-        contato_id: p.contatoId,
-        criado_por: p.criadoPorId,
+      const { data, error } = await supabase.rpc('criar_tarefa_atendimento', {
+        p_atendimento_id: p.atendimentoId,
+        p_contato_id: p.contatoId,
+        p_titulo: p.titulo,
+        p_descricao: p.descricao,
+        p_responsavel_id: p.responsavelId,
+        p_prioridade_id: p.prioridadeId,
+        p_inicio_previsto: p.inicioIso,
+        p_prazo_entrega: p.prazoIso,
       } as never)
-      if (errVinc) throw errVinc
+      if (error) throw error
+      const linha = (data as { tarefa_id: string }[] | null)?.[0]
+      const tarefaId = linha?.tarefa_id
+      if (!tarefaId) throw new Error('RPC não retornou a tarefa criada')
 
       if (p.responsavelId && p.responsavelId !== p.criadoPorId) {
         // Notificação é best-effort; não bloqueia a criação se falhar.
@@ -457,6 +439,19 @@ export function useCriarTarefa() {
       qc.invalidateQueries({ queryKey: ['tarefas_contato', v.contatoId] })
     },
   })
+}
+
+/** Mensagem de erro da criação de tarefa, pelo código que o Postgres devolve. */
+export function mensagemErroCriarTarefa(erro: unknown): string {
+  const e = erro as { code?: string; message?: string } | null
+  if (e?.code === '42501') {
+    return 'Seu perfil não pode criar tarefas no painel. Peça a liberação a um administrador.'
+  }
+  // Regras da própria RPC (empresa não vinculada, título vazio) já vêm escritas.
+  if (e?.code === '23514' || e?.code === '23503') {
+    return e.message ?? 'Não foi possível criar a tarefa.'
+  }
+  return 'Não foi possível criar a tarefa. Tente de novo.'
 }
 
 /** Ids dos atendimentos em que o usuário logado entra como participante (não dono). */

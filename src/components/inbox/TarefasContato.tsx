@@ -4,6 +4,7 @@ import {
   useCatalogosTarefa,
   useCriarTarefa,
   useTarefasDoContato,
+  mensagemErroCriarTarefa,
   nomeEmpresa,
   type AtendimentoLista,
   type TarefaDoContato,
@@ -36,6 +37,17 @@ function tomPrioridade(nivel: number | undefined): 'neutro' | 'warn' | 'err' {
   if ((nivel ?? 0) >= 4) return 'err'
   if ((nivel ?? 0) === 3) return 'warn'
   return 'neutro'
+}
+
+/** "YYYY-MM-DDTHH:mm" no fuso local, formato que o input datetime-local espera. */
+function agoraLocal(): string {
+  const d = new Date()
+  return `${d.toLocaleDateString('sv')}T${d.toTimeString().slice(0, 5)}`
+}
+
+/** Hoje no horário informado ("18:00"), mesmo formato do input. */
+function hojeAs(hhmm: string): string {
+  return `${new Date().toLocaleDateString('sv')}T${hhmm}`
 }
 
 function formatarPrazo(iso: string | null): string | null {
@@ -78,9 +90,10 @@ function ItemTarefa({ item }: { item: TarefaDoContato }) {
  * avulsa (formulário num modal, já que o painel é estreito) que passa a ser
  * trabalhada no painel de implantação; aqui a lista é só leitura e mostra as
  * mais recentes (o restante fica no painel, via "Ver mais"). O botão de criar só
- * aparece para quem tem `tarefa.criar` (a RLS de `tarefas` também barra). A lista
- * vem por `atendimento_tarefas` (só o que foi aberto pelo chat) — tarefa criada
- * direto no painel não aparece aqui. Ver docs/db.md.
+ * aparece para quem tem `tarefa.criar` e para contato com empresa vinculada (a
+ * RPC `criar_tarefa_atendimento` barra os dois casos no banco). A lista vem por
+ * `atendimento_tarefas` (só o que foi aberto pelo chat) — tarefa criada direto
+ * no painel não aparece aqui. Ver docs/db.md.
  */
 export function TarefasContato({ atendimento }: { atendimento: AtendimentoLista }) {
   const usuario = useUsuarioAtual()
@@ -90,9 +103,11 @@ export function TarefasContato({ atendimento }: { atendimento: AtendimentoLista 
   const lista = useTarefasDoContato(atendimento.contato?.id ?? null)
   const criar = useCriarTarefa()
 
-  const podeCriar = can('tarefa.criar')
   const contato = atendimento.contato
   const empresa = contato?.cliente_id ? nomeEmpresa(contato.cliente) : null
+  // Tarefa nasce vinculada à empresa do contato; sem vínculo, a RPC recusa.
+  const semEmpresa = !contato?.cliente_id
+  const podeCriar = can('tarefa.criar') && !semEmpresa
 
   const [aberto, setAberto] = useState(false)
   const [titulo, setTitulo] = useState('')
@@ -114,8 +129,10 @@ export function TarefasContato({ atendimento }: { atendimento: AtendimentoLista 
     setDescricao('')
     setResponsavelId(usuario?.id ?? '')
     setPrioridadeId('')
-    setInicio('')
-    setPrazo('')
+    // Mesmos defaults do painel: começa agora, entrega hoje às 18h. Sem prazo a
+    // tarefa nunca aparece como atrasada nem entra no aviso diário de prazo.
+    setInicio(agoraLocal())
+    setPrazo(hojeAs('18:00'))
     criar.reset()
     setAberto(true)
   }
@@ -126,14 +143,12 @@ export function TarefasContato({ atendimento }: { atendimento: AtendimentoLista 
       {
         atendimentoId: atendimento.id,
         contatoId: contato.id,
-        clienteId: contato.cliente_id,
         titulo: titulo.trim().toUpperCase(),
         descricao: descricao.trim() || null,
         responsavelId: responsavelId || null,
         inicioIso: inicio ? new Date(inicio).toISOString() : null,
         prazoIso: prazo ? new Date(prazo).toISOString() : null,
         prioridadeId: prioridadeId || null,
-        etapaPendenteId: catalogos.data?.etapaPendenteId ?? null,
         criadoPorId: usuario!.id,
       },
       { onSuccess: () => setAberto(false) }
@@ -146,6 +161,16 @@ export function TarefasContato({ atendimento }: { atendimento: AtendimentoLista 
         <Botao variante="neutro" tamanho="sm" icone={<Plus size={15} />} onClick={abrir}>
           Nova tarefa
         </Botao>
+      )}
+
+      {semEmpresa && can('tarefa.criar') && (
+        <div className="flex items-start gap-2 rounded-[8px] border border-bd-1 bg-sf-2 px-3 py-2.5">
+          <Building2 size={14} className="shrink-0 mt-0.5 text-tx-3" />
+          <p className="text-[12px] text-tx-2 leading-snug">
+            Este contato não tem empresa vinculada. Vincule uma empresa nas informações do
+            contato para abrir tarefas por aqui.
+          </p>
+        </div>
       )}
 
       {lista.isLoading ? (
@@ -256,7 +281,7 @@ export function TarefasContato({ atendimento }: { atendimento: AtendimentoLista 
           )}
 
           {criar.isError && (
-            <p className="text-[12px] text-err">Não foi possível criar a tarefa. Tente de novo.</p>
+            <p className="text-[12px] text-err">{mensagemErroCriarTarefa(criar.error)}</p>
           )}
 
           <div className="flex items-center justify-end gap-2 pt-1">
