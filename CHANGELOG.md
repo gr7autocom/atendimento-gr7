@@ -4,6 +4,16 @@
 
 ---
 
+## 2026-07-29 — Tarefa aberta pelo chat: regras mais firmes
+
+- A tarefa só é aberta para contato com empresa vinculada. Sem vínculo, a seção Tarefas explica o que fazer em vez de deixar criar solta
+- Início previsto e prazo de entrega já vêm preenchidos com agora e hoje às 18:00, editáveis. Tarefa sem prazo não aparece como atrasada no painel nem entra no aviso diário de prazo
+- Toda tarefa aberta pelo chat chega ao painel com categoria Outros e classificação Solicitações de cliente, então não some mais dos filtros de lá
+- A criação virou uma operação só no banco: ou a tarefa é criada e vinculada ao atendimento, ou nada é gravado. Antes, uma falha no meio podia deixar tarefa duplicada no painel
+- Quando o perfil não tem permissão para criar tarefa, a mensagem diz isso, no lugar do erro genérico
+
+---
+
 ## 2026-07-28 — Tarefas no atendimento
 
 - No painel do contato, o atendente agora abre uma tarefa direto do chat, na seção Tarefas: informa o título e, se quiser, descrição, responsável, prioridade, início previsto e prazo de entrega
