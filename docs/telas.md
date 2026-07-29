@@ -102,4 +102,6 @@ Sidebar com as abas abaixo. Detalhe de cada aba chega por prints ao longo do des
 
 ## Fora do escopo (pós-MVP)
 
-Dashboard e Relatórios reais (Fase 3); abas do painel do contato vistas no Zintech que não entram agora (Tarefas, Mensagens Programadas, Retornos, Comentários); admin 100% otimizado para mobile.
+Dashboard e Relatórios reais (Fase 3); abas do painel do contato vistas no Zintech que não entram agora (Mensagens Programadas, Retornos, Comentários); admin 100% otimizado para mobile.
+
+> A aba **Tarefas** saiu desta lista: entregue em 2026-07-28 (abre tarefa avulsa no painel de implantação). Ver [db.md](db.md).
