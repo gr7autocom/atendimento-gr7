@@ -4,7 +4,33 @@
 
 ## 🔄 Em Andamento
 
-_(nada no momento)_
+**Checkpoint salvo em 2026-07-30 16:34**
+
+### Feito nesta sessão
+
+- Auditoria visual completa com a skill `ui-ux-pro-max` (24 achados) e os 5 lotes de correção, registrados em ✅ Concluído
+- Guarda automática dos padrões criada (`src/padroes-ui.test.ts`, 10 regras dentro do `npm test`, hoje 50 testes)
+- Documentação sincronizada: `design.md` (checklist, contraste, escala tipográfica, dimensões e espaçamento), regras 6 e 7 do `CLAUDE.md`, Status no ADR-10 e marco no `CHANGELOG.md`
+- Code review dos 5 commits: 5 achados, nenhum CRITICAL ou HIGH, **todos corrigidos e commitados** (X duplicado na busca; modal fechando só no `onSuccess`, com prop `erro` nova no `ModalConfirmar`; callback do `useFecharFora` em ref; `GradeHorarios` travando só o dia clicado; hook movido para `src/lib/useFecharFora.ts` e guarda ampliada para varrer `.ts`)
+- Tudo commitado e publicado: `c63b749..8fb9cfd` em `feat/fundacao`
+
+### Ressalva de validação
+
+- Do review, só o achado do X duplicado foi conferido no navegador. Os outros passaram por type-check, lint e os 50 testes, sem executar remoção real para não apagar tag, departamento ou mensagem do banco. Vale um olhar no caminho de remoção quando alguém mexer nessas telas
+
+### Tentado e descartado
+
+- `fileURLToPath(new URL('.', import.meta.url))` para achar a raiz em `padroes-ui.test.ts` — quebra no vitest com jsdom (`TypeError: The URL must be of scheme file`), porque ali o `import.meta.url` vem como URL http do dev server do Vite. Usar `join(process.cwd(), 'src')`
+- Filtro de comentário com regex ancorado em `$` sem tratar CRLF — não filtrava nada, porque em JS o `.` não casa `\r` e os arquivos do projeto estão em CRLF. Ler com `.split(/\r?\n/)`
+
+### Próximo passo
+
+- Ligar a aba Conexão e a pílula de status ao `whatsapp-conexao` em modo mock: é o único item de implementação que não depende de contratar a uazapi
+
+### Decisões pendentes
+
+- Trocar a senha usada no chat durante esta sessão
+- Contratar uazapi e número dedicado, que destrava a integração real, o indicador de não lidas e as três métricas do painel
 
 **Próximo:** o **fluxo do bot** está implementado no `whatsapp-webhook` e **deployado**, completo no modo mock (boas-vindas, menu, identificação com auto-vínculo por CNPJ, fila, `#sair`, avaliação ao finalizar, **fora de horário/plantão e reabertura em 3h**). Faltam ligar a aba Conexão/pílula ao mock e a **integração real** (conta uazapi + número, envio de fato).
 
