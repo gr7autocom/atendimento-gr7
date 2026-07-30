@@ -64,7 +64,7 @@ export function AceitarPotencial({
   return (
     <Modal titulo="Aceitar chamado" aberto={aberto} onFechar={onFechar}>
       <div className="flex flex-col gap-3">
-        <p className="text-[13px] text-tx-2">
+        <p className="text-corpo text-tx-2">
           Este contato ainda não tem empresa vinculada. Escolha a empresa e o setor para assumir o atendimento.
         </p>
 
@@ -77,11 +77,11 @@ export function AceitarPotencial({
         />
 
         {busca.trim().length >= 2 && (
-          <div className="max-h-40 overflow-y-auto rounded-[6px] border border-bd-2 bg-sf-2">
+          <div className="max-h-40 overflow-y-auto rounded-1 border border-bd-2 bg-sf-2">
             {clientes.isLoading ? (
-              <p className="text-[13px] text-tx-3 p-2.5">Buscando…</p>
+              <p className="text-corpo text-tx-3 p-2.5">Buscando…</p>
             ) : (clientes.data ?? []).length === 0 ? (
-              <p className="text-[13px] text-tx-3 p-2.5">
+              <p className="text-corpo text-tx-3 p-2.5">
                 Nenhuma empresa encontrada. O cadastro novo é feito no painel.
               </p>
             ) : (
@@ -90,7 +90,7 @@ export function AceitarPotencial({
                   key={c.id}
                   onClick={() => setEmpresaId(c.id)}
                   className={cn(
-                    'w-full text-left px-2.5 py-2 text-[13px] transition-colors duration-[120ms]',
+                    'w-full text-left px-2.5 py-2 text-corpo transicao',
                     empresaId === c.id ? 'bg-br-soft text-br-2 font-medium' : 'text-tx-1 hover:bg-sf-3'
                   )}
                 >
@@ -102,7 +102,7 @@ export function AceitarPotencial({
         )}
 
         {empresaEscolhida && (
-          <p className="text-[13px] text-tx-1">
+          <p className="text-corpo text-tx-1">
             Empresa escolhida: <span className="font-medium">{nomeEmpresa(empresaEscolhida)}</span>
           </p>
         )}
@@ -121,7 +121,7 @@ export function AceitarPotencial({
           ))}
         </Selecao>
 
-        {erro && <p className="text-[13px] text-err">{erro}</p>}
+        {erro && <p className="text-corpo text-err">{erro}</p>}
 
         <div className="flex justify-end gap-2 pt-1">
           <Botao variante="fantasma" onClick={onFechar}>

@@ -25,6 +25,7 @@ export function HorarioFuncionamento() {
         ]}
       >
         <GradeHorarios
+          adicionando={horarios.criar.isPending}
           faixas={faixas}
           aoAdicionar={(dia) =>
             horarios.criar.mutate({ dia_semana: dia, hora_inicio: '08:00', hora_fim: '18:00', ativo: true })

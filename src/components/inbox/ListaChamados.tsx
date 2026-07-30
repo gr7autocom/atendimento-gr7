@@ -1,15 +1,16 @@
 import { useState } from 'react'
-import { Inbox as IconeInbox, Search, ListFilter, RotateCw, X, Building2 } from 'lucide-react'
+import { Inbox as IconeInbox, ListFilter, RotateCw, X, Building2 } from 'lucide-react'
 import { nomeEmpresa, useMeusAtendimentosParticipante, type AtendimentoLista } from '../../lib/useInbox'
 import type { FiltroInbox } from '../../pages/Dashboard'
 import { useCrud } from '../../lib/useCrud'
 import { useUsuarios } from '../../lib/useVinculos'
 import { usePermissao } from '../../lib/permissoes'
 import { cn } from '../../lib/utils'
-import { corTag } from '../../lib/coresSetor'
 import { Avatar } from '../ui/Avatar'
 import { PontoStatus } from '../ui/Selo'
 import { Vazio, LinhasCarregando } from '../ui/Estados'
+import { PillTag } from '../ui/PillTag'
+import { CampoBusca } from '../ui/Campo'
 import { CriarAtendimento } from './CriarAtendimento'
 
 type Fila = 'ativos' | 'pendentes' | 'potenciais'
@@ -113,21 +114,17 @@ export function ListaChamados({
     >
       <div className="p-2.5 flex flex-col gap-2 border-b border-bd-1">
         <div className="flex items-center gap-1.5">
-          <div className="relative flex-1">
-            <Search size={15} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-tx-3 pointer-events-none" />
-            <input
-              value={busca}
-              onChange={(e) => setBusca(e.target.value)}
-              placeholder="Pesquisar"
-              aria-label="Pesquisar chamados"
-              className="w-full h-8 pl-8 pr-2.5 text-[13px] rounded-[6px] bg-sf-2 border border-bd-2 text-tx-1 placeholder:text-tx-3 hover:border-bd-3 focus:border-br-1 focus:outline-none focus:ring-2 focus:ring-[color:var(--br-soft)] transition-colors duration-[120ms]"
-            />
-          </div>
+          <CampoBusca
+            valor={busca}
+            aoMudar={setBusca}
+            rotuloAcessivel="Pesquisar chamados"
+            className="flex-1"
+          />
           <button
             type="button"
             onClick={aoAtualizar}
             aria-label="Atualizar lista"
-            className="w-8 h-8 shrink-0 rounded-[6px] flex items-center justify-center text-tx-2 hover:text-tx-1 hover:bg-sf-2 border border-bd-2 transition-colors duration-[120ms]"
+            className="w-8 h-8 shrink-0 rounded-1 flex items-center justify-center text-tx-2 hover:text-tx-1 hover:bg-sf-2 border border-bd-campo transicao"
           >
             <RotateCw size={15} className={cn(atualizando && 'animate-spin')} />
           </button>
@@ -140,7 +137,7 @@ export function ListaChamados({
             value={setorFiltro}
             onChange={(e) => aoFiltrar({ ...filtro, departamentoId: e.target.value || null })}
             aria-label="Filtrar por departamento"
-            className="flex-1 h-7 px-2 text-[12px] rounded-[6px] bg-sf-2 border border-bd-2 text-tx-2 hover:border-bd-3 focus:border-br-1 focus:outline-none transition-colors duration-[120ms]"
+            className="flex-1 h-7 px-2 text-apoio rounded-1 bg-sf-2 border border-bd-campo text-tx-2 hover:border-tx-3 focus:border-br-2 focus:outline-none transicao"
           >
             <option value="">Todos os setores</option>
             {(departamentos.lista.data ?? []).map((d) => (
@@ -153,13 +150,13 @@ export function ListaChamados({
 
         {nomeAtendente && (
           <div className="flex items-center">
-            <span className="inline-flex items-center gap-1.5 h-6 pl-2 pr-1 rounded-[6px] bg-br-soft text-br-2 text-[12px] font-medium">
+            <span className="inline-flex items-center gap-1.5 h-6 pl-2 pr-1 rounded-1 bg-br-soft text-br-2 text-apoio font-medium">
               Atendente: {nomeAtendente}
               <button
                 type="button"
                 onClick={() => aoFiltrar({ ...filtro, atendenteId: null })}
                 aria-label="Limpar filtro de atendente"
-                className="w-5 h-5 flex items-center justify-center rounded-[4px] hover:bg-[color:var(--br-soft)]"
+                className="w-6 h-6 flex items-center justify-center rounded-micro hover:bg-[color:var(--br-soft)]"
               >
                 <X size={13} />
               </button>
@@ -174,12 +171,12 @@ export function ListaChamados({
             key={a.id}
             onClick={() => setFila(a.id)}
             className={cn(
-              'flex-1 h-7 rounded-[6px] text-[12px] transition-colors duration-[120ms] inline-flex items-center justify-center gap-1',
+              'flex-1 h-7 rounded-1 text-apoio transicao inline-flex items-center justify-center gap-1',
               fila === a.id ? 'bg-br-soft text-br-2 font-medium' : 'text-tx-2 hover:text-tx-1 hover:bg-sf-2'
             )}
           >
             {a.label}
-            <span className={cn('text-[11px]', fila === a.id ? 'text-br-2' : 'text-tx-3')}>{listas[a.id].length}</span>
+            <span className={cn('text-mini', fila === a.id ? 'text-br-2' : 'text-tx-3')}>{listas[a.id].length}</span>
           </button>
         ))}
       </div>
@@ -202,7 +199,7 @@ export function ListaChamados({
                 key={a.id}
                 onClick={() => onSelecionar(a.id)}
                 className={cn(
-                  'relative w-full text-left px-3 py-2.5 border-b border-bd-1 flex gap-2.5 transition-colors duration-[120ms]',
+                  'relative w-full text-left px-3 py-2.5 border-b border-bd-1 flex gap-2.5 transicao',
                   ativo ? 'bg-sf-2' : 'hover:bg-sf-2'
                 )}
               >
@@ -213,42 +210,32 @@ export function ListaChamados({
                 <Avatar nome={nomeContato(a)} tamanho={38} whatsapp />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline justify-between gap-2">
-                    <span className="text-[13px] text-tx-1 font-medium truncate">{nomeContato(a)}</span>
-                    <span className="dado text-[11px] text-tx-3 shrink-0">{hora(a.ultima_mensagem_em)}</span>
+                    <span className="text-corpo text-tx-1 font-medium truncate">{nomeContato(a)}</span>
+                    <span className="dado text-mini text-tx-3 shrink-0">{hora(a.ultima_mensagem_em)}</span>
                   </div>
                   {empresa && (
                     <div className="flex items-center gap-1 mt-0.5 min-w-0">
                       <Building2 size={12} className="text-tx-3 shrink-0" />
-                      <span className="text-[12px] text-tx-2 truncate">{empresa}</span>
+                      <span className="text-apoio text-tx-2 truncate">{empresa}</span>
                     </div>
                   )}
                   <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
                     <PontoStatus status={a.status} />
-                    <span className="text-[12px] text-tx-2 italic truncate">{setor ?? 'Sem setor'}</span>
+                    <span className="text-apoio text-tx-2 italic truncate">{setor ?? 'Sem setor'}</span>
                     {participoDe(a) && (
-                      <span className="shrink-0 inline-flex items-center h-[16px] px-1.5 rounded-[4px] bg-br-soft text-br-2 text-[10px] font-semibold uppercase tracking-wide">
+                      <span className="shrink-0 inline-flex items-center h-[16px] px-1.5 rounded-micro bg-br-soft text-br-2 text-micro font-semibold uppercase tracking-wide">
                         Participo
                       </span>
                     )}
                   </div>
                   <div className="mt-1">
-                    <span className="dado text-[11px] text-tx-3 truncate">{a.contato?.telefone ?? ''}</span>
+                    <span className="dado text-mini text-tx-3 truncate">{a.contato?.telefone ?? ''}</span>
                   </div>
                   {tags.length > 0 && (
                     <div className="flex flex-wrap items-center gap-1 mt-1.5">
-                      {tags.map((t) => {
-                        const ct = corTag(t)
-                        return (
-                          <span
-                            key={t.id}
-                            title={t.nome}
-                            className="h-[18px] leading-[18px] px-1.5 rounded-[4px] text-[10px] font-semibold uppercase tracking-wide truncate max-w-[calc(50%-3px)]"
-                            style={{ background: ct.bg, color: ct.fg }}
-                          >
-                            {t.nome}
-                          </span>
-                        )
-                      })}
+                      {tags.map((t) => (
+                        <PillTag key={t.id} tag={t} compacta className="max-w-[calc(50%-3px)]" />
+                      ))}
                     </div>
                   )}
                 </div>

@@ -47,11 +47,11 @@ export function AtendenteDetalhe() {
         <button
           type="button"
           onClick={() => navigate('/admin/usuarios')}
-          className="inline-flex items-center gap-1.5 text-[13px] text-tx-2 hover:text-tx-1"
+          className="inline-flex items-center gap-1.5 text-corpo text-tx-2 hover:text-tx-1"
         >
           <ArrowLeft size={16} /> Voltar
         </button>
-        <p className="mt-6 text-sm text-tx-3">Atendente não encontrado.</p>
+        <p className="mt-6 text-corpo-lg text-tx-3">Atendente não encontrado.</p>
       </div>
     )
   }
@@ -64,23 +64,25 @@ export function AtendenteDetalhe() {
             type="button"
             onClick={() => navigate('/admin/usuarios')}
             aria-label="Voltar"
-            className="w-8 h-8 shrink-0 rounded-[6px] flex items-center justify-center text-tx-2 hover:text-tx-1 hover:bg-sf-2 transition-colors"
+            className="w-8 h-8 shrink-0 rounded-1 flex items-center justify-center text-tx-2 hover:text-tx-1 hover:bg-sf-2 transicao"
           >
             <ArrowLeft size={18} />
           </button>
           <Avatar nome={usuario.nome} fotoUrl={usuario.foto_url} tamanho={40} />
           <div className="min-w-0">
-            <h1 className="text-[16px] font-semibold text-tx-1 truncate">{usuario.nome}</h1>
-            <p className="text-[12px] text-tx-3 truncate">{usuario.email}</p>
+            <h1 className="text-titulo font-semibold text-tx-1 truncate">{usuario.nome}</h1>
+            <p className="text-apoio text-tx-3 truncate">{usuario.email}</p>
           </div>
         </div>
         <Selo tom={usuario.ativo ? 'ok' : 'neutro'}>{usuario.ativo ? 'Ativo' : 'Inativo'}</Selo>
       </div>
 
-      <Abas abas={ABAS} ativo={aba} aoSelecionar={setAba} />
+      <Abas abas={ABAS} ativo={aba} aoSelecionar={setAba} idGrupo="atendente" rotulo="Seções do atendente" />
 
       {aba === 'departamentos' ? (
         <PainelAba
+          idGrupo="atendente"
+          aba="departamentos"
           topicos={[
             'Marque os departamentos que este atendente atende.',
             'Ele só vê as filas dos departamentos marcados.',
@@ -100,7 +102,7 @@ export function AtendenteDetalhe() {
                       : vinculos.vincular.mutate({ usuario_id: id, departamento_id: d.id })
                   }
                   className={cn(
-                    'h-8 px-3 rounded-[6px] text-[13px] border transition-colors duration-[120ms]',
+                    'h-8 px-3 rounded-1 text-corpo border transicao',
                     marcado
                       ? 'bg-br-soft text-br-2 border-transparent font-medium'
                       : 'bg-sf-2 text-tx-2 border-bd-2 hover:text-tx-1 hover:border-bd-3'
@@ -114,6 +116,8 @@ export function AtendenteDetalhe() {
         </PainelAba>
       ) : (
         <PainelAba
+          idGrupo="atendente"
+          aba="plantao"
           topicos={[
             'Defina as faixas em que o atendente atende fora do horário comercial.',
             'Sem faixa definida, vale apenas o horário comercial.',
@@ -121,6 +125,7 @@ export function AtendenteDetalhe() {
           ]}
         >
           <GradeHorarios
+            adicionando={horarios.adicionar.isPending}
             faixas={(horarios.lista.data ?? []).filter((f) => f.usuario_id === id)}
             aoAdicionar={(dia) =>
               horarios.adicionar.mutate({ usuario_id: id, dia_semana: dia, hora_inicio: '18:00', hora_fim: '22:00' })

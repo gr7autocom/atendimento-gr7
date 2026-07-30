@@ -42,7 +42,7 @@ export function SidebarRecolhida() {
               title={i.label}
               className={({ isActive }) =>
                 cn(
-                  'relative flex items-center h-10 mx-1.5 rounded-[6px] transition-colors duration-[120ms]',
+                  'relative flex items-center h-10 mx-1.5 rounded-1 transicao',
                   isActive ? 'bg-sf-2 text-tx-1 font-medium' : 'text-tx-2 hover:text-tx-1 hover:bg-sf-2'
                 )
               }
@@ -59,7 +59,7 @@ export function SidebarRecolhida() {
                   <span className="w-[40px] flex items-center justify-center shrink-0">
                     <Icone size={18} />
                   </span>
-                  <span className="text-[13px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                  <span className="text-corpo whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-150">
                     {i.label}
                   </span>
                 </>

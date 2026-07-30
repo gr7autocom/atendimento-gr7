@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Plus, Pencil, Trash2, MessageSquareText } from 'lucide-react'
 import { useCrud } from '../../lib/useCrud'
-import { Modal } from '../../components/ui/Modal'
+import { Modal, ModalConfirmar } from '../../components/ui/Modal'
 import { Botao } from '../../components/ui/Botao'
 import { Entrada, AreaTexto, Selecao } from '../../components/ui/Campo'
 import { Selo } from '../../components/ui/Selo'
@@ -31,6 +31,8 @@ export function MensagensRapidas() {
   const [atalho, setAtalho] = useState('')
   const [texto, setTexto] = useState('')
   const [departamentoId, setDepartamentoId] = useState('')
+  // Mensagem em vias de ser removida, para o modal nomear o atalho que sai do ar.
+  const [removerMsg, setRemoverMsg] = useState<MsgRapida | null>(null)
 
   const itens = lista.data ?? []
   const deps = departamentos.lista.data ?? []
@@ -88,7 +90,7 @@ export function MensagensRapidas() {
         }
       />
 
-      <div className="rounded-[10px] border border-bd-1 bg-sf-1 p-3 mb-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className="rounded-2 border border-bd-1 bg-sf-1 p-3 mb-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
         <Entrada
           rotulo="Mensagem"
           placeholder="Buscar no texto"
@@ -114,7 +116,7 @@ export function MensagensRapidas() {
       {lista.isLoading ? (
         <LinhasCarregando linhas={6} />
       ) : itens.length === 0 ? (
-        <div className="rounded-[10px] border border-bd-1 bg-sf-1">
+        <div className="rounded-2 border border-bd-1 bg-sf-1">
           <Vazio
             icone={<MessageSquareText size={22} />}
             titulo="Nenhuma mensagem rápida"
@@ -127,15 +129,15 @@ export function MensagensRapidas() {
           />
         </div>
       ) : (
-        <div className="rounded-[10px] border border-bd-1 bg-sf-1 overflow-hidden">
-          <div className="grid grid-cols-[140px_1fr_auto] sm:grid-cols-[160px_1fr_180px_auto] items-center gap-3 px-4 h-9 border-b border-bd-1 text-[11px] font-medium uppercase tracking-wide text-tx-3">
+        <div className="rounded-2 border border-bd-1 bg-sf-1 overflow-hidden">
+          <div className="grid grid-cols-[140px_1fr_auto] sm:grid-cols-[160px_1fr_180px_auto] items-center gap-3 px-4 h-9 border-b border-bd-1 text-mini font-medium uppercase tracking-wide text-tx-3">
             <span>Palavra-chave</span>
             <span>Mensagem</span>
             <span className="hidden sm:block">Departamento</span>
             <span className="text-right">Ações</span>
           </div>
           {filtradas.length === 0 ? (
-            <p className="px-4 py-8 text-center text-[13px] text-tx-3">Nenhuma mensagem encontrada.</p>
+            <p className="px-4 py-8 text-center text-corpo text-tx-3">Nenhuma mensagem encontrada.</p>
           ) : (
             filtradas.map((i) => {
               const inativo = i.ativo === false
@@ -143,19 +145,19 @@ export function MensagensRapidas() {
               return (
                 <div
                   key={i.id}
-                  className="grid grid-cols-[140px_1fr_auto] sm:grid-cols-[160px_1fr_180px_auto] items-center gap-3 px-4 py-2.5 border-b border-bd-1 last:border-b-0 hover:bg-sf-2 transition-colors"
+                  className="grid grid-cols-[140px_1fr_auto] sm:grid-cols-[160px_1fr_180px_auto] items-center gap-3 px-4 py-2.5 border-b border-bd-1 last:border-b-0 hover:bg-sf-2 transicao"
                 >
-                  <span className={'dado text-[13px] truncate ' + (inativo ? 'text-tx-3' : 'text-br-2')}>
+                  <span className={'dado text-corpo truncate ' + (inativo ? 'text-tx-3' : 'text-br-2')}>
                     /{i.atalho}
                   </span>
-                  <span className={'text-[13px] truncate ' + (inativo ? 'text-tx-3' : 'text-tx-2')}>
+                  <span className={'text-corpo truncate ' + (inativo ? 'text-tx-3' : 'text-tx-2')}>
                     {i.texto}
                   </span>
                   <div className="hidden sm:block min-w-0">
                     {dep ? (
                       <Selo tom="neutro">{dep}</Selo>
                     ) : (
-                      <span className="text-[12px] text-tx-3">Todos os departamentos</span>
+                      <span className="text-apoio text-tx-3">Todos os departamentos</span>
                     )}
                   </div>
                   <div className="flex items-center justify-end gap-0.5">
@@ -164,7 +166,7 @@ export function MensagensRapidas() {
                       aria-pressed={!inativo}
                       onClick={() => atualizar.mutate({ id: i.id, valores: { ativo: inativo } })}
                       title={inativo ? 'Clique para ativar' : 'Clique para desativar'}
-                      className="mr-1 rounded-[6px] focus:outline-none focus:ring-2 focus:ring-[color:var(--br-soft)]"
+                      className="mr-1 rounded-1 focus:outline-none focus:ring-2 focus:ring-[color:var(--br-soft)]"
                     >
                       <Selo tom={inativo ? 'neutro' : 'ok'}>{inativo ? 'Inativa' : 'Ativa'}</Selo>
                     </button>
@@ -176,7 +178,7 @@ export function MensagensRapidas() {
                       tamanho="sm"
                       aria-label={`Remover ${i.atalho}`}
                       onClick={() => {
-                        if (confirm(`Remover a mensagem "/${i.atalho}"?`)) remover.mutate(i.id)
+                        setRemoverMsg(i)
                       }}
                     >
                       <Trash2 size={15} />
@@ -188,6 +190,23 @@ export function MensagensRapidas() {
           )}
         </div>
       )}
+
+      <ModalConfirmar
+        aberto={!!removerMsg}
+        titulo="Remover mensagem rápida"
+        descricao={
+          <>
+            O atalho <strong className="text-tx-1">/{removerMsg?.atalho}</strong> deixa de funcionar no
+            compositor da conversa.
+          </>
+        }
+        carregando={remover.isPending}
+        aoConfirmar={() => {
+          if (removerMsg) remover.mutate(removerMsg.id)
+          setRemoverMsg(null)
+        }}
+        aoCancelar={() => setRemoverMsg(null)}
+      />
 
       <Modal
         titulo={editando ? 'Editar mensagem rápida' : 'Nova mensagem rápida'}
@@ -201,7 +220,7 @@ export function MensagensRapidas() {
           }}
           className="flex flex-col gap-3"
         >
-          <div className="rounded-[8px] border border-bd-1 bg-sf-2 px-3 py-2.5 text-[12px] text-tx-2 flex flex-col gap-1.5">
+          <div className="rounded-2 border border-bd-1 bg-sf-2 px-3 py-2.5 text-apoio text-tx-2 flex flex-col gap-1.5">
             <ul className="flex flex-col gap-0.5">
               <li className="flex gap-1.5">
                 <span className="text-tx-3 select-none">·</span>

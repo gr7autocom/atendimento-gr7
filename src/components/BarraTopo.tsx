@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { NavLink, Link } from 'react-router-dom'
 import { MessagesSquare, Bell, ChevronDown, LogOut, ArrowLeft } from 'lucide-react'
 import { useAuth } from '../lib/auth'
@@ -6,6 +6,7 @@ import { usePermissao } from '../lib/permissoes'
 import { useStatusBot } from '../lib/useStatusBot'
 import { ITENS_NAV } from './SidebarRecolhida'
 import { Avatar } from './ui/Avatar'
+import { useFecharFora, PainelMenu, ItemMenu } from './ui/Menu'
 import { cn } from '../lib/utils'
 
 /** Pílula de status da conexão do WhatsApp, visível a admin e atendente. */
@@ -20,8 +21,8 @@ function PilulaStatusBot({ isAdmin }: { isAdmin: boolean }) {
     <span
       title={titulo}
       className={cn(
-        'inline-flex items-center gap-1.5 h-6 pl-1.5 pr-2 rounded-full text-[11px] font-medium shrink-0',
-        conectado ? 'bg-[rgba(63,185,80,0.14)] text-ok' : 'bg-err-soft text-err'
+        'inline-flex items-center gap-1.5 h-6 pl-1.5 pr-2 rounded-full text-mini font-medium shrink-0',
+        conectado ? 'bg-ok-soft text-ok' : 'bg-err-soft text-err'
       )}
     >
       <span className={cn('w-1.5 h-1.5 rounded-full shrink-0', conectado ? 'bg-ok' : 'bg-err')} />
@@ -48,25 +49,17 @@ export function BarraTopo({ titulo, menu }: { titulo: string; menu?: ReactNode }
   const { signOut, usuario } = useAuth()
   const { isAdmin } = usePermissao()
   const [aberto, setAberto] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
+  // Fechar ao clicar fora e no Esc vem do hook compartilhado (ui/Menu).
+  const ref = useFecharFora<HTMLDivElement>(aberto, () => setAberto(false))
   const itensNav = ITENS_NAV.filter((i) => !i.adminOnly || isAdmin)
-
-  useEffect(() => {
-    if (!aberto) return
-    function fora(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setAberto(false)
-    }
-    document.addEventListener('mousedown', fora)
-    return () => document.removeEventListener('mousedown', fora)
-  }, [aberto])
 
   return (
     <header className="h-14 shrink-0 px-3 sm:px-4 flex items-center justify-between gap-3 bg-sf-1 border-b border-bd-1">
       <div className="flex items-center gap-2.5 min-w-0">
-        <div className="w-7 h-7 rounded-[6px] bg-br-1 flex items-center justify-center shrink-0">
+        <div className="w-7 h-7 rounded-1 bg-br-1 flex items-center justify-center shrink-0">
           <MessagesSquare size={15} className="text-white" />
         </div>
-        <span className="text-[14px] font-semibold text-tx-1 truncate">{titulo}</span>
+        <span className="text-corpo-lg font-semibold text-tx-1 truncate">{titulo}</span>
         <PilulaStatusBot isAdmin={isAdmin} />
       </div>
 
@@ -74,7 +67,7 @@ export function BarraTopo({ titulo, menu }: { titulo: string; menu?: ReactNode }
         <button
           type="button"
           aria-label="Notificações"
-          className="w-8 h-8 rounded-[6px] flex items-center justify-center text-tx-2 hover:text-tx-1 hover:bg-sf-2 transition-colors duration-[120ms]"
+          className="w-8 h-8 rounded-1 flex items-center justify-center text-tx-2 hover:text-tx-1 hover:bg-sf-2 transicao"
         >
           <Bell size={17} />
         </button>
@@ -85,34 +78,31 @@ export function BarraTopo({ titulo, menu }: { titulo: string; menu?: ReactNode }
             onClick={() => setAberto((v) => !v)}
             aria-haspopup="menu"
             aria-expanded={aberto}
-            className="flex items-center gap-2 h-8 pl-1 pr-1.5 rounded-[6px] hover:bg-sf-2 transition-colors duration-[120ms]"
+            className="flex items-center gap-2 h-8 pl-1 pr-1.5 rounded-1 hover:bg-sf-2 transicao"
           >
             <Avatar nome={usuario?.nome ?? usuario?.email ?? '?'} fotoUrl={usuario?.foto_url} tamanho={26} />
-            <span className="hidden sm:block text-[13px] text-tx-1 max-w-[140px] truncate">
+            <span className="hidden sm:block text-corpo text-tx-1 max-w-[140px] truncate">
               {usuario?.nome ?? 'Usuário'}
             </span>
             <ChevronDown size={14} className={cn('text-tx-3 transition-transform', aberto && 'rotate-180')} />
           </button>
 
           {aberto && (
-            <div
-              role="menu"
-              className="hidden lg:block absolute right-0 top-[calc(100%+6px)] z-30 w-56 rounded-[10px] border border-bd-2 bg-sf-3 shadow-lg py-1"
+            <PainelMenu
+              rotulo="Conta"
+              className="hidden lg:block right-0 top-[calc(100%+6px)] w-56 py-1"
             >
               <div className="px-3 py-2 border-b border-bd-1">
-                <div className="text-[13px] text-tx-1 truncate">{usuario?.nome ?? 'Usuário'}</div>
-                <div className="text-[11px] text-tx-3 truncate">{usuario?.email}</div>
+                <div className="text-corpo text-tx-1 truncate">{usuario?.nome ?? 'Usuário'}</div>
+                <div className="text-mini text-tx-3 truncate">{usuario?.email}</div>
               </div>
               {menu && <div className="py-1 border-b border-bd-1">{menu}</div>}
-              <button
-                type="button"
-                onClick={() => signOut()}
-                role="menuitem"
-                className="flex items-center gap-2.5 w-full px-3 h-9 text-[13px] text-tx-2 hover:text-tx-1 hover:bg-sf-2 transition-colors duration-[120ms]"
-              >
-                <LogOut size={15} /> Sair
-              </button>
-            </div>
+              {/* Sair é destrutivo (encerra a sessão): tom de perigo e por último,
+                  separado das ações comuns. */}
+              <ItemMenu onClick={() => signOut()} icone={<LogOut size={15} />} perigo>
+                Sair
+              </ItemMenu>
+            </PainelMenu>
           )}
 
           {/* Mobile: menu em tela cheia, aberto ao tocar na foto (o sidebar de ícones não existe no mobile) */}
@@ -123,14 +113,14 @@ export function BarraTopo({ titulo, menu }: { titulo: string; menu?: ReactNode }
               type="button"
               onClick={() => setAberto(false)}
               aria-label="Voltar"
-              className="w-9 h-9 shrink-0 rounded-[6px] flex items-center justify-center text-tx-2 hover:text-tx-1 hover:bg-sf-2"
+              className="w-9 h-9 shrink-0 rounded-1 flex items-center justify-center text-tx-2 hover:text-tx-1 hover:bg-sf-2"
             >
               <ArrowLeft size={18} />
             </button>
             <Avatar nome={usuario?.nome ?? usuario?.email ?? '?'} fotoUrl={usuario?.foto_url} tamanho={38} />
             <div className="min-w-0">
-              <div className="text-[14px] font-semibold text-tx-1 truncate">{usuario?.nome ?? 'Usuário'}</div>
-              <div className="text-[12px] text-tx-3 truncate">{usuario?.permissao?.nome ?? usuario?.email}</div>
+              <div className="text-corpo-lg font-semibold text-tx-1 truncate">{usuario?.nome ?? 'Usuário'}</div>
+              <div className="text-apoio text-tx-3 truncate">{usuario?.permissao?.nome ?? usuario?.email}</div>
             </div>
           </div>
 
@@ -145,7 +135,7 @@ export function BarraTopo({ titulo, menu }: { titulo: string; menu?: ReactNode }
                   onClick={() => setAberto(false)}
                   className={({ isActive }) =>
                     cn(
-                      'flex items-center gap-3 w-full px-4 h-12 text-[14px] border-b border-bd-1 transition-colors duration-[120ms]',
+                      'flex items-center gap-3 w-full px-4 h-12 text-corpo-lg border-b border-bd-1 transicao',
                       isActive ? 'text-tx-1 bg-sf-2 font-medium' : 'text-tx-1 hover:bg-sf-2'
                     )
                   }
@@ -159,13 +149,13 @@ export function BarraTopo({ titulo, menu }: { titulo: string; menu?: ReactNode }
             <button
               type="button"
               onClick={() => signOut()}
-              className="flex items-center gap-3 w-full px-4 h-12 text-[14px] text-tx-1 border-b border-bd-1 hover:bg-sf-2 transition-colors duration-[120ms]"
+              className="flex items-center gap-3 w-full px-4 h-12 text-corpo-lg text-tx-1 border-b border-bd-1 hover:bg-sf-2 transicao"
             >
               <LogOut size={18} className="text-tx-2 shrink-0" /> Sair
             </button>
           </nav>
 
-          <div className="shrink-0 text-center text-[11px] text-tx-3 py-3">GR7 Atendimento</div>
+          <div className="shrink-0 text-center text-mini text-tx-3 py-3">GR7 Atendimento</div>
         </div>
       )}
         </div>
@@ -174,24 +164,9 @@ export function BarraTopo({ titulo, menu }: { titulo: string; menu?: ReactNode }
   )
 }
 
-/** Item de navegação usado dentro do menu do usuário (ex.: acesso cruzado do admin). */
-export function ItemMenuTopo({
-  onClick,
-  icone,
-  children,
-}: {
-  onClick: () => void
-  icone: ReactNode
-  children: ReactNode
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      role="menuitem"
-      className="flex items-center gap-2.5 w-full px-3 h-9 text-[13px] text-tx-2 hover:text-tx-1 hover:bg-sf-2 transition-colors duration-[120ms]"
-    >
-      {icone} {children}
-    </button>
-  )
-}
+/**
+ * Item de navegação usado dentro do menu do usuário (ex.: acesso cruzado do
+ * admin). Reexporta o `ItemMenu` de ui/Menu para as telas que já importavam
+ * daqui não precisarem mudar.
+ */
+export { ItemMenu as ItemMenuTopo }

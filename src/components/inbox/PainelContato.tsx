@@ -32,13 +32,13 @@ function Contador({
   carregando: boolean
 }) {
   return (
-    <div className="rounded-[10px] border border-bd-1 bg-sf-2 px-3 py-2.5">
-      <div className="text-[11px] text-tx-3">{label}</div>
+    <div className="rounded-2 border border-bd-1 bg-sf-2 px-3 py-2.5">
+      <div className="text-mini text-tx-3">{label}</div>
       <div className="flex items-end justify-between gap-1 mt-1">
         {carregando ? (
           <Skeleton className="h-5 w-9" />
         ) : (
-          <span className="dado text-[20px] font-semibold text-tx-1 tabular-nums leading-none">{valor}</span>
+          <span className="dado text-destaque font-semibold text-tx-1 tabular-nums leading-none">{valor}</span>
         )}
         <Icone size={15} className="text-tx-3 mb-0.5 shrink-0" />
       </div>
@@ -83,18 +83,18 @@ export function PainelContato({
 
   return (
     <aside className={cls}>
-      <div className="p-5 flex flex-col items-center text-center border-b border-bd-1">
+      <div className="p-4 flex flex-col items-center text-center border-b border-bd-1">
         <Avatar nome={nomeContato(atendimento)} tamanho={72} whatsapp />
         <button
           type="button"
           onClick={copiarProtocolo}
-          className="mt-3 inline-flex items-center gap-1.5 text-tx-3 hover:text-tx-2 transition-colors"
+          className="mt-3 inline-flex items-center gap-1.5 text-tx-3 hover:text-tx-2 transicao"
           title="Copiar protocolo"
         >
           <span className="rotulo">Protocolo</span>
           {copiado ? <Check size={12} className="text-ok" /> : <Copy size={12} />}
         </button>
-        <div className="dado text-[26px] font-semibold text-tx-1 tabular-nums leading-tight">
+        <div className="dado text-metrica font-semibold text-tx-1 tabular-nums leading-tight">
           {atendimento.protocolo}
         </div>
       </div>
@@ -125,9 +125,9 @@ export function PainelContato({
           <div>
             <div className="rotulo mb-1">Empresa</div>
             {contato?.cliente_id ? (
-              <div className="text-[13px] text-tx-1">{nomeEmpresa(contato.cliente) ?? 'Cadastro vinculado'}</div>
+              <div className="text-corpo text-tx-1">{nomeEmpresa(contato.cliente) ?? 'Cadastro vinculado'}</div>
             ) : (
-              <div className="text-[13px] text-tx-2">Sem cadastro. Use Aceitar para vincular a empresa e assumir.</div>
+              <div className="text-corpo text-tx-2">Sem cadastro. Use Aceitar para vincular a empresa e assumir.</div>
             )}
           </div>
 
@@ -148,7 +148,7 @@ export function PainelContato({
 
           <div>
             <div className="rotulo mb-1">Telefone</div>
-            <div className="dado text-[13px] text-tx-1">{contato?.telefone}</div>
+            <div className="dado text-corpo text-tx-1">{contato?.telefone}</div>
           </div>
         </div>
       </SecaoContato>

@@ -22,8 +22,8 @@ const ABAS: AbaItem<Aba>[] = [
 ]
 
 const campoNovo =
-  'flex-1 h-9 px-3 text-sm rounded-[6px] bg-sf-2 border border-bd-2 text-tx-1 placeholder:text-tx-3 ' +
-  'hover:border-bd-3 focus:border-br-1 focus:outline-none focus:ring-2 focus:ring-[color:var(--br-soft)] transition-colors duration-[120ms]'
+  'flex-1 h-9 px-3 text-corpo-lg rounded-1 bg-sf-2 border border-bd-campo text-tx-1 placeholder:text-tx-3 ' +
+  'hover:border-tx-3 focus:border-br-2 focus:outline-none focus:ring-2 focus:ring-[color:var(--br-soft)] transicao'
 
 export function DepartamentoDetalhe() {
   const { id = '' } = useParams()
@@ -94,11 +94,11 @@ export function DepartamentoDetalhe() {
         <button
           type="button"
           onClick={() => navigate('/admin/departamentos')}
-          className="inline-flex items-center gap-1.5 text-[13px] text-tx-2 hover:text-tx-1"
+          className="inline-flex items-center gap-1.5 text-corpo text-tx-2 hover:text-tx-1"
         >
           <ArrowLeft size={16} /> Voltar
         </button>
-        <p className="mt-6 text-sm text-tx-3">Departamento não encontrado.</p>
+        <p className="mt-6 text-corpo-lg text-tx-3">Departamento não encontrado.</p>
       </div>
     )
   }
@@ -113,13 +113,13 @@ export function DepartamentoDetalhe() {
             type="button"
             onClick={() => navigate('/admin/departamentos')}
             aria-label="Voltar"
-            className="w-8 h-8 shrink-0 rounded-[6px] flex items-center justify-center text-tx-2 hover:text-tx-1 hover:bg-sf-2 transition-colors"
+            className="w-8 h-8 shrink-0 rounded-1 flex items-center justify-center text-tx-2 hover:text-tx-1 hover:bg-sf-2 transicao"
           >
             <ArrowLeft size={18} />
           </button>
           <div className="min-w-0">
-            <h1 className="text-[16px] font-semibold text-tx-1 truncate">{dep.nome}</h1>
-            <p className="text-[12px] text-tx-3">Departamento {dep.ordem}</p>
+            <h1 className="text-titulo font-semibold text-tx-1 truncate">{dep.nome}</h1>
+            <p className="text-apoio text-tx-3">Departamento {dep.ordem}</p>
           </div>
         </div>
         <button
@@ -127,16 +127,16 @@ export function DepartamentoDetalhe() {
           aria-pressed={!inativo}
           onClick={() => atualizar.mutate({ id, valores: { ativo: inativo } })}
           title={inativo ? 'Clique para ativar' : 'Clique para desativar'}
-          className="rounded-[6px] focus:outline-none focus:ring-2 focus:ring-[color:var(--br-soft)]"
+          className="rounded-1 focus:outline-none focus:ring-2 focus:ring-[color:var(--br-soft)]"
         >
           <Selo tom={inativo ? 'neutro' : 'ok'}>{inativo ? 'Inativo' : 'Ativo'}</Selo>
         </button>
       </div>
 
-      <Abas abas={ABAS} ativo={aba} aoSelecionar={setAba} />
+      <Abas abas={ABAS} ativo={aba} aoSelecionar={setAba} idGrupo="departamento" rotulo="Seções do departamento" />
 
       {aba === 'dados' ? (
-        <PainelAba>
+        <PainelAba idGrupo="departamento" aba="dados">
           <div className="flex flex-wrap items-end gap-3">
             <div className="w-24">
               <Entrada rotulo="Número" type="number" min={1} value={numero} onChange={(e) => setNumero(e.target.value)} />
@@ -144,13 +144,15 @@ export function DepartamentoDetalhe() {
             <div className="flex-1 min-w-[200px]">
               <Entrada rotulo="Nome" value={nome} onChange={(e) => setNome(e.target.value)} />
             </div>
-            <Botao variante="primario" tamanho="sm" onClick={salvarDados}>
+            <Botao variante="primario" tamanho="sm" onClick={salvarDados} carregando={atualizar.isPending}>
               Salvar
             </Botao>
           </div>
         </PainelAba>
       ) : aba === 'horario' ? (
         <PainelAba
+          idGrupo="departamento"
+          aba="horario"
           topicos={[
             'Defina as faixas em que o departamento fica disponível.',
             'Sem faixa definida, o departamento segue o horário comercial.',
@@ -158,6 +160,7 @@ export function DepartamentoDetalhe() {
           ]}
         >
           <GradeHorarios
+            adicionando={horariosDep.adicionar.isPending}
             faixas={(horariosDep.lista.data ?? []).filter((f) => f.departamento_id === id)}
             aoAdicionar={(dia) =>
               horariosDep.adicionar.mutate({ departamento_id: id, dia_semana: dia, hora_inicio: '08:00', hora_fim: '18:00' })
@@ -168,6 +171,8 @@ export function DepartamentoDetalhe() {
         </PainelAba>
       ) : (
         <PainelAba
+          idGrupo="departamento"
+          aba="motivos"
           topicos={[
             'Defina os motivos que o atendente escolhe ao finalizar um chamado deste departamento.',
             'Use as setas para definir a ordem em que os motivos aparecem na tela de Finalizar.',
@@ -187,20 +192,20 @@ export function DepartamentoDetalhe() {
             aria-label="Novo motivo"
             className={campoNovo}
           />
-          <Botao variante="primario" tamanho="sm" onClick={addMotivo} icone={<Plus size={15} />}>
+          <Botao variante="primario" tamanho="sm" onClick={addMotivo} icone={<Plus size={15} />} carregando={motivosCrud.criar.isPending}>
             Adicionar
           </Botao>
         </div>
         {motivosDe.length === 0 ? (
-          <p className="text-[13px] text-tx-3">Nenhum motivo ainda.</p>
+          <p className="text-corpo text-tx-3">Nenhum motivo ainda.</p>
         ) : (
-          <div className="rounded-[8px] border border-bd-1 overflow-hidden">
+          <div className="rounded-2 border border-bd-1 overflow-hidden">
             {motivosDe.map((m, idx) => (
               <div
                 key={m.id}
-                className="flex items-center justify-between gap-2 px-3 py-2 border-b border-bd-1 last:border-b-0 hover:bg-sf-2 transition-colors"
+                className="flex items-center justify-between gap-2 px-3 py-2 border-b border-bd-1 last:border-b-0 hover:bg-sf-2 transicao"
               >
-                <span className="flex items-center gap-2 min-w-0 text-[13px] text-tx-1">
+                <span className="flex items-center gap-2 min-w-0 text-corpo text-tx-1">
                   <span className="dado w-5 text-right text-tx-3 shrink-0">{idx + 1}</span>
                   <span className="truncate">{m.nome}</span>
                 </span>
@@ -210,7 +215,7 @@ export function DepartamentoDetalhe() {
                     disabled={idx === 0}
                     onClick={() => moverMotivo(idx, -1)}
                     aria-label={`Subir ${m.nome}`}
-                    className="w-7 h-7 rounded-[6px] flex items-center justify-center text-tx-3 hover:text-tx-1 hover:bg-sf-2 disabled:opacity-30 disabled:pointer-events-none transition-colors"
+                    className="w-7 h-7 rounded-1 flex items-center justify-center text-tx-3 hover:text-tx-1 hover:bg-sf-2 disabled:opacity-30 disabled:pointer-events-none transicao"
                   >
                     <ChevronUp size={16} />
                   </button>
@@ -219,7 +224,7 @@ export function DepartamentoDetalhe() {
                     disabled={idx === motivosDe.length - 1}
                     onClick={() => moverMotivo(idx, 1)}
                     aria-label={`Descer ${m.nome}`}
-                    className="w-7 h-7 rounded-[6px] flex items-center justify-center text-tx-3 hover:text-tx-1 hover:bg-sf-2 disabled:opacity-30 disabled:pointer-events-none transition-colors"
+                    className="w-7 h-7 rounded-1 flex items-center justify-center text-tx-3 hover:text-tx-1 hover:bg-sf-2 disabled:opacity-30 disabled:pointer-events-none transicao"
                   >
                     <ChevronDown size={16} />
                   </button>
@@ -263,7 +268,7 @@ export function DepartamentoDetalhe() {
             <Botao variante="fantasma" type="button" onClick={() => setEditando(null)}>
               Cancelar
             </Botao>
-            <Botao variante="primario" type="submit">
+            <Botao variante="primario" type="submit" carregando={motivosCrud.atualizar.isPending}>
               Salvar
             </Botao>
           </div>

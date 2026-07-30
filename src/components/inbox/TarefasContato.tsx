@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, CalendarClock, Building2, Loader2, ExternalLink } from 'lucide-react'
+import { Plus, CalendarClock, Building2, ExternalLink } from 'lucide-react'
 import {
   useCatalogosTarefa,
   useCriarTarefa,
@@ -65,18 +65,18 @@ function ItemTarefa({ item }: { item: TarefaDoContato }) {
   if (!t) return null
   const prazo = formatarPrazo(t.prazo_entrega)
   return (
-    <div className="rounded-[8px] border border-bd-1 bg-sf-2 px-3 py-2.5 flex flex-col gap-2">
+    <div className="rounded-2 border border-bd-1 bg-sf-2 px-3 py-2.5 flex flex-col gap-2">
       <div className="flex items-start justify-between gap-2">
-        <span className="text-[13px] text-tx-1 font-medium leading-snug break-words min-w-0">{t.titulo}</span>
-        <span className="dado text-[11px] text-tx-3 shrink-0 tabular-nums">#{t.codigo}</span>
+        <span className="text-corpo text-tx-1 font-medium leading-snug break-words min-w-0">{t.titulo}</span>
+        <span className="dado text-mini text-tx-3 shrink-0 tabular-nums">#{t.codigo}</span>
       </div>
       <div className="flex flex-wrap items-center gap-1.5">
         {t.etapa?.nome && <Selo tom={tomEtapa(t.etapa.nome)}>{t.etapa.nome}</Selo>}
         {t.prioridade?.nome && <Selo tom={tomPrioridade(t.prioridade.nivel)}>{t.prioridade.nome}</Selo>}
-        <span className="text-[11px] text-tx-3">{t.responsavel?.nome ?? 'Em aberto'}</span>
+        <span className="text-mini text-tx-3">{t.responsavel?.nome ?? 'Em aberto'}</span>
       </div>
       {prazo && (
-        <div className="flex items-center gap-1.5 text-[11px] text-tx-3">
+        <div className="flex items-center gap-1.5 text-mini text-tx-3">
           <CalendarClock size={12} className="shrink-0" />
           <span className="dado tabular-nums">{prazo}</span>
         </div>
@@ -121,8 +121,8 @@ export function TarefasContato({ atendimento }: { atendimento: AtendimentoLista 
   const visiveis = tarefas.slice(0, LIMITE_LISTA)
   const temMais = tarefas.length > LIMITE_LISTA
   const inputBase =
-    'dado h-9 px-2.5 text-sm rounded-[6px] bg-sf-2 border border-bd-2 text-tx-1 hover:border-bd-3 ' +
-    'focus:border-br-1 focus:outline-none focus:ring-2 focus:ring-[color:var(--br-soft)] transition-colors duration-[120ms]'
+    'dado h-9 px-2.5 text-corpo-lg rounded-1 bg-sf-2 border border-bd-campo text-tx-1 hover:border-tx-3 ' +
+    'focus:border-br-2 focus:outline-none focus:ring-2 focus:ring-[color:var(--br-soft)] transicao'
 
   function abrir() {
     setTitulo('')
@@ -164,9 +164,9 @@ export function TarefasContato({ atendimento }: { atendimento: AtendimentoLista 
       )}
 
       {semEmpresa && can('tarefa.criar') && (
-        <div className="flex items-start gap-2 rounded-[8px] border border-bd-1 bg-sf-2 px-3 py-2.5">
+        <div className="flex items-start gap-2 rounded-2 border border-bd-1 bg-sf-2 px-3 py-2.5">
           <Building2 size={14} className="shrink-0 mt-0.5 text-tx-3" />
-          <p className="text-[12px] text-tx-2 leading-snug">
+          <p className="text-apoio text-tx-2 leading-snug">
             Este contato não tem empresa vinculada. Vincule uma empresa nas informações do
             contato para abrir tarefas por aqui.
           </p>
@@ -175,11 +175,11 @@ export function TarefasContato({ atendimento }: { atendimento: AtendimentoLista 
 
       {lista.isLoading ? (
         <div className="flex flex-col gap-2">
-          <Skeleton className="h-16 w-full rounded-[8px]" />
-          <Skeleton className="h-16 w-full rounded-[8px]" />
+          <Skeleton className="h-16 w-full rounded-2" />
+          <Skeleton className="h-16 w-full rounded-2" />
         </div>
       ) : tarefas.length === 0 ? (
-        <p className="text-[12px] text-tx-3">
+        <p className="text-apoio text-tx-3">
           {podeCriar
             ? 'Nenhuma tarefa aberta para este contato. Use Nova tarefa para abrir uma no painel.'
             : 'Nenhuma tarefa aberta para este contato.'}
@@ -194,7 +194,7 @@ export function TarefasContato({ atendimento }: { atendimento: AtendimentoLista 
               href={URL_TAREFAS_PAINEL}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center justify-center gap-1.5 h-8 rounded-[6px] border border-bd-2 bg-sf-2 text-[12px] text-tx-2 hover:text-tx-1 hover:bg-sf-3 transition-colors duration-[120ms]"
+              className="flex items-center justify-center gap-1.5 h-8 rounded-1 border border-bd-campo bg-sf-2 text-apoio text-tx-2 hover:text-tx-1 hover:bg-sf-3 transicao"
             >
               Ver mais no painel
               <ExternalLink size={13} className="shrink-0" />
@@ -250,7 +250,7 @@ export function TarefasContato({ atendimento }: { atendimento: AtendimentoLista 
           </div>
           <div className="grid grid-cols-2 gap-3">
             <label className="flex flex-col gap-1.5">
-              <span className="text-[13px] text-tx-2">Início previsto</span>
+              <span className="text-corpo text-tx-2">Início previsto</span>
               <input
                 type="datetime-local"
                 value={inicio}
@@ -260,7 +260,7 @@ export function TarefasContato({ atendimento }: { atendimento: AtendimentoLista 
               />
             </label>
             <label className="flex flex-col gap-1.5">
-              <span className="text-[13px] text-tx-2">Prazo de entrega</span>
+              <span className="text-corpo text-tx-2">Prazo de entrega</span>
               <input
                 type="datetime-local"
                 value={prazo}
@@ -272,7 +272,7 @@ export function TarefasContato({ atendimento }: { atendimento: AtendimentoLista 
           </div>
 
           {empresa && (
-            <div className="flex items-center gap-1.5 text-[12px] text-tx-3">
+            <div className="flex items-center gap-1.5 text-apoio text-tx-3">
               <Building2 size={13} className="shrink-0" />
               <span className="truncate">
                 Vincula à empresa <span className="text-tx-2">{empresa}</span>
@@ -281,7 +281,7 @@ export function TarefasContato({ atendimento }: { atendimento: AtendimentoLista 
           )}
 
           {criar.isError && (
-            <p className="text-[12px] text-err">{mensagemErroCriarTarefa(criar.error)}</p>
+            <p className="text-apoio text-err">{mensagemErroCriarTarefa(criar.error)}</p>
           )}
 
           <div className="flex items-center justify-end gap-2 pt-1">
@@ -292,8 +292,8 @@ export function TarefasContato({ atendimento }: { atendimento: AtendimentoLista 
               variante="primario"
               tamanho="md"
               onClick={salvar}
-              disabled={!titulo.trim() || criar.isPending}
-              icone={criar.isPending ? <Loader2 size={15} className="animate-spin" /> : undefined}
+              disabled={!titulo.trim()}
+              carregando={criar.isPending}
             >
               Criar tarefa
             </Botao>

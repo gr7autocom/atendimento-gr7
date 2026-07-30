@@ -30,6 +30,10 @@ export function Inbox() {
 
   return (
     <div className="h-full min-h-0 flex flex-col lg:flex-row">
+      {/* A tela é toda painel (lista, conversa, contato) e não tinha h1 nenhum.
+          Fica oculto no visual porque um título visível repetiria a barra do
+          topo e comeria altura da lista, mas o leitor de tela precisa dele. */}
+      <h1 className="sr-only">Atendimentos</h1>
       <ListaChamados
         atendimentos={lista}
         usuarioId={usuario?.id ?? null}

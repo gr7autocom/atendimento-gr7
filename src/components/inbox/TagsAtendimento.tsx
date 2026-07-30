@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { X, Check, Search, Tag as IconeTag } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { X, Check, Tag as IconeTag } from 'lucide-react'
 import { useCrud } from '../../lib/useCrud'
 import { useTagsDoAtendimento, useAcoesTags } from '../../lib/useInbox'
-import { corTag } from '../../lib/coresSetor'
+import { corTag } from '../../lib/cores'
+import { useFecharFora } from '../ui/Menu'
 import { PillTag } from '../ui/PillTag'
+import { CampoBusca } from '../ui/Campo'
 import { cn } from '../../lib/utils'
 
 type TagCatalogo = {
@@ -40,7 +42,8 @@ export function SeletorTags({
 }) {
   const [aberto, setAberto] = useState(false)
   const [busca, setBusca] = useState('')
-  const ref = useRef<HTMLDivElement>(null)
+  // Clique fora e Esc: hook compartilhado (ui/Menu).
+  const ref = useFecharFora<HTMLDivElement>(aberto, () => setAberto(false))
 
   const aplicadas = useTagsDoAtendimento(atendimentoId)
   const disponiveis = useAplicaveis(departamentoId)
@@ -56,15 +59,6 @@ export function SeletorTags({
     if (!termo) return disponiveis
     return disponiveis.filter((t) => t.nome?.toLowerCase().includes(termo))
   }, [disponiveis, busca])
-
-  useEffect(() => {
-    if (!aberto) return
-    function fora(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setAberto(false)
-    }
-    document.addEventListener('mousedown', fora)
-    return () => document.removeEventListener('mousedown', fora)
-  }, [aberto])
 
   function alternar(tag: TagCatalogo) {
     if (aplicadasIds.has(tag.id)) {
@@ -84,7 +78,7 @@ export function SeletorTags({
         aria-label="Tags do atendimento"
         title="Tags"
         className={cn(
-          'w-8 h-8 rounded-[6px] flex items-center justify-center transition-colors duration-[120ms]',
+          'w-8 h-8 rounded-1 flex items-center justify-center transicao',
           aberto ? 'bg-sf-2 text-tx-1' : 'text-tx-2 hover:text-tx-1 hover:bg-sf-2'
         )}
       >
@@ -92,27 +86,17 @@ export function SeletorTags({
       </button>
 
       {aberto && (
-        <div className="absolute right-0 top-[calc(100%+6px)] z-30 w-[min(320px,calc(100vw-24px))] rounded-[10px] border border-bd-2 bg-sf-3 shadow-[0_12px_32px_rgba(0,0,0,0.55)]">
+        <div className="absolute right-0 top-[calc(100%+6px)] z-30 w-[min(320px,calc(100vw-24px))] rounded-2 border border-bd-2 bg-sf-3 shadow-2">
           <div className="p-2 border-b border-bd-1">
-            <div className="relative">
-              <Search size={15} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-tx-3 pointer-events-none" />
-              <input
-                value={busca}
-                onChange={(e) => setBusca(e.target.value)}
-                placeholder="Pesquisar"
-                aria-label="Pesquisar tag"
-                autoFocus
-                className="w-full h-8 pl-8 pr-2.5 text-[13px] rounded-[6px] bg-sf-2 border border-bd-2 text-tx-1 placeholder:text-tx-3 focus:border-br-1 focus:outline-none focus:ring-2 focus:ring-[color:var(--br-soft)] transition-colors duration-[120ms]"
-              />
-            </div>
+            <CampoBusca valor={busca} aoMudar={setBusca} rotuloAcessivel="Pesquisar tag" autoFocus />
           </div>
           <div className="max-h-[300px] overflow-y-auto py-1">
             {disponiveis.length === 0 ? (
-              <p className="px-3 py-6 text-center text-[13px] text-tx-3">
+              <p className="px-3 py-6 text-center text-corpo text-tx-3">
                 Nenhuma tag disponível para este setor.
               </p>
             ) : filtradas.length === 0 ? (
-              <p className="px-3 py-6 text-center text-[13px] text-tx-3">Nenhuma tag encontrada.</p>
+              <p className="px-3 py-6 text-center text-corpo text-tx-3">Nenhuma tag encontrada.</p>
             ) : (
               filtradas.map((tag) => {
                 const marcada = aplicadasIds.has(tag.id)
@@ -124,14 +108,14 @@ export function SeletorTags({
                     aria-checked={marcada}
                     onClick={() => alternar(tag)}
                     className={cn(
-                      'flex items-center gap-2.5 w-full px-3 h-10 text-left transition-colors duration-[120ms]',
+                      'flex items-center gap-2.5 w-full px-3 h-10 text-left transicao',
                       marcada ? 'bg-sf-2' : 'hover:bg-sf-2'
                     )}
                   >
                     <span
                       aria-hidden="true"
                       className={cn(
-                        'w-4 h-4 shrink-0 rounded-[4px] border flex items-center justify-center',
+                        'w-4 h-4 shrink-0 rounded-micro border flex items-center justify-center',
                         marcada ? 'bg-br-1 border-br-1 text-white' : 'border-bd-3'
                       )}
                     >
@@ -171,7 +155,7 @@ export function FaixaTagsAplicadas({
           <span
             key={t.tag_id}
             style={{ background: cor.bg, color: cor.fg }}
-            className="inline-flex items-center gap-1 h-6 pl-2 pr-1 rounded-[6px] text-[12px] font-semibold uppercase tracking-wide"
+            className="inline-flex items-center gap-1 h-6 pl-2 pr-1 rounded-1 text-apoio font-semibold uppercase tracking-wide"
           >
             {t.tag!.nome}
             {podeEditar && (

@@ -35,19 +35,19 @@ export function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-sf-0">
       <div className="w-full max-w-[360px]">
-        <div className="flex items-center gap-2.5 mb-6">
-          <div className="w-9 h-9 rounded-[8px] bg-br-1 flex items-center justify-center">
+        <div className="flex items-center justify-center gap-2.5 mb-6">
+          <div className="w-9 h-9 rounded-2 bg-br-1 flex items-center justify-center">
             <MessagesSquare size={18} className="text-white" />
           </div>
           <div>
-            <div className="text-[15px] font-semibold text-tx-1 leading-tight">GR7 Atendimento</div>
-            <div className="text-[12px] text-tx-3 leading-tight">Central de WhatsApp da equipe</div>
+            <div className="text-titulo font-semibold text-tx-1 leading-tight">GR7 Atendimento</div>
+            <div className="text-apoio text-tx-3 leading-tight">Central de WhatsApp da equipe</div>
           </div>
         </div>
 
         <form
           onSubmit={onSubmit}
-          className="flex flex-col gap-4 rounded-[10px] border border-bd-1 bg-sf-1 p-5"
+          className="flex flex-col gap-4 rounded-2 border border-bd-1 bg-sf-1 p-4"
         >
           <Entrada
             rotulo="E-mail"
@@ -71,7 +71,7 @@ export function Login() {
           </Botao>
         </form>
 
-        <p className="text-[12px] text-tx-3 mt-4 text-center">
+        <p className="text-apoio text-tx-3 mt-4 text-center">
           Use a mesma conta do Painel de Implantação.
         </p>
       </div>

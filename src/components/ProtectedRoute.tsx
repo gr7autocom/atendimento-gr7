@@ -10,7 +10,7 @@ export function ProtectedRoute({ children, requireAdmin = false }: { children: R
   if (status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-sf-0">
-        <span className="text-[13px] text-tx-2">Carregando…</span>
+        <span className="text-corpo text-tx-2">Carregando…</span>
       </div>
     )
   }

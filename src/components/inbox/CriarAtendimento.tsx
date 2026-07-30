@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Search, User, Building2, X } from 'lucide-react'
+import { Plus, User, Building2, X } from 'lucide-react'
 import {
   useContatos,
   useClientes,
@@ -12,7 +12,7 @@ import { useCrud } from '../../lib/useCrud'
 import { useUsuarios } from '../../lib/useVinculos'
 import { Modal } from '../ui/Modal'
 import { Botao } from '../ui/Botao'
-import { Selecao } from '../ui/Campo'
+import { Selecao, CampoBusca } from '../ui/Campo'
 import { cn } from '../../lib/utils'
 
 type Departamento = { id: string; nome: string; ativo: boolean }
@@ -111,7 +111,7 @@ export function CriarAtendimento() {
         onClick={() => setAberto(true)}
         aria-label="Criar atendimento"
         title="Criar atendimento"
-        className="w-8 h-8 shrink-0 rounded-[6px] flex items-center justify-center text-tx-2 hover:text-tx-1 hover:bg-sf-2 border border-bd-2 transition-colors duration-[120ms]"
+        className="w-8 h-8 shrink-0 rounded-1 flex items-center justify-center text-tx-2 hover:text-tx-1 hover:bg-sf-2 border border-bd-campo transicao"
       >
         <Plus size={16} />
       </button>
@@ -120,7 +120,7 @@ export function CriarAtendimento() {
         <div className="flex flex-col gap-4">
           <div>
             <div className="rotulo mb-1">Canal</div>
-            <div className="text-[13px] text-tx-2">
+            <div className="text-corpo text-tx-2">
               WhatsApp <span className="text-tx-3">· número do bot entra com a integração</span>
             </div>
           </div>
@@ -135,10 +135,10 @@ export function CriarAtendimento() {
                 }}
                 aria-pressed={modo === 'contato'}
                 className={cn(
-                  'flex-1 h-8 inline-flex items-center justify-center gap-1.5 rounded-[6px] text-[12px] border transition-colors duration-[120ms]',
+                  'flex-1 h-8 inline-flex items-center justify-center gap-1.5 rounded-1 text-apoio border transicao',
                   modo === 'contato'
                     ? 'bg-br-soft text-br-2 border-transparent font-medium'
-                    : 'bg-sf-2 text-tx-2 border-bd-2 hover:text-tx-1 hover:border-bd-3'
+                    : 'bg-sf-2 text-tx-2 border-bd-2 hover:text-tx-1 hover:border-tx-3'
                 )}
               >
                 <User size={14} /> Buscar por contato
@@ -151,10 +151,10 @@ export function CriarAtendimento() {
                 }}
                 aria-pressed={modo === 'empresa'}
                 className={cn(
-                  'flex-1 h-8 inline-flex items-center justify-center gap-1.5 rounded-[6px] text-[12px] border transition-colors duration-[120ms]',
+                  'flex-1 h-8 inline-flex items-center justify-center gap-1.5 rounded-1 text-apoio border transicao',
                   modo === 'empresa'
                     ? 'bg-br-soft text-br-2 border-transparent font-medium'
-                    : 'bg-sf-2 text-tx-2 border-bd-2 hover:text-tx-1 hover:border-bd-3'
+                    : 'bg-sf-2 text-tx-2 border-bd-2 hover:text-tx-1 hover:border-tx-3'
                 )}
               >
                 <Building2 size={14} /> Buscar por empresa
@@ -163,22 +163,18 @@ export function CriarAtendimento() {
 
             {modo && (
               <div>
-                <div className="relative">
-                  <Search size={15} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-tx-3 pointer-events-none" />
-                  <input
-                    autoFocus
-                    value={busca}
-                    onChange={(e) => setBusca(e.target.value)}
-                    placeholder={modo === 'contato' ? 'Nome ou telefone do contato' : 'Nome da empresa'}
-                    aria-label={modo === 'contato' ? 'Buscar contato' : 'Buscar empresa'}
-                    className="w-full h-8 pl-8 pr-2.5 text-[13px] rounded-[6px] bg-sf-2 border border-bd-2 text-tx-1 placeholder:text-tx-3 focus:border-br-1 focus:outline-none focus:ring-2 focus:ring-[color:var(--br-soft)]"
-                  />
-                </div>
+                <CampoBusca
+                  valor={busca}
+                  aoMudar={setBusca}
+                  rotuloAcessivel={modo === 'contato' ? 'Buscar contato' : 'Buscar empresa'}
+                  placeholder={modo === 'contato' ? 'Nome ou telefone do contato' : 'Nome da empresa'}
+                  autoFocus
+                />
                 {busca.trim().length >= 2 && (
-                  <div className="mt-1 max-h-40 overflow-y-auto rounded-[6px] border border-bd-2 bg-sf-2 divide-y divide-bd-1">
+                  <div className="mt-1 max-h-40 overflow-y-auto rounded-1 border border-bd-campo bg-sf-2 divide-y divide-bd-1">
                     {modo === 'contato' ? (
                       (contatos.data ?? []).length === 0 ? (
-                        <div className="px-2.5 py-2 text-[12px] text-tx-3">
+                        <div className="px-2.5 py-2 text-apoio text-tx-3">
                           {contatos.isLoading ? 'Buscando…' : 'Nenhum contato encontrado.'}
                         </div>
                       ) : (
@@ -187,15 +183,15 @@ export function CriarAtendimento() {
                             key={c.id}
                             type="button"
                             onClick={() => escolherContato(c)}
-                            className="w-full text-left px-2.5 py-1.5 hover:bg-sf-3 transition-colors"
+                            className="w-full text-left px-2.5 py-1.5 hover:bg-sf-3 transicao"
                           >
-                            <div className="text-[13px] text-tx-1 truncate">{c.nome || c.nome_whatsapp || 'Sem nome'}</div>
-                            <div className="dado text-[11px] text-tx-3">{c.telefone}</div>
+                            <div className="text-corpo text-tx-1 truncate">{c.nome || c.nome_whatsapp || 'Sem nome'}</div>
+                            <div className="dado text-mini text-tx-3">{c.telefone}</div>
                           </button>
                         ))
                       )
                     ) : (clientes.data ?? []).length === 0 ? (
-                      <div className="px-2.5 py-2 text-[12px] text-tx-3">
+                      <div className="px-2.5 py-2 text-apoio text-tx-3">
                         {clientes.isLoading ? 'Buscando…' : 'Nenhuma empresa encontrada.'}
                       </div>
                     ) : (
@@ -204,7 +200,7 @@ export function CriarAtendimento() {
                           key={e.id}
                           type="button"
                           onClick={() => escolherEmpresa(e)}
-                          className="w-full text-left px-2.5 py-1.5 hover:bg-sf-3 transition-colors text-[13px] text-tx-1 truncate"
+                          className="w-full text-left px-2.5 py-1.5 hover:bg-sf-3 transicao text-corpo text-tx-1 truncate"
                         >
                           {nomeEmpresa(e) ?? 'Empresa sem nome'}
                         </button>
@@ -220,22 +216,22 @@ export function CriarAtendimento() {
             <div>
               <div className="rotulo mb-1.5">Número</div>
               {contatoId ? (
-                <div className="flex items-center justify-between gap-2 h-9 px-3 rounded-[6px] bg-sf-2 border border-bd-2">
-                  <span className="dado text-[13px] text-tx-1">+55 {telefone}</span>
+                <div className="flex items-center justify-between gap-2 h-9 px-3 rounded-1 bg-sf-2 border border-bd-campo">
+                  <span className="dado text-corpo text-tx-1">+55 {telefone}</span>
                   <button
                     type="button"
                     onClick={() => {
                       setContatoId(null)
                       setTelefone('')
                     }}
-                    className="text-[11px] text-tx-3 hover:text-tx-1 inline-flex items-center gap-1"
+                    className="text-mini text-tx-3 hover:text-tx-1 inline-flex items-center gap-1"
                   >
                     <X size={12} /> trocar
                   </button>
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
-                  <span className="h-9 px-2.5 inline-flex items-center rounded-[6px] bg-sf-3 border border-bd-2 text-[13px] text-tx-2 shrink-0">
+                  <span className="h-9 px-2.5 inline-flex items-center rounded-1 bg-sf-3 border border-bd-campo text-corpo text-tx-2 shrink-0">
                     +55
                   </span>
                   <input
@@ -244,7 +240,7 @@ export function CriarAtendimento() {
                     inputMode="numeric"
                     placeholder="DDD e número"
                     aria-label="Número do contato"
-                    className="dado flex-1 h-9 px-3 text-[13px] rounded-[6px] bg-sf-2 border border-bd-2 text-tx-1 placeholder:text-tx-3 focus:border-br-1 focus:outline-none focus:ring-2 focus:ring-[color:var(--br-soft)]"
+                    className="dado flex-1 h-9 px-3 text-corpo rounded-1 bg-sf-2 border border-bd-campo text-tx-1 placeholder:text-tx-3 focus:border-br-2 focus:outline-none focus:ring-2 focus:ring-[color:var(--br-soft)]"
                   />
                 </div>
               )}
@@ -257,22 +253,22 @@ export function CriarAtendimento() {
                 onChange={(e) => setNome(e.target.value)}
                 placeholder="Quem está em contato"
                 aria-label="Nome do contato"
-                className="w-full h-9 px-3 text-sm rounded-[6px] bg-sf-2 border border-bd-2 text-tx-1 placeholder:text-tx-3 focus:border-br-1 focus:outline-none focus:ring-2 focus:ring-[color:var(--br-soft)]"
+                className="w-full h-9 px-3 text-corpo-lg rounded-1 bg-sf-2 border border-bd-campo text-tx-1 placeholder:text-tx-3 focus:border-br-2 focus:outline-none focus:ring-2 focus:ring-[color:var(--br-soft)]"
               />
             </div>
 
             <div>
               <div className="rotulo mb-1.5">Empresa</div>
               {clienteLabel ? (
-                <div className="flex items-center justify-between gap-2 h-9 px-3 rounded-[6px] bg-sf-2 border border-bd-2">
-                  <span className="text-[13px] text-tx-1 truncate">{clienteLabel}</span>
+                <div className="flex items-center justify-between gap-2 h-9 px-3 rounded-1 bg-sf-2 border border-bd-campo">
+                  <span className="text-corpo text-tx-1 truncate">{clienteLabel}</span>
                   <button
                     type="button"
                     onClick={() => {
                       setClienteId(null)
                       setClienteLabel(null)
                     }}
-                    className="text-[11px] text-tx-3 hover:text-tx-1 inline-flex items-center gap-1 shrink-0"
+                    className="text-mini text-tx-3 hover:text-tx-1 inline-flex items-center gap-1 shrink-0"
                   >
                     <X size={12} /> remover
                   </button>
@@ -284,7 +280,7 @@ export function CriarAtendimento() {
                     setModo('empresa')
                     setBusca('')
                   }}
-                  className="w-full h-9 px-3 text-left text-[13px] text-tx-3 rounded-[6px] bg-sf-2 border border-bd-2 border-dashed hover:border-bd-3 hover:text-tx-2 transition-colors"
+                  className="w-full h-9 px-3 text-left text-corpo text-tx-3 rounded-1 bg-sf-2 border border-bd-campo border-dashed hover:border-tx-3 hover:text-tx-2 transicao"
                 >
                   Amarrar a uma empresa (opcional)
                 </button>
@@ -319,7 +315,7 @@ export function CriarAtendimento() {
             </Selecao>
           </div>
 
-          {erro && <div className="text-[12px] text-err">{erro}</div>}
+          {erro && <div className="text-apoio text-err">{erro}</div>}
 
           <div className="flex justify-end gap-2 pt-1">
             <Botao variante="fantasma" onClick={fechar}>

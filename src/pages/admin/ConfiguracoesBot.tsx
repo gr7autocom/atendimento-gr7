@@ -5,7 +5,7 @@ import { Botao } from '../../components/ui/Botao'
 import { AreaTexto, Entrada, Selecao } from '../../components/ui/Campo'
 import { LinhasCarregando } from '../../components/ui/Estados'
 import { CabecalhoAdmin } from '../../components/admin/CabecalhoAdmin'
-import { Abas, type AbaItem } from '../../components/admin/Abas'
+import { Abas, PainelAba, type AbaItem } from '../../components/admin/Abas'
 
 type Aba = 'geral' | 'atendimento' | 'potenciais'
 
@@ -148,7 +148,7 @@ export function ConfiguracoesBot() {
   }
 
   const LegendaVariaveis = () => (
-    <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-[12px] text-tx-2">
+    <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-apoio text-tx-2">
       {VARIAVEIS.map((v) => (
         <span key={v.chave} className="flex items-center gap-1.5">
           <span className="dado text-tx-1">{`{{${v.chave}}}`}</span>
@@ -165,15 +165,15 @@ export function ConfiguracoesBot() {
         descricao="Defina como o bot se apresenta ao cliente e o que ele faz antes de passar para um atendente."
       />
 
-      <Abas abas={ABAS} ativo={aba} aoSelecionar={setAba} />
+      <Abas abas={ABAS} ativo={aba} aoSelecionar={setAba} idGrupo="bot" rotulo="Seções do bot" />
 
-      <div className="rounded-[10px] border border-bd-1 bg-sf-1 p-5">
+      <PainelAba idGrupo="bot" aba={aba}>
         {mensagens.isLoading ? (
           <LinhasCarregando linhas={6} />
         ) : aba === 'geral' ? (
-          <div className="flex flex-col gap-7">
+          <div className="flex flex-col gap-6">
             <div className="flex flex-col gap-5">
-              <h3 className="text-[13px] font-semibold text-tx-1">Comportamento</h3>
+              <h3 className="text-corpo font-semibold text-tx-1">Comportamento</h3>
               <div className="sm:max-w-md">
                 <Entrada
                   rotulo="Nome do bot"
@@ -196,7 +196,7 @@ export function ConfiguracoesBot() {
               </div>
               <div className="flex flex-wrap gap-x-6 gap-y-3">
                 {TOGGLES.map((c) => (
-                  <label key={c.chave} className="flex items-center gap-2.5 text-[13px] text-tx-1">
+                  <label key={c.chave} className="flex items-center gap-2.5 text-corpo text-tx-1">
                     <input
                       type="checkbox"
                       className="accent-[color:var(--br-1)]"
@@ -210,7 +210,7 @@ export function ConfiguracoesBot() {
             </div>
 
             <div className="flex flex-col gap-4">
-              <h3 className="text-[13px] font-semibold text-tx-1">Mensagens gerais</h3>
+              <h3 className="text-corpo font-semibold text-tx-1">Mensagens gerais</h3>
               <LegendaVariaveis />
               <div className="grid gap-4 lg:grid-cols-2 items-start">
                 {MSGS_GERAIS.map((chave) => (
@@ -229,7 +229,7 @@ export function ConfiguracoesBot() {
             </div>
           </div>
         ) : (
-          <div className="flex flex-col gap-7">
+          <div className="flex flex-col gap-6">
             <div className="sm:max-w-2xl">
               <Selecao
                 rotulo="Controle de potenciais"
@@ -247,8 +247,8 @@ export function ConfiguracoesBot() {
 
             <div className="flex flex-col gap-3">
               <div>
-                <h3 className="text-[13px] font-semibold text-tx-1">Identificação do cliente</h3>
-                <p className="text-[12px] text-tx-2 mt-0.5">
+                <h3 className="text-corpo font-semibold text-tx-1">Identificação do cliente</h3>
+                <p className="text-apoio text-tx-2 mt-0.5">
                   Contato sem cadastro cai em Potenciais sem empresa. O bot pede estes dados antes do menu para o
                   atendente não receber um potencial em branco.
                 </p>
@@ -262,7 +262,7 @@ export function ConfiguracoesBot() {
             </div>
           </div>
         )}
-      </div>
+      </PainelAba>
 
       <div className="flex items-center justify-end gap-2">
         <Botao variante="neutro" tamanho="sm" onClick={descartar} disabled={salvando}>

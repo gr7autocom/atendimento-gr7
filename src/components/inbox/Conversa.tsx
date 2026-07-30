@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import { Fragment, useRef, useState, type FormEvent } from 'react'
 import {
   Send,
   UserCheck,
@@ -33,35 +33,9 @@ import { Botao } from '../ui/Botao'
 import { Selecao } from '../ui/Campo'
 import { PontoStatus } from '../ui/Selo'
 import { Avatar } from '../ui/Avatar'
+import { useFecharFora, ItemMenu } from '../ui/Menu'
 import { LinhasCarregando } from '../ui/Estados'
 import { cn } from '../../lib/utils'
-
-/** Item do menu ⋮ (mobile) no cabeçalho da conversa. */
-function ItemMenu({
-  onClick,
-  icone,
-  children,
-  perigo,
-}: {
-  onClick: () => void
-  icone: ReactNode
-  children: ReactNode
-  perigo?: boolean
-}) {
-  return (
-    <button
-      type="button"
-      role="menuitem"
-      onClick={onClick}
-      className={cn(
-        'flex items-center gap-2.5 w-full px-3 h-10 text-[13px] transition-colors duration-[120ms]',
-        perigo ? 'text-err hover:bg-err-soft' : 'text-tx-2 hover:text-tx-1 hover:bg-sf-2'
-      )}
-    >
-      {icone} {children}
-    </button>
-  )
-}
 
 type Departamento = { id: string; nome: string; ativo: boolean }
 type Motivo = { id: string; nome: string; ativo: boolean; departamento_id?: string | null }
@@ -150,16 +124,8 @@ export function Conversa({
   const [modalAceitar, setModalAceitar] = useState(false)
   const [menuAberto, setMenuAberto] = useState(false)
   const [mostrarDados, setMostrarDados] = useState(false)
-  const menuRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!menuAberto) return
-    function fora(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuAberto(false)
-    }
-    document.addEventListener('mousedown', fora)
-    return () => document.removeEventListener('mousedown', fora)
-  }, [menuAberto])
+  // Clique fora e Esc: hook compartilhado (ui/Menu).
+  const menuRef = useFecharFora<HTMLDivElement>(menuAberto, () => setMenuAberto(false))
   const [destinoDep, setDestinoDep] = useState('')
   const [destinoUsuario, setDestinoUsuario] = useState('')
   const [motivoId, setMotivoId] = useState('')
@@ -171,8 +137,8 @@ export function Conversa({
           <MessagesSquare size={44} className="text-bd-3" />
         </div>
         <div>
-          <div className="text-[14px] font-medium text-tx-2">GR7 Atendimento</div>
-          <div className="text-[13px] text-tx-3 mt-0.5">Escolha um chamado na lista para abrir a conversa.</div>
+          <div className="text-corpo-lg font-medium text-tx-2">GR7 Atendimento</div>
+          <div className="text-corpo text-tx-3 mt-0.5">Escolha um chamado na lista para abrir a conversa.</div>
         </div>
       </div>
     )
@@ -247,15 +213,15 @@ export function Conversa({
               type="button"
               onClick={aoFechar}
               aria-label="Voltar para a lista"
-              className="lg:hidden w-8 h-8 shrink-0 rounded-[6px] flex items-center justify-center text-tx-2 hover:text-tx-1 hover:bg-sf-2 transition-colors duration-[120ms]"
+              className="lg:hidden w-8 h-8 shrink-0 rounded-1 flex items-center justify-center text-tx-2 hover:text-tx-1 hover:bg-sf-2 transicao"
             >
               <ArrowLeft size={18} />
             </button>
           )}
           <Avatar nome={nomeContato(atendimento)} tamanho={34} whatsapp />
           <div className="min-w-0">
-            <div className="text-[13px] font-medium text-tx-1 truncate">{nomeContato(atendimento)}</div>
-            <div className="flex items-center gap-2 text-[12px] text-tx-2">
+            <div className="text-corpo font-medium text-tx-1 truncate">{nomeContato(atendimento)}</div>
+            <div className="flex items-center gap-2 text-apoio text-tx-2">
               <span className="dado text-tx-3">#{atendimento.protocolo}</span>
               <span className="text-tx-3">·</span>
               <span className="truncate">{atendimento.departamento?.nome ?? 'Sem setor'}</span>
@@ -292,6 +258,7 @@ export function Conversa({
                     tamanho="sm"
                     onClick={() => usuarioId && assumir.mutate({ id: atendimento.id, usuarioId })}
                     icone={<UserCheck size={15} />}
+                    carregando={assumir.isPending}
                   >
                     Assumir
                   </Botao>
@@ -310,7 +277,7 @@ export function Conversa({
               onClick={aoFechar}
               aria-label="Fechar conversa"
               title="Fechar conversa"
-              className="w-8 h-8 ml-0.5 rounded-[6px] flex items-center justify-center text-tx-2 hover:text-tx-1 hover:bg-sf-2 transition-colors duration-[120ms]"
+              className="w-8 h-8 ml-0.5 rounded-1 flex items-center justify-center text-tx-2 hover:text-tx-1 hover:bg-sf-2 transicao"
             >
               <X size={16} />
             </button>
@@ -333,12 +300,12 @@ export function Conversa({
             aria-haspopup="menu"
             aria-expanded={menuAberto}
             aria-label="Ações do atendimento"
-            className="w-9 h-9 rounded-[6px] flex items-center justify-center text-tx-2 hover:text-tx-1 hover:bg-sf-2 transition-colors duration-[120ms]"
+            className="w-9 h-9 rounded-1 flex items-center justify-center text-tx-2 hover:text-tx-1 hover:bg-sf-2 transicao"
           >
             <MoreVertical size={18} />
           </button>
           {menuAberto && (
-            <div role="menu" className="absolute right-0 top-[calc(100%+6px)] z-30 w-56 rounded-[10px] border border-bd-2 bg-sf-3 shadow-lg py-1">
+            <div role="menu" className="absolute right-0 top-[calc(100%+6px)] z-30 w-56 rounded-2 border border-bd-2 bg-sf-3 shadow-lg py-1">
               <ItemMenu onClick={() => { setMostrarDados(true); setMenuAberto(false) }} icone={<Info size={16} />}>
                 Dados do atendimento
               </ItemMenu>
@@ -385,11 +352,11 @@ export function Conversa({
               type="button"
               onClick={() => setMostrarDados(false)}
               aria-label="Voltar"
-              className="w-9 h-9 rounded-[6px] flex items-center justify-center text-tx-2 hover:text-tx-1 hover:bg-sf-2"
+              className="w-9 h-9 rounded-1 flex items-center justify-center text-tx-2 hover:text-tx-1 hover:bg-sf-2"
             >
               <ArrowLeft size={18} />
             </button>
-            <span className="text-[14px] font-medium text-tx-1">Dados do atendimento</span>
+            <span className="text-corpo-lg font-medium text-tx-1">Dados do atendimento</span>
           </header>
           <div className="flex-1 min-h-0">
             <PainelContato atendimento={atendimento} variante="cheia" />
@@ -407,7 +374,7 @@ export function Conversa({
             <div className="w-12 h-12 rounded-full bg-sf-1 border border-bd-1 flex items-center justify-center">
               <MessagesSquare size={22} className="text-bd-3" />
             </div>
-            <p className="text-[13px] text-tx-3">Nenhuma mensagem ainda. Escreva abaixo para começar.</p>
+            <p className="text-corpo text-tx-3">Nenhuma mensagem ainda. Escreva abaixo para começar.</p>
           </div>
         ) : (
           <div className="mx-auto w-full max-w-[820px] flex flex-col gap-1.5">
@@ -418,7 +385,7 @@ export function Conversa({
                 const novoDia = dia !== ultimoDia
                 ultimoDia = dia
                 const separador = novoDia && (
-                  <div className="self-center my-2 px-2.5 h-6 inline-flex items-center rounded-full bg-sf-2 border border-bd-1 text-[11px] text-tx-3">
+                  <div className="self-center my-2 px-2.5 h-6 inline-flex items-center rounded-full bg-sf-2 border border-bd-1 text-mini text-tx-3">
                     {diaLabel(item.at)}
                   </div>
                 )
@@ -432,7 +399,7 @@ export function Conversa({
                         <div className="self-center my-1">
                           <span
                             className={cn(
-                              'px-3 h-6 inline-flex items-center rounded-full text-[11px] font-medium',
+                              'px-3 h-6 inline-flex items-center rounded-full text-mini font-medium',
                               PILULA_COR[d.cor]
                             )}
                           >
@@ -452,12 +419,12 @@ export function Conversa({
                     {separador}
                     <div
                       className={cn(
-                        'max-w-[76%] px-3 py-2 text-[13px] leading-relaxed shadow-sm',
+                        'max-w-[76%] px-3 py-2 text-corpo leading-relaxed shadow-sm',
                         entrada
-                          ? 'self-start bg-sf-2 text-tx-1 rounded-[12px] rounded-bl-[4px]'
+                          ? 'self-start bg-sf-2 text-tx-1 rounded-3 rounded-bl-micro'
                           : bot
-                            ? 'self-end bg-sf-3 text-tx-2 rounded-[12px] rounded-br-[4px] border border-bd-1'
-                            : 'self-end bg-br-1 text-white rounded-[12px] rounded-br-[4px]'
+                            ? 'self-end bg-sf-3 text-tx-2 rounded-3 rounded-br-micro border border-bd-1'
+                            : 'self-end bg-br-1 text-white rounded-3 rounded-br-micro'
                       )}
                     >
                       {bot && <div className="rotulo mb-0.5 text-tx-3">Bot</div>}
@@ -468,7 +435,7 @@ export function Conversa({
                           entrada || bot ? 'text-tx-3' : 'text-white/70'
                         )}
                       >
-                        <span className="dado text-[10px]">{hora(m.created_at)}</span>
+                        <span className="dado text-micro">{hora(m.created_at)}</span>
                         {!entrada && !bot && <CheckCheck size={13} aria-label="Enviado" />}
                       </div>
                     </div>
@@ -482,7 +449,7 @@ export function Conversa({
 
       {finalizado ? (
         <div className="shrink-0 border-t border-bd-1 bg-sf-1 px-4 py-3">
-          <div className="mx-auto w-full max-w-[820px] flex items-center gap-2 text-[13px] text-tx-2">
+          <div className="mx-auto w-full max-w-[820px] flex items-center gap-2 text-corpo text-tx-2">
             <CheckCheck size={15} className="text-ok shrink-0" />
             Atendimento finalizado. Se o cliente escrever de novo em até 3h, o chamado reabre sozinho.
           </div>
@@ -491,8 +458,8 @@ export function Conversa({
         <form onSubmit={enviar} className="shrink-0 border-t border-bd-1 bg-sf-1 p-3">
           <div className="mx-auto w-full max-w-[820px] relative">
             {mostrarPicker && (
-              <div className="absolute bottom-full left-0 right-0 mb-2 z-30 rounded-[10px] border border-bd-2 bg-sf-3 shadow-[0_12px_32px_rgba(0,0,0,0.55)] overflow-hidden">
-                <div className="px-3 h-7 flex items-center text-[11px] uppercase tracking-wide text-tx-3 border-b border-bd-1">
+              <div className="absolute bottom-full left-0 right-0 mb-2 z-30 rounded-2 border border-bd-2 bg-sf-3 shadow-2 overflow-hidden">
+                <div className="px-3 h-7 flex items-center text-mini uppercase tracking-wide text-tx-3 border-b border-bd-1">
                   Mensagens rápidas
                 </div>
                 <div className="max-h-64 overflow-y-auto py-1">
@@ -503,16 +470,24 @@ export function Conversa({
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => inserirRapida(m)}
                       className={cn(
-                        'flex flex-col items-start gap-0.5 w-full px-3 py-1.5 text-left transition-colors duration-[120ms]',
+                        'flex flex-col items-start gap-0.5 w-full px-3 py-1.5 text-left transicao',
                         idx === 0 ? 'bg-sf-2' : 'hover:bg-sf-2'
                       )}
                     >
-                      <span className="dado text-[12px] text-br-2">/{m.atalho}</span>
-                      <span className="text-[12px] text-tx-2 truncate w-full">{m.texto}</span>
+                      <span className="dado text-apoio text-br-2">/{m.atalho}</span>
+                      <span className="text-apoio text-tx-2 truncate w-full">{m.texto}</span>
                     </button>
                   ))}
                 </div>
               </div>
+            )}
+            {/* Aviso visível: antes isso era só um `title` no botão, que nunca
+                aparecia porque botão desabilitado tem pointer-events-none. Quem
+                não é o responsável ficava com o Enviar morto e sem explicação. */}
+            {!podeResponder && (
+              <p className="mb-2 text-apoio text-warn">
+                Este chamado é de outro atendente. Peça a transferência para responder.
+              </p>
             )}
             <div className="flex gap-2">
               <input
@@ -535,13 +510,13 @@ export function Conversa({
                   semDono ? 'Responder (isso assume o chamado). / para atalhos' : 'Escreva sua resposta ou / para atalhos'
                 }
                 aria-label="Resposta"
-                className="flex-1 h-9 px-3 text-sm rounded-[8px] bg-sf-2 border border-bd-2 text-tx-1 placeholder:text-tx-3 hover:border-bd-3 focus:border-br-1 focus:outline-none focus:ring-2 focus:ring-[color:var(--br-soft)] transition-colors duration-[120ms]"
+                className="flex-1 h-9 px-3 text-corpo-lg rounded-2 bg-sf-2 border border-bd-campo text-tx-1 placeholder:text-tx-3 hover:border-tx-3 focus:border-br-2 focus:outline-none focus:ring-2 focus:ring-[color:var(--br-soft)] transicao"
               />
               <Botao
                 variante="primario"
                 type="submit"
                 disabled={!texto.trim() || !podeResponder}
-                title={!podeResponder ? 'Este chamado é de outro atendente' : undefined}
+                carregando={responder.isPending}
                 icone={<Send size={15} />}
               >
                 Enviar
@@ -593,6 +568,7 @@ export function Conversa({
             </Botao>
             <Botao
               variante="primario"
+              carregando={transferir.isPending}
               disabled={
                 !(
                   (destinoDep && destinoDep !== atendimento.departamento_id) ||
@@ -641,6 +617,7 @@ export function Conversa({
             </Botao>
             <Botao
               variante="primario"
+              carregando={finalizar.isPending}
               onClick={() => {
                 finalizar.mutate({ id: atendimento.id, motivoId: motivoId || null })
                 setModalFinalizar(false)

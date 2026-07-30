@@ -3,9 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import { Plus, Pencil, Trash2, Building2 } from 'lucide-react'
 import { useCrud } from '../../lib/useCrud'
 import { useHorariosDepartamento } from '../../lib/useHorariosDepartamento'
-import { corSetor } from '../../lib/coresSetor'
+import { corSetor } from '../../lib/cores'
 import { departamentoDisponivelAgora, type Faixa } from '../../lib/horario'
-import { Modal } from '../../components/ui/Modal'
+import { Modal, ModalConfirmar } from '../../components/ui/Modal'
 import { Botao } from '../../components/ui/Botao'
 import { Entrada } from '../../components/ui/Campo'
 import { CabecalhoAdmin } from '../../components/admin/CabecalhoAdmin'
@@ -24,6 +24,8 @@ export function Departamentos() {
   const [aberto, setAberto] = useState(false)
   const [nome, setNome] = useState('')
   const [numero, setNumero] = useState('')
+  // Departamento em vias de ser removido, para o modal nomear o que vai apagar.
+  const [removerDep, setRemoverDep] = useState<Departamento | null>(null)
 
   const itens = lista.data ?? []
   const faixasComercial = (comercial.lista.data ?? []) as Faixa[]
@@ -64,7 +66,7 @@ export function Departamentos() {
           ))}
         </div>
       ) : itens.length === 0 ? (
-        <div className="rounded-[10px] border border-bd-1 bg-sf-1">
+        <div className="rounded-2 border border-bd-1 bg-sf-1">
           <Vazio
             icone={<Building2 size={22} />}
             titulo="Nenhum departamento ainda"
@@ -96,11 +98,13 @@ export function Departamentos() {
                   }
                 }}
                 aria-label={`Configurar ${d.nome}`}
-                className="group flex flex-col text-left cursor-pointer rounded-[10px] border border-bd-1 bg-sf-1 p-3.5 transition-colors hover:border-bd-2 focus:outline-none focus:ring-2 focus:ring-[color:var(--br-soft)]"
+                className="group flex flex-col text-left cursor-pointer rounded-2 border border-bd-1 bg-sf-1 p-3.5 transicao hover:border-bd-2 focus:outline-none focus:ring-2 focus:ring-[color:var(--br-soft)]"
               >
                 <div className="flex items-start gap-3">
                   <span
-                    className="dado shrink-0 grid place-items-center w-9 h-9 rounded-[8px] text-[15px] font-semibold tabular-nums"
+                    // corpo-lg e não titulo: é o número da ordem dentro de um
+                    // círculo de 36px, não um título de tela.
+                    className="dado shrink-0 grid place-items-center w-9 h-9 rounded-2 text-corpo-lg font-semibold tabular-nums"
                     style={{ background: cor.bg, color: cor.fg }}
                     aria-hidden="true"
                   >
@@ -108,14 +112,14 @@ export function Departamentos() {
                   </span>
                   <div className="min-w-0 flex-1">
                     <p
-                      className={'text-sm font-medium truncate ' + (inativo ? 'text-tx-3' : 'text-tx-1')}
+                      className={'text-corpo-lg font-medium truncate ' + (inativo ? 'text-tx-3' : 'text-tx-1')}
                       title={d.nome}
                     >
                       {d.nome}
                     </p>
                     <div className="flex items-center gap-1.5 mt-1">
                       <Selo tom={disp ? 'ok' : 'warn'}>{disp ? 'Disponível agora' : 'Fora de horário'}</Selo>
-                      <span className="text-[11px] text-tx-3">{usaProprio ? 'horário próprio' : 'segue o comercial'}</span>
+                      <span className="text-mini text-tx-3">{usaProprio ? 'horário próprio' : 'segue o comercial'}</span>
                     </div>
                   </div>
                 </div>
@@ -127,14 +131,14 @@ export function Departamentos() {
                       aria-pressed={!inativo}
                       onClick={() => atualizar.mutate({ id: d.id, valores: { ativo: inativo } })}
                       title={inativo ? 'Clique para ativar' : 'Clique para desativar'}
-                      className="rounded-[6px] focus:outline-none focus:ring-2 focus:ring-[color:var(--br-soft)]"
+                      className="rounded-1 focus:outline-none focus:ring-2 focus:ring-[color:var(--br-soft)]"
                     >
                       <Selo tom={inativo ? 'neutro' : 'ok'}>{inativo ? 'Inativo' : 'Ativo'}</Selo>
                     </button>
                   </span>
 
                   <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
-                    <span className="inline-flex items-center gap-1 text-[12px] text-tx-2">
+                    <span className="inline-flex items-center gap-1 text-apoio text-tx-2">
                       <Pencil size={14} /> Configurar
                     </span>
                     <span onClick={(e) => e.stopPropagation()}>
@@ -143,7 +147,7 @@ export function Departamentos() {
                         tamanho="sm"
                         aria-label={`Remover ${d.nome}`}
                         onClick={() => {
-                          if (confirm(`Remover o departamento "${d.nome}"?`)) remover.mutate(d.id)
+                          setRemoverDep(d)
                         }}
                       >
                         <Trash2 size={15} />
@@ -156,6 +160,23 @@ export function Departamentos() {
           })}
         </div>
       )}
+
+      <ModalConfirmar
+        aberto={!!removerDep}
+        titulo="Remover departamento"
+        descricao={
+          <>
+            O departamento <strong className="text-tx-1">{removerDep?.nome}</strong> sai do menu do bot e dos
+            filtros. Chamados que já passaram por ele mantêm o histórico.
+          </>
+        }
+        carregando={remover.isPending}
+        aoConfirmar={() => {
+          if (removerDep) remover.mutate(removerDep.id)
+          setRemoverDep(null)
+        }}
+        aoCancelar={() => setRemoverDep(null)}
+      />
 
       <Modal titulo="Novo departamento" aberto={aberto} onFechar={() => setAberto(false)}>
         <form
@@ -173,7 +194,7 @@ export function Departamentos() {
               <Entrada rotulo="Nome" required value={nome} onChange={(e) => setNome(e.target.value)} />
             </div>
           </div>
-          <p className="text-[12px] text-tx-3">Depois de criar, clique no departamento para configurar motivos e horário.</p>
+          <p className="text-apoio text-tx-3">Depois de criar, clique no departamento para configurar motivos e horário.</p>
           <div className="flex justify-end gap-2 pt-1">
             <Botao variante="fantasma" type="button" onClick={() => setAberto(false)}>
               Cancelar

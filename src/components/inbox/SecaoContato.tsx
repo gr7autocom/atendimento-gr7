@@ -25,7 +25,7 @@ export function SecaoContato({
         type="button"
         onClick={() => setAberta((v) => !v)}
         aria-expanded={aberta}
-        className="w-full flex items-center justify-between gap-2 px-5 py-3.5 text-left text-[13px] font-medium text-tx-1 hover:bg-sf-2 transition-colors duration-[120ms]"
+        className="w-full flex items-center justify-between gap-2 px-5 py-3.5 text-left text-corpo font-medium text-tx-1 hover:bg-sf-2 transicao"
       >
         <span className="flex items-center gap-1.5 min-w-0 truncate">
           {titulo}

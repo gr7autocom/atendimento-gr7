@@ -4,6 +4,8 @@ import { useAtendimentos, type AtendimentoLista } from '../lib/useInbox'
 import { useUsuarios } from '../lib/useVinculos'
 import { useCrud } from '../lib/useCrud'
 import { LinhasCarregando } from '../components/ui/Estados'
+import { Th } from '../components/ui/Tabela'
+import { COR_METRICA } from '../lib/cores'
 import { cn } from '../lib/utils'
 
 type Departamento = { id: string; nome: string; ativo: boolean }
@@ -11,22 +13,15 @@ export type FiltroInbox = { departamentoId: string | null; atendenteId: string |
 
 const semCadastro = (a: AtendimentoLista) => !a.contato?.cliente_id
 
-// Cores sólidas por métrica, para orientar visualmente (tom escuro do tema).
-const COR = {
-  online: '#3fb950',
-  potenciais: '#a371f7',
-  novas: '#3bb6c9',
-  ativos: '#4c8dff',
-  pendentes: '#e0a12e',
-  retornos: '#f0803c',
-}
+// Cor por métrica: vem de lib/cores, junto com setor, tag e avatar.
+const COR = COR_METRICA
 
 /** Número em pílula colorida quando > 0; discreto quando zero. */
 function Contagem({ valor, cor }: { valor: number; cor: string }) {
-  if (!valor) return <span className="dado text-[13px] text-tx-3">0</span>
+  if (!valor) return <span className="dado text-corpo text-tx-3">0</span>
   return (
     <span
-      className="dado inline-flex items-center justify-center min-w-[30px] h-6 px-2 rounded-[6px] text-[12px] font-semibold"
+      className="dado inline-flex items-center justify-center min-w-[30px] h-6 px-2 rounded-1 text-apoio font-semibold"
       style={{ background: `${cor}26`, color: cor }}
     >
       {valor}
@@ -61,14 +56,21 @@ export function Dashboard({
   const nomeDep = (id: string | null) =>
     (departamentos.lista.data ?? []).find((d) => d.id === id)?.nome ?? 'Sem setor'
 
-  // Métricas sem origem de dados (presença/leitura/uazapi) ficam em 0.
+  /**
+   * `semFonte` marca a métrica que ainda não tem de onde vir (presença do
+   * atendente, leitura de mensagem e retorno dependem da integração uazapi).
+   *
+   * Antes esses três cards mostravam 0 igual aos outros, e zero em painel de
+   * gestão lê como "a operação parou", não como "o dado não existe". A legenda
+   * evita alarme falso e diz o que falta para o número aparecer.
+   */
   const cards = [
-    { rotulo: 'Atendentes online', valor: 0, cor: COR.online },
+    { rotulo: 'Atendentes online', valor: 0, cor: COR.online, semFonte: true },
     { rotulo: 'Potenciais', valor: potenciais.length, cor: COR.potenciais },
-    { rotulo: 'Novas mensagens', valor: 0, cor: COR.novas },
+    { rotulo: 'Novas mensagens', valor: 0, cor: COR.novas, semFonte: true },
     { rotulo: 'Atendimentos ativos', valor: ativos.length, cor: COR.ativos },
     { rotulo: 'Atendimentos pendentes', valor: pendentes.length, cor: COR.pendentes },
-    { rotulo: 'Retornos', valor: 0, cor: COR.retornos },
+    { rotulo: 'Retornos', valor: 0, cor: COR.retornos, semFonte: true },
   ]
 
   const porDepartamento = (departamentos.lista.data ?? []).map((d) => ({
@@ -103,32 +105,44 @@ export function Dashboard({
 
   const carregando = atendimentos.isLoading || departamentos.lista.isLoading
 
-  const thCls = 'h-9 px-3 text-[12px] font-medium text-tx-3 border-b border-bd-1 whitespace-nowrap'
-  const thNome = cn(thCls, 'text-left w-[40%]')
-  const thNum = cn(thCls, 'text-center w-[20%]')
-  const rowBase = 'border-b border-bd-1 last:border-0 transition-colors duration-[120ms]'
+  /**
+   * A linha aqui não usa o `Tr` do design system porque tem estado próprio
+   * (clicável, selecionada quando o filtro aponta para ela) e altura variável
+   * entre linha-mãe e linha-filha. O cabeçalho, sim, usa o `Th` padrão: antes
+   * repetia as mesmas classes à mão e ainda pintava o `thead`, o que fazia esta
+   * tabela parecer de outro produto.
+   */
+  const rowBase = 'border-b border-bd-1 last:border-0 transicao'
 
   return (
     <div className="flex-1 min-w-0 min-h-0 overflow-y-auto bg-sf-0">
       <div className="p-5 sm:p-6 flex flex-col gap-6">
         <div>
-          <h1 className="text-[16px] font-semibold text-tx-1">Supervisão</h1>
-          <p className="text-[13px] text-tx-2 mt-0.5">Clique num departamento ou atendente para filtrar as conversas.</p>
+          {/* h2, não h1: este painel é renderizado DENTRO da inbox, cujo h1 é
+              "Atendimentos". Dois h1 na mesma tela quebram a navegação por
+              títulos de quem usa leitor de tela. */}
+          <h2 className="text-titulo font-semibold text-tx-1">Supervisão</h2>
+          <p className="text-corpo text-tx-2 mt-0.5">Clique num departamento ou atendente para filtrar as conversas.</p>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
           {cards.map((c) => (
             <div
               key={c.rotulo}
-              className="rounded-[10px] border p-3 h-[84px] flex flex-col justify-between"
+              className="rounded-2 border p-3 min-h-[84px] flex flex-col justify-between gap-1"
               style={{ background: `${c.cor}12`, borderColor: `${c.cor}40` }}
             >
               <div className="rotulo text-tx-2 leading-tight">{c.rotulo}</div>
-              <div
-                className="dado text-[26px] font-semibold leading-none tracking-tight"
-                style={{ color: c.valor ? c.cor : 'var(--tx-3)' }}
-              >
-                {c.valor}
+              <div>
+                <div
+                  className="dado text-metrica font-semibold leading-none tracking-tight"
+                  style={{ color: c.valor ? c.cor : 'var(--tx-3)' }}
+                >
+                  {c.valor}
+                </div>
+                {c.semFonte && (
+                  <p className="text-mini text-tx-3 leading-tight mt-1.5">Sem dados até conectar o WhatsApp</p>
+                )}
               </div>
             </div>
           ))}
@@ -138,19 +152,19 @@ export function Dashboard({
         <section>
           <div className="flex items-center gap-2 mb-2">
             <Building2 size={16} className="text-tx-2" />
-            <h2 className="text-[14px] font-semibold text-tx-1">Por departamento</h2>
+            <h2 className="text-corpo-lg font-semibold text-tx-1">Por departamento</h2>
           </div>
           {carregando ? (
             <LinhasCarregando linhas={4} />
           ) : (
-            <div className="overflow-x-auto rounded-[10px] border border-bd-1 bg-sf-1">
-              <table className="w-full min-w-[560px] text-sm border-collapse table-fixed">
+            <div className="overflow-x-auto rounded-2 border border-bd-1 bg-sf-1">
+              <table className="w-full min-w-[560px] text-corpo-lg border-collapse table-fixed">
                 <thead>
-                  <tr className="bg-sf-2">
-                    <th className={thNome}>Departamento</th>
-                    <th className={thNum}>Ativos</th>
-                    <th className={thNum}>Pendentes</th>
-                    <th className={thNum}>Retornos</th>
+                  <tr>
+                    <Th className="text-left w-[40%]">Departamento</Th>
+                    <Th className="text-center w-[20%]">Ativos</Th>
+                    <Th className="text-center w-[20%]">Pendentes</Th>
+                    <Th className="text-center w-[20%]">Retornos</Th>
                   </tr>
                 </thead>
                 <tbody>
@@ -172,11 +186,11 @@ export function Dashboard({
                                   e.stopPropagation()
                                   setDepAberto(aberto ? null : d.id)
                                 }}
-                                className="w-6 h-6 flex items-center justify-center rounded-[4px] text-tx-3 hover:text-tx-1 hover:bg-sf-3"
+                                className="w-6 h-6 flex items-center justify-center rounded-micro text-tx-3 hover:text-tx-1 hover:bg-sf-3"
                               >
                                 <ChevronRight size={14} className={cn('transition-transform', aberto && 'rotate-90')} />
                               </button>
-                              <span className="text-[13px] font-medium text-tx-1">{d.nome}</span>
+                              <span className="text-corpo font-medium text-tx-1">{d.nome}</span>
                             </div>
                           </td>
                           <td className="h-10 px-3 text-center"><Contagem valor={d.ativos} cor={COR.ativos} /></td>
@@ -186,7 +200,7 @@ export function Dashboard({
                         {aberto &&
                           (atendentesNoDep(d.id).length === 0 ? (
                             <tr className={rowBase}>
-                              <td colSpan={4} className="h-9 pl-9 text-[12px] text-tx-3">Ninguém com ativo aqui.</td>
+                              <td colSpan={4} className="h-9 pl-9 text-apoio text-tx-3">Ninguém com ativo aqui.</td>
                             </tr>
                           ) : (
                             atendentesNoDep(d.id).map((u) => {
@@ -198,7 +212,7 @@ export function Dashboard({
                                   onClick={() => filtrar({ departamentoId: d.id, atendenteId: u.id })}
                                 >
                                   <td className="h-9 pr-3 pl-9 align-middle">
-                                    <span className="inline-flex items-center gap-1.5 text-[13px] text-tx-2">
+                                    <span className="inline-flex items-center gap-1.5 text-corpo text-tx-2">
                                       <User size={13} className="text-tx-3" /> {nomeUsuario(u.id)}
                                     </span>
                                   </td>
@@ -222,21 +236,21 @@ export function Dashboard({
         <section>
           <div className="flex items-center gap-2 mb-2">
             <Users size={16} className="text-tx-2" />
-            <h2 className="text-[14px] font-semibold text-tx-1">Por atendente</h2>
+            <h2 className="text-corpo-lg font-semibold text-tx-1">Por atendente</h2>
           </div>
           {carregando ? (
             <LinhasCarregando linhas={3} />
           ) : porAtendente.length === 0 ? (
-            <p className="text-[13px] text-tx-3">Ninguém com atendimento ativo no momento.</p>
+            <p className="text-corpo text-tx-3">Ninguém com atendimento ativo no momento.</p>
           ) : (
-            <div className="overflow-x-auto rounded-[10px] border border-bd-1 bg-sf-1">
-              <table className="w-full min-w-[560px] text-sm border-collapse table-fixed">
+            <div className="overflow-x-auto rounded-2 border border-bd-1 bg-sf-1">
+              <table className="w-full min-w-[560px] text-corpo-lg border-collapse table-fixed">
                 <thead>
-                  <tr className="bg-sf-2">
-                    <th className={thNome}>Atendente</th>
-                    <th className={thNum}>Ativos</th>
-                    <th className={thNum}>Novas</th>
-                    <th className={thNum}>Retornos</th>
+                  <tr>
+                    <Th className="text-left w-[40%]">Atendente</Th>
+                    <Th className="text-center w-[20%]">Ativos</Th>
+                    <Th className="text-center w-[20%]">Novas</Th>
+                    <Th className="text-center w-[20%]">Retornos</Th>
                   </tr>
                 </thead>
                 <tbody>
@@ -258,11 +272,11 @@ export function Dashboard({
                                   e.stopPropagation()
                                   setAtendAberto(aberto ? null : u.id)
                                 }}
-                                className="w-6 h-6 flex items-center justify-center rounded-[4px] text-tx-3 hover:text-tx-1 hover:bg-sf-3"
+                                className="w-6 h-6 flex items-center justify-center rounded-micro text-tx-3 hover:text-tx-1 hover:bg-sf-3"
                               >
                                 <ChevronRight size={14} className={cn('transition-transform', aberto && 'rotate-90')} />
                               </button>
-                              <span className="text-[13px] font-medium text-tx-1">{u.nome}</span>
+                              <span className="text-corpo font-medium text-tx-1">{u.nome}</span>
                             </div>
                           </td>
                           <td className="h-10 px-3 text-center"><Contagem valor={u.ativos} cor={COR.ativos} /></td>
@@ -279,7 +293,7 @@ export function Dashboard({
                                 onClick={() => filtrar({ departamentoId: dep.id, atendenteId: u.id })}
                               >
                                 <td className="h-9 pr-3 pl-9 align-middle">
-                                  <span className="inline-flex items-center gap-1.5 text-[13px] text-tx-2">
+                                  <span className="inline-flex items-center gap-1.5 text-corpo text-tx-2">
                                     <Building2 size={13} className="text-tx-3" /> {nomeDep(dep.id)}
                                   </span>
                                 </td>

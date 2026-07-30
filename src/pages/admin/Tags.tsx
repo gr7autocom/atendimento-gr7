@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react'
-import { Plus, Pencil, Trash2, Search, Tag as IconeTag } from 'lucide-react'
+import { Plus, Pencil, Trash2, Tag as IconeTag } from 'lucide-react'
 import { useCrud } from '../../lib/useCrud'
-import { Modal } from '../../components/ui/Modal'
+import { Modal, ModalConfirmar } from '../../components/ui/Modal'
 import { Botao } from '../../components/ui/Botao'
-import { Entrada, Selecao } from '../../components/ui/Campo'
+import { Entrada, Selecao, CampoBusca } from '../../components/ui/Campo'
 import { Selo } from '../../components/ui/Selo'
 import { PillTag } from '../../components/ui/PillTag'
 import { CabecalhoAdmin } from '../../components/admin/CabecalhoAdmin'
@@ -35,21 +35,21 @@ function CampoCor({
 }) {
   return (
     <label className="flex flex-col gap-1.5">
-      <span className="text-[13px] text-tx-2">{rotulo}</span>
+      <span className="text-corpo text-tx-2">{rotulo}</span>
       <div className="flex items-center gap-2">
         <input
           type="color"
           aria-label={rotulo}
           value={valor}
           onChange={(e) => aoMudar(e.target.value)}
-          className="w-9 h-9 shrink-0 rounded-[6px] border border-bd-2 bg-sf-2 cursor-pointer p-0.5"
+          className="w-9 h-9 shrink-0 rounded-1 border border-bd-campo bg-sf-2 cursor-pointer p-0.5"
         />
         <input
           type="text"
           value={valor}
           onChange={(e) => aoMudar(e.target.value)}
           spellCheck={false}
-          className="dado w-full h-9 px-3 text-sm rounded-[6px] bg-sf-2 border border-bd-2 text-tx-1 placeholder:text-tx-3 hover:border-bd-3 focus:border-br-1 focus:outline-none focus:ring-2 focus:ring-[color:var(--br-soft)] transition-colors duration-[120ms]"
+          className="dado w-full h-9 px-3 text-corpo-lg rounded-1 bg-sf-2 border border-bd-campo text-tx-1 placeholder:text-tx-3 hover:border-tx-3 focus:border-br-2 focus:outline-none focus:ring-2 focus:ring-[color:var(--br-soft)] transicao"
         />
       </div>
     </label>
@@ -66,6 +66,9 @@ export function Tags() {
   const [corFundo, setCorFundo] = useState(COR_FUNDO_PADRAO)
   const [corTexto, setCorTexto] = useState(COR_TEXTO_PADRAO)
   const [departamentoId, setDepartamentoId] = useState('')
+  // Guarda a tag que está para ser removida: o modal precisa do nome para dizer
+  // o que vai apagar, e o `confirm()` do navegador não combinava com o tema.
+  const [removerTag, setRemoverTag] = useState<Tag | null>(null)
 
   const itens = lista.data ?? []
   const deps = departamentos.lista.data ?? []
@@ -119,16 +122,13 @@ export function Tags() {
         descricao="Rótulos que o atendente aplica ao chamado. Valem para todos os departamentos ou um específico."
         acoes={
           <>
-            <div className="relative">
-              <Search size={15} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-tx-3 pointer-events-none" />
-              <input
-                value={busca}
-                onChange={(e) => setBusca(e.target.value)}
-                placeholder="Buscar tag"
-                aria-label="Buscar tag"
-                className="w-44 h-8 pl-8 pr-2.5 text-[13px] rounded-[6px] bg-sf-2 border border-bd-2 text-tx-1 placeholder:text-tx-3 hover:border-bd-3 focus:border-br-1 focus:outline-none focus:ring-2 focus:ring-[color:var(--br-soft)] transition-colors duration-[120ms]"
-              />
-            </div>
+            <CampoBusca
+              valor={busca}
+              aoMudar={setBusca}
+              rotuloAcessivel="Buscar tag"
+              placeholder="Buscar tag"
+              className="w-44"
+            />
             <Botao variante="primario" tamanho="sm" onClick={abrirNovo} icone={<Plus size={15} />}>
               Nova tag
             </Botao>
@@ -139,7 +139,7 @@ export function Tags() {
       {lista.isLoading ? (
         <LinhasCarregando linhas={6} />
       ) : itens.length === 0 ? (
-        <div className="rounded-[10px] border border-bd-1 bg-sf-1">
+        <div className="rounded-2 border border-bd-1 bg-sf-1">
           <Vazio
             icone={<IconeTag size={22} />}
             titulo="Nenhuma tag ainda"
@@ -152,14 +152,14 @@ export function Tags() {
           />
         </div>
       ) : (
-        <div className="rounded-[10px] border border-bd-1 bg-sf-1 overflow-hidden">
-          <div className="grid grid-cols-[1fr_auto] sm:grid-cols-[1fr_1fr_auto] items-center gap-3 px-4 h-9 border-b border-bd-1 text-[11px] font-medium uppercase tracking-wide text-tx-3">
+        <div className="rounded-2 border border-bd-1 bg-sf-1 overflow-hidden">
+          <div className="grid grid-cols-[1fr_auto] sm:grid-cols-[1fr_1fr_auto] items-center gap-3 px-4 h-9 border-b border-bd-1 text-mini font-medium uppercase tracking-wide text-tx-3">
             <span>Tag</span>
             <span className="hidden sm:block">Departamento</span>
             <span className="text-right">Ações</span>
           </div>
           {filtradas.length === 0 ? (
-            <p className="px-4 py-8 text-center text-[13px] text-tx-3">Nenhuma tag encontrada.</p>
+            <p className="px-4 py-8 text-center text-corpo text-tx-3">Nenhuma tag encontrada.</p>
           ) : (
             filtradas.map((t) => {
               const inativo = t.ativo === false
@@ -167,7 +167,7 @@ export function Tags() {
               return (
                 <div
                   key={t.id}
-                  className="grid grid-cols-[1fr_auto] sm:grid-cols-[1fr_1fr_auto] items-center gap-3 px-4 py-2.5 border-b border-bd-1 last:border-b-0 hover:bg-sf-2 transition-colors"
+                  className="grid grid-cols-[1fr_auto] sm:grid-cols-[1fr_1fr_auto] items-center gap-3 px-4 py-2.5 border-b border-bd-1 last:border-b-0 hover:bg-sf-2 transicao"
                 >
                   <div className={'flex items-center gap-2 min-w-0 ' + (inativo ? 'opacity-50' : '')}>
                     <PillTag tag={t} />
@@ -176,7 +176,7 @@ export function Tags() {
                     {dep ? (
                       <Selo tom="neutro">{dep}</Selo>
                     ) : (
-                      <span className="text-[12px] text-tx-3">Todos os departamentos</span>
+                      <span className="text-apoio text-tx-3">Todos os departamentos</span>
                     )}
                   </div>
                   <div className="flex items-center justify-end gap-0.5">
@@ -185,7 +185,7 @@ export function Tags() {
                       aria-pressed={!inativo}
                       onClick={() => atualizar.mutate({ id: t.id, valores: { ativo: inativo } })}
                       title={inativo ? 'Clique para ativar' : 'Clique para desativar'}
-                      className="mr-1 rounded-[6px] focus:outline-none focus:ring-2 focus:ring-[color:var(--br-soft)]"
+                      className="mr-1 rounded-1 focus:outline-none focus:ring-2 focus:ring-[color:var(--br-soft)]"
                     >
                       <Selo tom={inativo ? 'neutro' : 'ok'}>{inativo ? 'Inativa' : 'Ativa'}</Selo>
                     </button>
@@ -196,9 +196,7 @@ export function Tags() {
                       variante="perigo"
                       tamanho="sm"
                       aria-label={`Remover ${t.nome}`}
-                      onClick={() => {
-                        if (confirm(`Remover a tag "${t.nome}"?`)) remover.mutate(t.id)
-                      }}
+                      onClick={() => setRemoverTag(t)}
                     >
                       <Trash2 size={15} />
                     </Botao>
@@ -209,6 +207,23 @@ export function Tags() {
           )}
         </div>
       )}
+
+      <ModalConfirmar
+        aberto={!!removerTag}
+        titulo="Remover tag"
+        descricao={
+          <>
+            A tag <strong className="text-tx-1">{removerTag?.nome}</strong> sai dos chamados que já a usam. Não
+            dá para desfazer.
+          </>
+        }
+        carregando={remover.isPending}
+        aoConfirmar={() => {
+          if (removerTag) remover.mutate(removerTag.id)
+          setRemoverTag(null)
+        }}
+        aoCancelar={() => setRemoverTag(null)}
+      />
 
       <Modal
         titulo={editando ? 'Editar tag' : 'Nova tag'}
@@ -243,7 +258,7 @@ export function Tags() {
           </Selecao>
 
           <div className="flex items-center gap-2 pt-0.5">
-            <span className="text-[13px] text-tx-2">Prévia:</span>
+            <span className="text-corpo text-tx-2">Prévia:</span>
             <PillTag tag={{ nome: nome || 'Exemplo', cor_fundo: corFundo, cor_texto: corTexto }} />
           </div>
 
