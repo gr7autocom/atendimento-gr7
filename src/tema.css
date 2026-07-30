@@ -16,27 +16,44 @@
   --bd-1: rgba(255, 255, 255, 0.06);
   --bd-2: rgba(255, 255, 255, 0.1);
   --bd-3: rgba(255, 255, 255, 0.16);
+  /* Borda de CONTROLE (input, select, textarea). As de cima são separadores e
+     podem ser sutis; esta delimita algo clicável, então a WCAG 1.4.11 pede 3:1
+     contra a superfície. Em 0.10 dava 1.31 e o campo praticamente sumia. */
+  --bd-campo: rgba(255, 255, 255, 0.34);
 
   /* Texto */
   --tx-1: #e6e9ee; /* principal */
   --tx-2: #9aa4b2; /* secundário */
-  --tx-3: #6a7482; /* apoio, placeholder */
+  /* Apoio e placeholder. Era #6a7482, que reprovava em toda superfície
+     (3.30 a 4.05 contra os 4.5 da AA). Carrega telefone, hora e rótulo, que
+     são conteúdo de leitura, não decoração. */
+  --tx-3: #828d9b;
 
   /* Marca (azul do painel) */
-  --br-1: #0078d4;
-  --br-2: #3b9eff; /* hover */
-  --br-3: #005a9e; /* pressionado */
+  --br-1: #0078d4; /* base da ação */
+  --br-2: #3b9eff; /* claro: TEXTO e ícone sobre fundo escuro (link, aba, atalho) */
+  --br-3: #005a9e; /* hover de fundo: escurece, não clareia */
+  --br-4: #004b83; /* pressionado */
   --br-soft: rgba(0, 120, 212, 0.16); /* seleção, fundo de selo */
 
   /* Semânticas */
   --ok: #3fb950;
+  --ok-soft: rgba(63, 185, 80, 0.14);
   --warn: #d29922;
+  --warn-soft: rgba(210, 153, 34, 0.14);
   --err: #f85149;
   --err-soft: rgba(248, 81, 73, 0.14);
 
-  /* Forma */
+  /* Forma. Quatro níveis por PAPEL, não por gosto:
+     micro = badge, mini-tag e o canto "quebrado" da bolha
+     1 = controle (botão, campo, selo, aba)
+     2 = superfície (card, modal, menu, bloco)
+     3 = bolha de mensagem e moldura de destaque (o QR), onde o raio maior é
+         convenção de mensageiro e não capricho. */
+  --r-micro: 4px;
   --r-1: 6px;
   --r-2: 10px;
+  --r-3: 12px;
   --r-full: 999px;
 
   /* Profundidade */
@@ -58,6 +75,7 @@
   --color-bd-1: var(--bd-1);
   --color-bd-2: var(--bd-2);
   --color-bd-3: var(--bd-3);
+  --color-bd-campo: var(--bd-campo);
 
   --color-tx-1: var(--tx-1);
   --color-tx-2: var(--tx-2);
@@ -66,16 +84,42 @@
   --color-br-1: var(--br-1);
   --color-br-2: var(--br-2);
   --color-br-3: var(--br-3);
+  --color-br-4: var(--br-4);
   --color-br-soft: var(--br-soft);
 
   --color-ok: var(--ok);
+  --color-ok-soft: var(--ok-soft);
   --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
   --color-err: var(--err);
   --color-err-soft: var(--err-soft);
 
+  --radius-micro: var(--r-micro);
   --radius-1: var(--r-1);
   --radius-2: var(--r-2);
+  --radius-3: var(--r-3);
 
-  --font-sans: 'IBM Plex Sans', system-ui, sans-serif;
-  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  /* Sombras como utilitário (shadow-1, shadow-2). O valor de sh-2 estava
+     copiado à mão no Modal e no seletor de mensagens rápidas. */
+  --shadow-1: var(--sh-1);
+  --shadow-2: var(--sh-2);
+
+  --font-sans: 'Roboto', system-ui, sans-serif;
+  --font-mono: 'Roboto Mono', ui-monospace, monospace;
+
+  /**
+   * Escala tipográfica por PAPEL. Existe porque havia 9 tamanhos anônimos em 187
+   * lugares (`text-[13px]` e afins): não se sabia qual era "o corpo do texto" e
+   * cada tela escolhia sozinha.
+   *
+   * micro/mini são para rótulo e metadado, nunca para texto que se lê em frase.
+   */
+  --text-micro: 10px; /* badge dentro de linha densa */
+  --text-mini: 11px; /* rótulo caixa-alta, hora, legenda */
+  --text-apoio: 12px; /* dica de campo, texto secundário */
+  --text-corpo: 13px; /* padrão da interface */
+  --text-corpo-lg: 14px; /* corpo em área confortável, título de bloco */
+  --text-titulo: 16px; /* título de tela e de painel */
+  --text-destaque: 20px; /* número em destaque no painel do contato */
+  --text-metrica: 26px; /* número dos cards de supervisão */
 }

@@ -1,9 +1,18 @@
-/* Fontes locais (sem CDN): IBM Plex Sans para UI, Mono para dados */
-@import '@fontsource/ibm-plex-sans/400.css';
-@import '@fontsource/ibm-plex-sans/500.css';
-@import '@fontsource/ibm-plex-sans/600.css';
-@import '@fontsource/ibm-plex-mono/400.css';
-@import '@fontsource/ibm-plex-mono/500.css';
+/**
+ * Fontes locais (sem CDN): Roboto para UI, Roboto Mono para dados.
+ *
+ * Local e não Google Fonts de propósito: o CDN faria o navegador de cada
+ * atendente enviar IP e user-agent ao Google em toda visita, e o texto ficaria
+ * esperando rede externa. É a mesma Roboto, servida pelo nosso domínio.
+ */
+/* Só o subset latino: o import cheio trazia cirílico, grego, vietnamita, math e
+   symbols, ~90 arquivos de fonte no build para um produto em português. */
+@import '@fontsource/roboto/latin-300.css';
+@import '@fontsource/roboto/latin-400.css';
+@import '@fontsource/roboto/latin-500.css';
+@import '@fontsource/roboto/latin-700.css';
+@import '@fontsource/roboto-mono/latin-400.css';
+@import '@fontsource/roboto-mono/latin-500.css';
 
 @import './tema.css';
 @import 'tailwindcss';
@@ -23,22 +32,41 @@ body {
   margin: 0;
   background-color: var(--sf-0);
   color: var(--tx-1);
-  font-family: 'IBM Plex Sans', system-ui, sans-serif;
-  font-size: 14px;
-  line-height: 1.45;
+  font-family: 'Roboto', system-ui, sans-serif;
+  /* 13px é o corpo real da interface (o mais usado em 187 ocorrências), então é
+     o padrão do body em vez de 14px que quase todo componente sobrescrevia. */
+  font-size: var(--text-corpo);
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 /* Dados (protocolo, telefone, hora) em mono: alinham e leem melhor em lista */
 .dado {
-  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-family: 'Roboto Mono', ui-monospace, monospace;
   font-variant-numeric: tabular-nums;
+}
+
+/**
+ * Transição padrão de estado (hover, foco, seleção). Existe para os tokens
+ * --t-1/--t-2 serem realmente usados: antes havia `duration-[120ms]` literal
+ * espalhado em cerca de 30 lugares e mudar o ritmo da interface exigia varrer
+ * o projeto inteiro.
+ */
+.transicao {
+  transition-property: color, background-color, border-color, opacity, box-shadow;
+  transition-duration: var(--t-1);
+  transition-timing-function: ease;
+}
+.transicao-2 {
+  transition-property: color, background-color, border-color, opacity, box-shadow, transform;
+  transition-duration: var(--t-2);
+  transition-timing-function: ease;
 }
 
 /* Rótulo de bloco no painel lateral */
 .rotulo {
-  font-size: 11px;
+  font-size: var(--text-mini);
   font-weight: 500;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -50,6 +78,20 @@ body {
   outline: 2px solid var(--br-2);
   outline-offset: 2px;
   border-radius: var(--r-1);
+}
+
+/* Quem pede menos movimento no sistema recebe a interface sem animação:
+   spinner de atualizar, pulso do esqueleto e transições de hover. O estado
+   continua legível porque nada aqui depende do movimento para ser entendido. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* Scrollbar fina, sem roubar atenção */
