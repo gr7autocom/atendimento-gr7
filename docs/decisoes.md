@@ -13,6 +13,7 @@ Registro das decisões fechadas no discovery/design, com justificativa. Data: 20
 ## ADR-10 — Visual próprio do Atendimento (revisa a decisão de "idêntico ao painel")
 **Decisão (2026-07-23):** o Atendimento terá **identidade visual própria** (dark), mais elaborada que o painel, definida numa **etapa de design dedicada no fim** da implementação. Os tokens de cor base seguem vindos do painel.
 **Por quê:** a inbox de atendimento pede um layout mais denso que as telas do painel, e o cliente quer um produto mais acabado. Trade-off aceito conscientemente: as telas construídas antes dessa etapa saem cruas e serão repolidas depois (retrabalho conhecido).
+**Status (2026-07-30):** a etapa de **padronização e acessibilidade** aconteceu (auditoria com 24 achados, 5 lotes, guarda em `src/padroes-ui.test.ts`). Tokens, escala tipográfica, dimensões, espaçamento, contraste e navegação por teclado estão fechados e verificados por teste. O que segue em aberto do ADR é o polimento **estético**, não a base.
 
 ## ADR-03 — Migrations aditivas no repo do painel
 **Decisão:** as tabelas novas moram no `supabase/migrations/` do painel (fonte única já linkada) e o MVP só faz `CREATE TABLE` — nenhum `ALTER`/`DROP` em tabela do painel.

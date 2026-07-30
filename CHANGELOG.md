@@ -4,6 +4,21 @@
 
 ---
 
+## 2026-07-30 — Padronização visual e acessibilidade
+
+- A fonte do sistema agora é Roboto. Protocolo, telefone e hora usam Roboto Mono, que alinha os números em coluna
+- Texto de apoio, telefone na lista e hora das mensagens ficaram mais legíveis: a cor anterior não atingia o mínimo de contraste
+- A borda dos campos aparece de verdade. Antes era quase invisível e ficava difícil ver onde clicar
+- O botão principal não clareia mais ao passar o mouse, o que deixava o texto branco ilegível justo na hora do clique
+- Remover departamento, tag ou mensagem rápida agora abre uma confirmação do próprio sistema, dizendo o que sai e o que muda. Antes era a caixa cinza do navegador
+- Enviar, assumir, transferir, finalizar, salvar e adicionar horário travam enquanto a ação está em curso, então clique duplo não executa duas vezes
+- As buscas de chamado, de tag e de contato ganharam botão para limpar
+- No painel de supervisão, as três métricas sem fonte de dados (atendentes online, novas mensagens, retornos) dizem "Sem dados até conectar o WhatsApp" em vez de mostrar zero como se a operação tivesse parado
+- Quem usa teclado navega as abas das telas de configuração com as setas, e o foco fica preso dentro das janelas até fechar
+- Quem pede menos animação no sistema operacional recebe a interface sem movimento
+
+---
+
 ## 2026-07-29 — Tarefa aberta pelo chat: regras mais firmes
 
 - A tarefa só é aberta para contato com empresa vinculada. Sem vínculo, a seção Tarefas explica o que fazer em vez de deixar criar solta
