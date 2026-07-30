@@ -33,7 +33,8 @@ import { Botao } from '../ui/Botao'
 import { Selecao } from '../ui/Campo'
 import { PontoStatus } from '../ui/Selo'
 import { Avatar } from '../ui/Avatar'
-import { useFecharFora, ItemMenu } from '../ui/Menu'
+import { ItemMenu } from '../ui/Menu'
+import { useFecharFora } from '../../lib/useFecharFora'
 import { LinhasCarregando } from '../ui/Estados'
 import { cn } from '../../lib/utils'
 
@@ -124,7 +125,7 @@ export function Conversa({
   const [modalAceitar, setModalAceitar] = useState(false)
   const [menuAberto, setMenuAberto] = useState(false)
   const [mostrarDados, setMostrarDados] = useState(false)
-  // Clique fora e Esc: hook compartilhado (ui/Menu).
+  // Clique fora e Esc: hook compartilhado (lib/useFecharFora).
   const menuRef = useFecharFora<HTMLDivElement>(menuAberto, () => setMenuAberto(false))
   const [destinoDep, setDestinoDep] = useState('')
   const [destinoUsuario, setDestinoUsuario] = useState('')
@@ -578,14 +579,22 @@ export function Conversa({
                 )
               }
               onClick={() => {
-                transferir.mutate({
-                  id: atendimento.id,
-                  paraDepartamentoId: destinoDep || null,
-                  paraUsuarioId: destinoUsuario || null,
-                })
-                setModalTransferir(false)
-                setDestinoDep('')
-                setDestinoUsuario('')
+                // Fecha no onSuccess: fechando junto com o mutate, o carregando
+                // nunca aparece e uma falha some da tela sem aviso.
+                transferir.mutate(
+                  {
+                    id: atendimento.id,
+                    paraDepartamentoId: destinoDep || null,
+                    paraUsuarioId: destinoUsuario || null,
+                  },
+                  {
+                    onSuccess: () => {
+                      setModalTransferir(false)
+                      setDestinoDep('')
+                      setDestinoUsuario('')
+                    },
+                  }
+                )
               }}
             >
               Transferir
@@ -619,9 +628,15 @@ export function Conversa({
               variante="primario"
               carregando={finalizar.isPending}
               onClick={() => {
-                finalizar.mutate({ id: atendimento.id, motivoId: motivoId || null })
-                setModalFinalizar(false)
-                setMotivoId('')
+                finalizar.mutate(
+                  { id: atendimento.id, motivoId: motivoId || null },
+                  {
+                    onSuccess: () => {
+                      setModalFinalizar(false)
+                      setMotivoId('')
+                    },
+                  }
+                )
               }}
             >
               Finalizar

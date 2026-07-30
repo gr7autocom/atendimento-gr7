@@ -1,35 +1,5 @@
-import { useEffect, useRef, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { cn } from '../../lib/utils'
-
-/**
- * Fecha o painel ao clicar fora ou apertar Esc, e devolve a ref para envolver o
- * conjunto gatilho + painel.
- *
- * O mesmo `useEffect` de "clicou fora" estava escrito três vezes (menu do
- * usuário, menu ⋮ da conversa e seletor de tags), e nenhuma das três fechava com
- * Esc, que é o reflexo de quem usa teclado.
- */
-export function useFecharFora<T extends HTMLElement = HTMLDivElement>(aberto: boolean, aoFechar: () => void) {
-  const ref = useRef<T>(null)
-
-  useEffect(() => {
-    if (!aberto) return
-    function fora(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) aoFechar()
-    }
-    function tecla(e: KeyboardEvent) {
-      if (e.key === 'Escape') aoFechar()
-    }
-    document.addEventListener('mousedown', fora)
-    document.addEventListener('keydown', tecla)
-    return () => {
-      document.removeEventListener('mousedown', fora)
-      document.removeEventListener('keydown', tecla)
-    }
-  }, [aberto, aoFechar])
-
-  return ref
-}
 
 /** Casca do painel suspenso: superfície elevada, borda e sombra do tema. */
 export function PainelMenu({

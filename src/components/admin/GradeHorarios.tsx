@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { Plus, X } from 'lucide-react'
 import { CampoHora } from '../ui/Campo'
 
@@ -24,6 +25,12 @@ export function GradeHorarios({
   aoAtualizar: (id: string, valores: { hora_inicio?: string; hora_fim?: string }) => void
   aoRemover: (id: string) => void
 }) {
+  // Qual dia disparou a criação em curso, para travar só o botão dele.
+  const [diaEmCriacao, setDiaEmCriacao] = useState<number | null>(null)
+  useEffect(() => {
+    if (!adicionando) setDiaEmCriacao(null)
+  }, [adicionando])
+
   const faixasDe = (dia: number) =>
     faixas.filter((f) => f.dia_semana === dia).sort((a, b) => a.hora_inicio.localeCompare(b.hora_inicio))
 
@@ -36,8 +43,13 @@ export function GradeHorarios({
             <div className="text-mini font-semibold uppercase tracking-wide text-tx-2 text-center">{nomeDia}</div>
             <button
               type="button"
-              onClick={() => aoAdicionar(dia)}
-              disabled={adicionando}
+              onClick={() => {
+                setDiaEmCriacao(dia)
+                aoAdicionar(dia)
+              }}
+              // Trava só o dia clicado: a flag vem do hook e é uma só para a
+              // grade, então sem isso os sete dias desabilitavam juntos.
+              disabled={adicionando && diaEmCriacao === dia}
               className="inline-flex items-center justify-center gap-1 h-8 rounded-1 border border-bd-2 text-apoio text-br-2 hover:bg-br-soft transicao disabled:opacity-45 disabled:pointer-events-none"
             >
               <Plus size={14} /> horário

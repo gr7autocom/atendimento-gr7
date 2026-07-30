@@ -73,6 +73,15 @@ body {
   color: var(--tx-3);
 }
 
+/* O WebKit desenha o próprio "limpar" em input[type=search] quando o campo tem
+   foco, o que aparecia ao lado do botão de limpar do CampoBusca: dois X na mesma
+   caixa. O nosso fica, porque tem alvo de 24px e rótulo para leitor de tela. */
+input[type='search']::-webkit-search-cancel-button,
+input[type='search']::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
 /* Foco visível e consistente em tudo que é interativo */
 :where(button, a, input, textarea, select, [tabindex]):focus-visible {
   outline: 2px solid var(--br-2);

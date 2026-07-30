@@ -3,7 +3,7 @@ import { X, Check, Tag as IconeTag } from 'lucide-react'
 import { useCrud } from '../../lib/useCrud'
 import { useTagsDoAtendimento, useAcoesTags } from '../../lib/useInbox'
 import { corTag } from '../../lib/cores'
-import { useFecharFora } from '../ui/Menu'
+import { useFecharFora } from '../../lib/useFecharFora'
 import { PillTag } from '../ui/PillTag'
 import { CampoBusca } from '../ui/Campo'
 import { cn } from '../../lib/utils'
@@ -42,7 +42,7 @@ export function SeletorTags({
 }) {
   const [aberto, setAberto] = useState(false)
   const [busca, setBusca] = useState('')
-  // Clique fora e Esc: hook compartilhado (ui/Menu).
+  // Clique fora e Esc: hook compartilhado (lib/useFecharFora).
   const ref = useFecharFora<HTMLDivElement>(aberto, () => setAberto(false))
 
   const aplicadas = useTagsDoAtendimento(atendimentoId)

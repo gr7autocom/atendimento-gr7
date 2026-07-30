@@ -33,6 +33,7 @@ export function MensagensRapidas() {
   const [departamentoId, setDepartamentoId] = useState('')
   // Mensagem em vias de ser removida, para o modal nomear o atalho que sai do ar.
   const [removerMsg, setRemoverMsg] = useState<MsgRapida | null>(null)
+  const [erroRemover, setErroRemover] = useState<string | null>(null)
 
   const itens = lista.data ?? []
   const deps = departamentos.lista.data ?? []
@@ -201,11 +202,19 @@ export function MensagensRapidas() {
           </>
         }
         carregando={remover.isPending}
+        erro={erroRemover}
         aoConfirmar={() => {
-          if (removerMsg) remover.mutate(removerMsg.id)
-          setRemoverMsg(null)
+          if (!removerMsg) return
+          setErroRemover(null)
+          remover.mutate(removerMsg.id, {
+            onSuccess: () => setRemoverMsg(null),
+            onError: () => setErroRemover('Não foi possível remover. Tente de novo.'),
+          })
         }}
-        aoCancelar={() => setRemoverMsg(null)}
+        aoCancelar={() => {
+          setRemoverMsg(null)
+          setErroRemover(null)
+        }}
       />
 
       <Modal

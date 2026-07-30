@@ -69,6 +69,7 @@ export function Tags() {
   // Guarda a tag que está para ser removida: o modal precisa do nome para dizer
   // o que vai apagar, e o `confirm()` do navegador não combinava com o tema.
   const [removerTag, setRemoverTag] = useState<Tag | null>(null)
+  const [erroRemover, setErroRemover] = useState<string | null>(null)
 
   const itens = lista.data ?? []
   const deps = departamentos.lista.data ?? []
@@ -218,11 +219,21 @@ export function Tags() {
           </>
         }
         carregando={remover.isPending}
+        erro={erroRemover}
         aoConfirmar={() => {
-          if (removerTag) remover.mutate(removerTag.id)
-          setRemoverTag(null)
+          if (!removerTag) return
+          setErroRemover(null)
+          // Fecha só quando o servidor confirma: fechando junto com o mutate, o
+          // estado de carregando não aparece e a falha passa em silêncio.
+          remover.mutate(removerTag.id, {
+            onSuccess: () => setRemoverTag(null),
+            onError: () => setErroRemover('Não foi possível remover. Tente de novo.'),
+          })
         }}
-        aoCancelar={() => setRemoverTag(null)}
+        aoCancelar={() => {
+          setRemoverTag(null)
+          setErroRemover(null)
+        }}
       />
 
       <Modal

@@ -33,7 +33,9 @@ function arquivosUI(dir = RAIZ): string[] {
   return readdirSync(dir).flatMap((nome: string) => {
     const caminho = join(dir, nome)
     if (statSync(caminho).isDirectory()) return arquivosUI(caminho)
-    return nome.endsWith('.tsx') && !nome.endsWith('.test.tsx') ? [caminho] : []
+    // .ts entra junto: hook e helper de UI moram em lib/ e escapavam da varredura.
+    const ehFonte = /\.tsx?$/.test(nome) && !/\.test\.tsx?$/.test(nome)
+    return ehFonte ? [caminho] : []
   })
 }
 
@@ -120,20 +122,23 @@ describe('padrões de UI (docs/design.md)', () => {
   })
 
   it('mantém cor categórica em lib/cores.ts', () => {
-    const achados = procurar(/#[0-9a-fA-F]{3,8}\b/, (arquivo) =>
-      // Tags deixa o admin escolher a cor da tag: o padrão precisa de um hex.
-      arquivo === 'pages/admin/Tags.tsx'
+    const achados = procurar(
+      /#[0-9a-fA-F]{3,8}\b/,
+      (arquivo) =>
+        // lib/cores.ts É o lugar da cor categórica, então é o único que pode ter
+        // hex. Tags deixa o admin escolher a cor, e o padrão precisa de um valor.
+        arquivo === 'lib/cores.ts' || arquivo === 'pages/admin/Tags.tsx'
     )
     expect(
       relatar(achados, 'Cor de superfície e texto vem dos tokens (tema.css). Cor por item vem de lib/cores.ts.')
     ).toBe('')
   })
 
-  it('centraliza o fechar-ao-clicar-fora em ui/Menu', () => {
+  it('centraliza o fechar-ao-clicar-fora em lib/useFecharFora', () => {
     const achados = procurar(/addEventListener\('mousedown'|addEventListener\("mousedown"/, (arquivo) =>
-      arquivo === 'components/ui/Menu.tsx'
+      arquivo === 'lib/useFecharFora.ts'
     )
-    expect(relatar(achados, 'Use o hook useFecharFora de ui/Menu, que também fecha no Esc.')).toBe('')
+    expect(relatar(achados, 'Use o hook useFecharFora de lib/useFecharFora, que também fecha no Esc.')).toBe('')
   })
 
   it('não usa emoji como ícone', () => {

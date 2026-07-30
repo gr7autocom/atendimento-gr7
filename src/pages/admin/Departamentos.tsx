@@ -26,6 +26,7 @@ export function Departamentos() {
   const [numero, setNumero] = useState('')
   // Departamento em vias de ser removido, para o modal nomear o que vai apagar.
   const [removerDep, setRemoverDep] = useState<Departamento | null>(null)
+  const [erroRemover, setErroRemover] = useState<string | null>(null)
 
   const itens = lista.data ?? []
   const faixasComercial = (comercial.lista.data ?? []) as Faixa[]
@@ -171,11 +172,19 @@ export function Departamentos() {
           </>
         }
         carregando={remover.isPending}
+        erro={erroRemover}
         aoConfirmar={() => {
-          if (removerDep) remover.mutate(removerDep.id)
-          setRemoverDep(null)
+          if (!removerDep) return
+          setErroRemover(null)
+          remover.mutate(removerDep.id, {
+            onSuccess: () => setRemoverDep(null),
+            onError: () => setErroRemover('Não foi possível remover. Tente de novo.'),
+          })
         }}
-        aoCancelar={() => setRemoverDep(null)}
+        aoCancelar={() => {
+          setRemoverDep(null)
+          setErroRemover(null)
+        }}
       />
 
       <Modal titulo="Novo departamento" aberto={aberto} onFechar={() => setAberto(false)}>

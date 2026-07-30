@@ -95,6 +95,11 @@ export function Modal({
  * Confirmação de ação destrutiva. Substitui o `confirm()` do navegador, que
  * aparecia em tema claro do sistema, ignorava a identidade do produto e não
  * dava para dizer o que exatamente ia acontecer.
+ *
+ * Quem chama deve fechar no `onSuccess` da mutação, não junto com o `mutate`:
+ * fechando no mesmo tique, o `carregando` nunca aparece e a remoção some da
+ * tela antes de ter acontecido. Se falhar, passe `erro` e o modal continua
+ * aberto explicando, em vez de sumir como se tivesse dado certo.
  */
 export function ModalConfirmar({
   aberto,
@@ -102,6 +107,7 @@ export function ModalConfirmar({
   descricao,
   rotuloConfirmar = 'Remover',
   carregando = false,
+  erro,
   aoConfirmar,
   aoCancelar,
 }: {
@@ -110,6 +116,7 @@ export function ModalConfirmar({
   descricao: ReactNode
   rotuloConfirmar?: string
   carregando?: boolean
+  erro?: string | null
   aoConfirmar: () => void
   aoCancelar: () => void
 }) {
@@ -117,6 +124,11 @@ export function ModalConfirmar({
     <Modal titulo={titulo} aberto={aberto} onFechar={aoCancelar}>
       <div className="flex flex-col gap-4">
         <p className="text-corpo text-tx-2">{descricao}</p>
+        {erro && (
+          <p role="alert" className="text-apoio text-err">
+            {erro}
+          </p>
+        )}
         <div className="flex justify-end gap-2">
           <Botao variante="fantasma" onClick={aoCancelar}>
             Cancelar

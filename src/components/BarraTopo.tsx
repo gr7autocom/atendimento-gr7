@@ -6,7 +6,8 @@ import { usePermissao } from '../lib/permissoes'
 import { useStatusBot } from '../lib/useStatusBot'
 import { ITENS_NAV } from './SidebarRecolhida'
 import { Avatar } from './ui/Avatar'
-import { useFecharFora, PainelMenu, ItemMenu } from './ui/Menu'
+import { PainelMenu, ItemMenu } from './ui/Menu'
+import { useFecharFora } from '../lib/useFecharFora'
 import { cn } from '../lib/utils'
 
 /** Pílula de status da conexão do WhatsApp, visível a admin e atendente. */
@@ -49,7 +50,7 @@ export function BarraTopo({ titulo, menu }: { titulo: string; menu?: ReactNode }
   const { signOut, usuario } = useAuth()
   const { isAdmin } = usePermissao()
   const [aberto, setAberto] = useState(false)
-  // Fechar ao clicar fora e no Esc vem do hook compartilhado (ui/Menu).
+  // Fechar ao clicar fora e no Esc vem do hook compartilhado (lib/useFecharFora).
   const ref = useFecharFora<HTMLDivElement>(aberto, () => setAberto(false))
   const itensNav = ITENS_NAV.filter((i) => !i.adminOnly || isAdmin)
 

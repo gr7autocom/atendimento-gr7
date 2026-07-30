@@ -4,9 +4,13 @@ import { Topicos } from './Bloco'
 
 export type AbaItem<T extends string> = { id: T; label: string; icone: LucideIcon }
 
-/** Ids que ligam a aba ao seu painel. `idGrupo` isola telas com mais de um conjunto. */
-export const idAba = (idGrupo: string, aba: string) => `${idGrupo}-aba-${aba}`
-export const idPainel = (idGrupo: string, aba: string) => `${idGrupo}-painel-${aba}`
+/**
+ * Ids que ligam a aba ao seu painel. `idGrupo` isola telas com mais de um
+ * conjunto. Não são exportados de propósito: só `Abas` e `PainelAba` usam, e
+ * exportar função de um arquivo de componente quebra o fast refresh do Vite.
+ */
+const idAba = (idGrupo: string, aba: string) => `${idGrupo}-aba-${aba}`
+const idPainel = (idGrupo: string, aba: string) => `${idGrupo}-painel-${aba}`
 
 /**
  * Navegação por abas das telas de admin (Configurações do bot, Departamento,
