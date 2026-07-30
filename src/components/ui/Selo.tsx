@@ -6,8 +6,8 @@ type Tom = 'neutro' | 'marca' | 'ok' | 'warn' | 'err'
 const TONS: Record<Tom, string> = {
   neutro: 'bg-sf-3 text-tx-2 border-bd-2',
   marca: 'bg-br-soft text-br-2 border-transparent',
-  ok: 'bg-[rgba(63,185,80,0.14)] text-ok border-transparent',
-  warn: 'bg-[rgba(210,153,34,0.14)] text-warn border-transparent',
+  ok: 'bg-ok-soft text-ok border-transparent',
+  warn: 'bg-warn-soft text-warn border-transparent',
   err: 'bg-err-soft text-err border-transparent',
 }
 
@@ -23,7 +23,7 @@ export function Selo({
   return (
     <span
       className={cn(
-        'inline-flex items-center h-5 px-1.5 rounded-[6px] border text-[11px] font-medium leading-none',
+        'inline-flex items-center h-5 px-1.5 rounded-1 border text-mini font-medium leading-none',
         TONS[tom],
         className
       )}
@@ -57,7 +57,7 @@ export function PontoStatus({ status, comRotulo = false }: { status: string; com
         className="w-1.5 h-1.5 rounded-full shrink-0"
         style={{ background: cor }}
       />
-      <span className={cn('text-[12px]', comRotulo ? 'text-tx-2' : 'sr-only')}>
+      <span className={cn('text-apoio', comRotulo ? 'text-tx-2' : 'sr-only')}>
         {ROTULO_STATUS[status] ?? status}
       </span>
     </span>

@@ -1,4 +1,5 @@
 import { cn } from '../../lib/utils'
+import { tomAvatar, COR_WHATSAPP } from '../../lib/cores'
 
 /** Iniciais estáveis a partir do nome: primeira letra do primeiro e do último termo. */
 function iniciais(nome: string) {
@@ -8,13 +9,8 @@ function iniciais(nome: string) {
   return (partes[0][0] + partes[partes.length - 1][0]).toUpperCase()
 }
 
-/** Tom de fundo estável por nome, para o avatar não ser todo igual na lista. */
-const TONS = ['bg-br-1', 'bg-[#8957e5]', 'bg-[#1f6feb]', 'bg-[#3fb950]', 'bg-[#d29922]', 'bg-[#db6d28]']
-function tom(nome: string) {
-  let h = 0
-  for (let i = 0; i < nome.length; i++) h = (h * 31 + nome.charCodeAt(i)) >>> 0
-  return TONS[h % TONS.length]
-}
+// O tom de fundo vem de lib/cores: é a mesma família de cor categórica usada em
+// setor, tag e métrica, e antes estava duplicada aqui com outra função de hash.
 
 export function Avatar({
   nome,
@@ -44,7 +40,7 @@ export function Avatar({
         <span
           className={cn(
             'w-full h-full rounded-full flex items-center justify-center font-semibold text-white',
-            tom(nome)
+            tomAvatar(nome)
           )}
           style={{ fontSize: fonte }}
           aria-hidden="true"
@@ -54,7 +50,8 @@ export function Avatar({
       )}
       {whatsapp && (
         <span
-          className="absolute -bottom-0.5 -right-0.5 w-[14px] h-[14px] rounded-full bg-[#25d366] border-2 border-sf-1 flex items-center justify-center"
+          className="absolute -bottom-0.5 -right-0.5 w-[14px] h-[14px] rounded-full border-2 border-sf-1 flex items-center justify-center"
+          style={{ background: COR_WHATSAPP }}
           aria-hidden="true"
         >
           <svg viewBox="0 0 24 24" width="8" height="8" fill="white">
