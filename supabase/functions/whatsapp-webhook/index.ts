@@ -1,5 +1,5 @@
-import { criarDriver } from '../_shared/whatsapp/index.ts'
-import { criarClienteServico } from '../_shared/supabase.ts'
+import { criarDriver, type WhatsAppDriver } from '../_shared/whatsapp/index.ts'
+import { criarClienteServico, type ClienteServico } from '../_shared/supabase.ts'
 import { preflight, respostaJson } from '../_shared/cors.ts'
 import { aplicarVariaveis } from '../_shared/bot/variaveis.ts'
 import {
@@ -39,7 +39,7 @@ type Ticket = {
 
 const agora = () => new Date().toISOString()
 
-async function acharOuCriarContato(sb: any, telefone: string, nome: string | null | undefined) {
+async function acharOuCriarContato(sb: ClienteServico, telefone: string, nome: string | null | undefined) {
   const { data: existente } = await sb
     .from('contatos')
     .select('id, nome, nome_whatsapp, cliente_id')
@@ -55,12 +55,20 @@ async function acharOuCriarContato(sb: any, telefone: string, nome: string | nul
   return data
 }
 
-async function carregarMapa(sb: any, tabela: string, chave: string, valor: string) {
-  const { data } = await sb.from(tabela).select(`${chave}, ${valor}`)
-  return Object.fromEntries((data ?? []).map((r: any) => [r[chave], r[valor]])) as Record<string, string>
+// `.returns<T>()` aqui e no `carregarFaixas` não é enfeite: o supabase-js analisa
+// a string do `.select()` em tempo de tipo para deduzir o formato da linha, e não
+// consegue fazer isso quando as colunas vêm de variável — sem ele, o tipo da linha
+// vira um erro de parser. Como a tabela também é dinâmica, o formato é afirmado
+// aqui e vale o que o chamador pedir.
+async function carregarMapa(sb: ClienteServico, tabela: string, chave: string, valor: string) {
+  const { data } = await sb
+    .from(tabela)
+    .select(`${chave}, ${valor}`)
+    .returns<Record<string, string>[]>()
+  return Object.fromEntries((data ?? []).map((r) => [r[chave], r[valor]])) as Record<string, string>
 }
 
-async function carregarDepartamentos(sb: any): Promise<Departamento[]> {
+async function carregarDepartamentos(sb: ClienteServico): Promise<Departamento[]> {
   const { data } = await sb
     .from('departamentos')
     .select('id, nome, ordem')
@@ -71,10 +79,10 @@ async function carregarDepartamentos(sb: any): Promise<Departamento[]> {
 
 // `atendimento_horarios` (comercial) tem coluna `ativo`; `atendimento_usuario_horarios`
 // (janelas de plantão) não — daí o parâmetro para não pedir coluna inexistente.
-async function carregarFaixas(sb: any, tabela: string, comAtivo: boolean): Promise<Faixa[]> {
+async function carregarFaixas(sb: ClienteServico, tabela: string, comAtivo: boolean): Promise<Faixa[]> {
   const cols = comAtivo ? 'dia_semana, hora_inicio, hora_fim, ativo' : 'dia_semana, hora_inicio, hora_fim'
-  const { data } = await sb.from(tabela).select(cols)
-  return (data ?? []) as Faixa[]
+  const { data } = await sb.from(tabela).select(cols).returns<Faixa[]>()
+  return data ?? []
 }
 
 /**
@@ -83,7 +91,7 @@ async function carregarFaixas(sb: any, tabela: string, comAtivo: boolean): Promi
  * com a avaliação ativa (o #sair e a avaliação desligada não marcam esse campo);
  * `avaliacao` nula garante que o cliente não deu a nota. Ver docs/bot.md.
  */
-async function acharTicketReabertura(sb: any, contatoId: string, janelaHoras: number) {
+async function acharTicketReabertura(sb: ClienteServico, contatoId: string, janelaHoras: number) {
   const limite = new Date(Date.now() - janelaHoras * 3600_000).toISOString()
   const { data } = await sb
     .from('atendimentos')
@@ -100,7 +108,7 @@ async function acharTicketReabertura(sb: any, contatoId: string, janelaHoras: nu
 
 const SELECT_TICKET = 'id, protocolo, status, tentativas_menu, departamento_id, etapa_bot'
 
-async function acharTicketAberto(sb: any, contatoId: string): Promise<Ticket | null> {
+async function acharTicketAberto(sb: ClienteServico, contatoId: string): Promise<Ticket | null> {
   const { data } = await sb
     .from('atendimentos')
     .select(SELECT_TICKET)
@@ -112,7 +120,7 @@ async function acharTicketAberto(sb: any, contatoId: string): Promise<Ticket | n
 }
 
 /** Ticket recém-finalizado aguardando a nota de avaliação do cliente. */
-async function acharTicketAvaliacao(sb: any, contatoId: string) {
+async function acharTicketAvaliacao(sb: ClienteServico, contatoId: string) {
   const { data } = await sb
     .from('atendimentos')
     .select('id, protocolo, avaliacao_solicitada_em')
@@ -125,7 +133,7 @@ async function acharTicketAvaliacao(sb: any, contatoId: string) {
   return (data && data[0]) || null
 }
 
-async function criarTicketTriagem(sb: any, contatoId: string, etapa: string): Promise<Ticket> {
+async function criarTicketTriagem(sb: ClienteServico, contatoId: string, etapa: string): Promise<Ticket> {
   const { data, error } = await sb
     .from('atendimentos')
     .insert({
@@ -143,7 +151,7 @@ async function criarTicketTriagem(sb: any, contatoId: string, etapa: string): Pr
   return data as Ticket
 }
 
-async function gravarEntrada(sb: any, ticketId: string, wa_message_id: string, corpo: string | null) {
+async function gravarEntrada(sb: ClienteServico, ticketId: string, wa_message_id: string, corpo: string | null) {
   await sb.from('atendimento_mensagens').insert({
     atendimento_id: ticketId,
     direcao: 'entrada',
@@ -154,7 +162,13 @@ async function gravarEntrada(sb: any, ticketId: string, wa_message_id: string, c
   })
 }
 
-async function enviarBot(sb: any, driver: any, telefone: string, ticketId: string, textos: string[]) {
+async function enviarBot(
+  sb: ClienteServico,
+  driver: WhatsAppDriver,
+  telefone: string,
+  ticketId: string,
+  textos: string[],
+) {
   for (const texto of textos) {
     const { wa_message_id } = await driver.enviarMensagem(telefone, { tipo: 'texto', texto })
     await sb.from('atendimento_mensagens').insert({
@@ -169,11 +183,21 @@ async function enviarBot(sb: any, driver: any, telefone: string, ticketId: strin
   await sb.from('atendimentos').update({ ultima_mensagem_em: agora() }).eq('id', ticketId)
 }
 
-function vars(nomeContato: string, ticket: Ticket, empresa?: string | null, departamento?: string | null) {
+// `ticket` entra como anulável porque quem chama é o closure `aplica`, montado
+// antes de o chamado existir: ele captura a variável, não o valor. Hoje todas as
+// chamadas acontecem com o chamado já resolvido, mas o tipo tem que admitir o
+// null, senão o `deno check` reprova — e um `!` aqui só esconderia o dia em que
+// alguém mover uma chamada para antes.
+function vars(
+  nomeContato: string,
+  ticket: Ticket | null,
+  empresa?: string | null,
+  departamento?: string | null,
+) {
   return {
     contato: nomeContato,
     empresa: empresa ?? '',
-    protocolo: String(ticket.protocolo ?? ''),
+    protocolo: String(ticket?.protocolo ?? ''),
     departamento: departamento ?? '',
     atendente: '',
     horario: '',

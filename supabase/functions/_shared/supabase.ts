@@ -10,3 +10,10 @@ export function criarClienteServico(): SupabaseClient {
   const serviceRole = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
   return createClient(url, serviceRole, { auth: { persistSession: false } })
 }
+
+/**
+ * Tipo do cliente acima, para quem o recebe por parâmetro. Existe para que as
+ * funções auxiliares não precisem declarar `any` (que desliga a checagem inteira)
+ * nem reimportar o tipo do esm.sh uma a uma.
+ */
+export type ClienteServico = ReturnType<typeof criarClienteServico>
