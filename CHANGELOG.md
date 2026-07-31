@@ -75,6 +75,19 @@
 
 ---
 
+## 2026-07-24 — Sistema ganha forma: áreas separadas, painel de supervisão e uso no celular
+
+- O sistema passou a ter duas áreas: **Atendimento** e **Administração**, ligadas por uma barra no topo com a marca, notificações e o menu do usuário. Ao entrar, cada perfil cai na sua área: administrador na configuração, atendente direto nas conversas
+- O menu lateral ficou recolhido em faixa de ícones e **expande ao passar o mouse**, devolvendo espaço para a conversa
+- **Painel de supervisão para o administrador**, na área direita das conversas: seis indicadores no topo e duas tabelas, uma por departamento e outra por atendente. Clicar num setor ou numa pessoa **filtra a lista de chamados** na hora, e a seta abre o detalhe de quem tem chamado ativo naquele setor
+- O atendente agora **abre um chamado por conta própria**, escolhendo o contato ou a empresa, o departamento e o responsável. Sem responsável o chamado nasce pendente; com responsável já entra em atendimento
+- **Quem vê o quê mudou:** o administrador enxerga todos os chamados e atua em qualquer um; o atendente enxerga os seus mais a fila livre de todos os setores, e não vê o chamado que já é de outro colega. O perfil de suporte passou a poder assumir, responder, finalizar e transferir
+- **O atendimento funciona no celular:** abrir uma conversa ocupa a tela inteira com botão de voltar, o menu de três pontos reúne dados do atendimento, transferir e finalizar, e a navegação abre em tela cheia ao tocar na foto do usuário
+- A conversa foi refinada: foto do contato no cabeçalho, mensagens em coluna centralizada e legível em telas largas, separadores de "Hoje" e "Ontem", confirmação de envio ao lado do horário e orientação quando não há mensagem
+- A identidade visual própria do Atendimento (tema escuro) foi aplicada em todas as telas
+
+---
+
 ## 2026-07-23 — Projeto criado (planejamento)
 
 - Discovery e decisões de arquitetura concluídos

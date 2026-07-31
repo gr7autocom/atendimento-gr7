@@ -19,7 +19,7 @@ Uma central de atendimento **WhatsApp**, operada pela equipe interna, que:
 
 ## Personas
 
-- **Atendente (interno GR7):** usa a inbox, assume e responde tickets dos seus departamentos. É um `usuario` já existente no painel.
+- **Atendente (interno GR7):** usa a inbox, assume e responde tickets. Enxerga os **seus** mais a **fila livre** de todos os setores, e não vê o chamado que já é de outro atendente (visibilidade por dono, revista em 2026-07-24 — ver [db.md](db.md)). É um `usuario` já existente no painel.
 - **Gestor/CEO:** consome métricas e relatórios.
 - **Cliente final:** conversa **pelo WhatsApp**. **NÃO loga em nada** — não há portal do cliente.
 

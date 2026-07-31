@@ -15,10 +15,11 @@ Plataforma de atendimento via WhatsApp da GR7, operada pela equipe interna, **in
 
 ## Stack
 
-- **Frontend:** React 19 + TypeScript + Vite · TailwindCSS v4 (`@tailwindcss/vite`, sem config) · lucide-react · `clsx`+`tailwind-merge` (`cn`) · **TanStack Query** (data-fetching/cache do inbox) · **Zod** (validação de forms e payload do webhook)
+- **Frontend:** React 19 + TypeScript + Vite · TailwindCSS v4 (`@tailwindcss/vite`, sem config) · lucide-react · `clsx`+`tailwind-merge` (`cn`) · **TanStack Query** (data-fetching/cache do inbox)
+  - **Zod está instalado, mas não é usado em lugar nenhum** (conferido em 2026-07-31). Era previsto para forms e para o payload do webhook; os forms validam à mão e o `normalizar-uazapi.ts` valida de forma defensiva, porque o formato do envelope ainda não foi visto em tráfego real. Antes de escrever validação nova, decidir: adotar o Zod de fato ou tirar a dependência.
 - **Backend:** Supabase compartilhado · Edge Functions (Deno) para webhook/envio WhatsApp
 - **WhatsApp:** **uazapi** (API REST SaaS não-oficial) via **adapter** — ver [docs/whatsapp.md](docs/whatsapp.md)
-- **Design:** tema **dark** com visual **próprio** do Atendimento (tokens de cor base vindos do painel; layout e componentes próprios). Etapa de design dedicada no fim da implementação — ver [docs/design.md](docs/design.md)
+- **Design:** tema **dark** com visual **próprio** do Atendimento (tokens de cor base vindos do painel; layout e componentes próprios). Base padronizada e auditada, ver a regra 1 e [docs/design.md](docs/design.md)
 
 ## Credenciais Supabase
 
@@ -43,7 +44,7 @@ Plataforma de atendimento via WhatsApp da GR7, operada pela equipe interna, **in
 ## Regras específicas
 
 1. Design **dark com identidade própria** do Atendimento (decisão revista em 2026-07-23). Tokens de cor base copiados do painel; layout e componentes são próprios. A base visual foi **padronizada e auditada em 2026-07-29/30** (tokens, escala tipográfica, dimensões, espaçamento, contraste e teclado), com guarda em `src/padroes-ui.test.ts`. O que resta do ADR-10 é polimento **estético**, não a base: as telas não são mais "cruas de propósito".
-2. Toda tabela nova com RLS; atendente vê tickets dos **seus departamentos** (ver [docs/db.md](docs/db.md)).
+2. Toda tabela nova com RLS. Visibilidade é **por dono**, não por departamento (revista em 2026-07-24, migration `20260724150000`): **admin vê tudo e atua em qualquer chamado**; **atendente vê os seus mais a fila livre** de todos os setores, e **não vê o chamado de outro atendente**. O departamento serve para roteamento do bot e filtro da lista, não para a visão. Detalhe e helpers em [docs/db.md](docs/db.md).
 3. Provedor WhatsApp atrás de um **adapter** — nunca chamar a uazapi direto do código de domínio.
 4. Nada de multi-tenancy: **cliente final não loga** — só a equipe interna opera.
 5. Documentação viva: atualizar `PROGRESSO.md` + o `docs/*.md` afetado ao concluir algo.
@@ -52,4 +53,6 @@ Plataforma de atendimento via WhatsApp da GR7, operada pela equipe interna, **in
 
 ## Context7 — libs a consultar
 
-Ao mexer com estas libs, consultar `context7` antes: React, React Router DOM, Supabase (client/Postgres/Edge Functions), TailwindCSS v4, Vite, TypeScript, **TanStack Query**, **Zod**, **uazapi** (integração WhatsApp).
+Ao mexer com estas libs, consultar `context7` antes: React, React Router DOM, Supabase (client/Postgres/Edge Functions), TailwindCSS v4, Vite, TypeScript, **TanStack Query**, **Zod**.
+
+**A uazapi não está no Context7** (SaaS pequeno, sem doc indexada). A referência dela é o [docs/whatsapp.md](docs/whatsapp.md), que resume o spec OpenAPI oficial v2.1.1: endpoints, corpo do webhook, campos do payload e as armadilhas. O spec completo fica em `docs/uazapi-openapi-spec.yaml`, **fora do git** (600 KB, consulta local) — se não estiver na máquina, baixar no painel da uazapi.

@@ -14,15 +14,15 @@ Base navegável + configurações + inbox + bot funcionando.
 
 - App separado com design dark e login compartilhado
 - Configurações: departamentos, atendentes por departamento, mensagens do bot, horários
-- Inbox: fila por departamento, assumir/responder/finalizar ticket
+- Inbox: fila única com visibilidade por dono (admin vê tudo; atendente vê os seus mais a fila livre), assumir/responder/finalizar ticket
 - Bot por ticket: saudação, menu automático, roteamento, fora de horário, reabertura
 - Integração uazapi (webhook + envio) atrás de adapter
 
 ### Fase 2 — Integração com o Painel
 
-- Criar **tarefa** a partir do chamado (cliente pediu instalar PC)
-- Cadastrar **cliente + projeto** a partir da venda (reusa RPC `gerar_tarefas_iniciais_cliente`)
-- Histórico de atendimento na ficha do cliente
+- [x] Criar **tarefa** a partir do chamado (cliente pediu instalar PC) — **entregue em 2026-07-28**, antes do fim da Fase 1
+- [ ] Cadastrar **cliente + projeto** a partir da venda (reusa RPC `gerar_tarefas_iniciais_cliente`)
+- [ ] Histórico de atendimento na ficha do cliente
 
 ### Fase 3 — Métricas / Dashboard / Relatórios (prioridade dos CEOs)
 

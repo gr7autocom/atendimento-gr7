@@ -40,5 +40,5 @@ Resultado: o painel continua byte-a-byte igual; as tabelas novas são invisívei
 ## Deploy
 
 - Frontend: hospedagem própria (a definir — Apache/Plesk como o painel, ou Vercel/Netlify). Domínio próprio (ex.: `atendimento.gr7autocom.com.br`).
-- Edge Functions: no mesmo projeto Supabase (`npx supabase functions deploy`). As três (`whatsapp-webhook`, `whatsapp-send`, `whatsapp-conexao`) já existem em **esqueleto** (modo mock, nada deployado); ver [whatsapp.md](whatsapp.md).
+- Edge Functions: no mesmo projeto Supabase (`npx supabase functions deploy`). As três (`whatsapp-webhook`, `whatsapp-send`, `whatsapp-conexao`) estão **prontas e rodando em modo mock**; o `whatsapp-webhook` está **deployado** desde 2026-07-27 e roda o fluxo do bot. Falta a conta uazapi para sair do mock. Ver [whatsapp.md](whatsapp.md).
 - Provedor WhatsApp (uazapi): SaaS externo, sem infra nossa.
