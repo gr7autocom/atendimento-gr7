@@ -34,3 +34,7 @@ dist-ssr
 
 # Supabase CLI temp
 supabase/.temp/
+
+# Spec OpenAPI da uazapi (600 KB, baixado do painel deles) — consulta local,
+# nao versionado. O que importa dele esta resumido em docs/whatsapp.md.
+docs/uazapi-openapi-spec.yaml

@@ -13,6 +13,12 @@
 - Documentação sincronizada: `design.md` (checklist, contraste, escala tipográfica, dimensões e espaçamento), regras 6 e 7 do `CLAUDE.md`, Status no ADR-10 e marco no `CHANGELOG.md`
 - Code review dos 5 commits: 5 achados, nenhum CRITICAL ou HIGH, **todos corrigidos e commitados** (X duplicado na busca; modal fechando só no `onSuccess`, com prop `erro` nova no `ModalConfirmar`; callback do `useFecharFora` em ref; `GradeHorarios` travando só o dia clicado; hook movido para `src/lib/useFecharFora.ts` e guarda ampliada para varrer `.ts`)
 - Tudo commitado e publicado: `c63b749..8fb9cfd` em `feat/fundacao`
+- **Spec OpenAPI da uazapi conferido** (v2.1.1, 17 mil linhas): resolveu o corpo do `POST /webhook`, corrigiu `/instance/init` → `/instance/create` e confirmou o `UAZAPI_INSTANCE` como desnecessário. Achado mais importante: `excludeMessages: ["wasSentByApi"]` é obrigatório, senão o bot responde a si mesmo em loop. `docs/whatsapp.md`, `supabase/functions/README.md` e este arquivo atualizados; o spec ficou no `.gitignore` (600 KB, só consulta)
+- **`driver-uazapi.ts` corrigido** com o que o spec revelou: lia `dados.state`, `dados.qrCode` e `dados.pairingCode`, campos que não existem (o certo é `instance.status`, `instance.qrcode`, `instance.paircode` — o QR chegava sempre nulo e a aba Conexão nunca teria o código para escanear); e usava `id` (interno da uazapi) como `wa_message_id` em vez de `messageid`, o que faria a deduplicação nunca casar e duplicar mensagem na conversa
+- **Normalização do webhook escrita e testada**: novo `_shared/whatsapp/normalizar-uazapi.ts`, módulo puro (sem `fetch`, sem `Deno.env`) com 22 testes. Aceita os dois envelopes que o spec descreve e ignora o que não reconhece, em vez de gravar shape errado. Suíte foi de 50 para **72 testes**
+- **Ativação virou um POST**: `configurarWebhook` no driver e `whatsapp-conexao` aceitando `{ "acao": "webhook" }`, que aponta o webhook da uazapi para a nossa Function com os filtros certos, sem entrar no painel deles
+- **Ferramentas instaladas e Edge Functions validadas de verdade**: Deno 2.9.4 (winget) e Supabase CLI 2.111.0 (devDependency, use `npx supabase`). O `deno check` — que nunca tinha rodado — achou de cara um `Ticket | null` chegando onde se esperava `Ticket`; não era bug de runtime (nenhuma chamada acontece com o chamado nulo), é o closure `aplica` capturando a variável antes de ela existir. Corrigido no tipo, não com `!`
+- **`any` eliminado das Edge Functions** (12 avisos do `deno lint`, todos no `whatsapp-webhook`): `sb` virou o tipo novo `ClienteServico` (`_shared/supabase.ts`) e `driver` virou `WhatsAppDriver`. Tipar revelou um efeito colateral do supabase-js: ele analisa a string do `.select()` em tempo de tipo e não dá conta de coluna vinda de variável, resolvido com `.returns<T>()` em `carregarMapa` e `carregarFaixas`. Hoje: zero `any` em `supabase/functions`, `deno check` e `deno lint` limpos, 72 testes e build ok
 
 ### Ressalva de validação
 
@@ -39,17 +45,18 @@
 ### Auditoria visual (o que sobrou dos 5 lotes)
 
 1. [ ] (P2) **Virtualizar a lista de chamados.** Não feito de propósito: a diretriz vale a partir de ~50 itens e a fila real tem 5 a 8, então instalar biblioteca de virtualização hoje seria overengineering. **Gatilho para fazer:** quando uma fila passar de ~50 chamados abertos, ou quando alguém reclamar de lentidão ao rolar a lista
-2. [ ] (P2) **Indicador de não lidas na lista** (contador por chamado). **Depende da integração uazapi:** precisa do evento de leitura/entrega, que só existe com o WhatsApp conectado. É o principal atalho visual de uma inbox, então vale fazer junto com a integração
+2. [ ] (P2) **Indicador de não lidas na lista** (contador por chamado). **Depende da integração uazapi:** precisa do evento de leitura/entrega, que só existe com o WhatsApp conectado. É o principal atalho visual de uma inbox, então vale fazer junto com a integração. **Endpoints já identificados no spec:** o contador vem de `wa_unreadCount` (`POST /chat/details`) e `POST /message/markread` zera ao abrir a conversa
 
 ### Implementação (o que falta)
 
 1. [ ] (P2) **Ligar a aba Conexão + pílula de status** ao `whatsapp-conexao` (por ora em modo mock: QR fake + status; vira real quando as chaves entrarem)
-2. [ ] (P2) **Integração uazapi real:** fechar os "A CONFIRMAR" (payload real do webhook, id na resposta de envio), **enviar de verdade** (bot + respostas do atendente) e configurar o webhook na uazapi — **depende de conta uazapi + número**
+2. [ ] (P2) **Integração uazapi real:** conferir o **envelope do webhook** contra os casos de `normalizar-uazapi.test.ts` (único "A CONFIRMAR" que sobrou) e **enviar de verdade** (bot + respostas do atendente) — **depende de conta uazapi + número**. Apontar o webhook já é um POST: `whatsapp-conexao` com `{ "acao": "webhook" }`
 3. [ ] (P2) **Ligar as 3 métricas sem fonte do painel de supervisão** (Atendentes online, Novas mensagens, Retornos). Hoje mostram 0 com a legenda "Sem dados até conectar o WhatsApp"; ao ligar, **remover a legenda** junto (a marca é a flag `semFonte` em `Dashboard.tsx`). Presença do atendente pode não vir da uazapi e talvez precise de fonte própria
 
 ### Pré-requisitos externos (negócio — bloqueiam a integração real)
 
 - [ ] Conta/assinatura uazapi ativa + número de WhatsApp dedicado conectado (QR)
+- [ ] **Conta WhatsApp Business**, não WhatsApp comum: a uazapi avisa no próprio spec que o WhatsApp normal dá desconexão e instabilidade na integração
 - [ ] Confirmar reputação de estabilidade/uptime da uazapi antes de assinar
 
 ## ✅ Concluído
