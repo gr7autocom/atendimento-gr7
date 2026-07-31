@@ -30,6 +30,12 @@ export class DriverMock implements WhatsAppDriver {
     })
   }
 
+  configurarWebhook(_url: string): Promise<void> {
+    // Sem provedor não há o que apontar: em desenvolvimento o webhook é chamado
+    // direto por POST, com o payload já no shape do EventoNormalizado.
+    return Promise.resolve()
+  }
+
   normalizarWebhook(payload: unknown): EventoNormalizado {
     // No mock, aceitamos direto um EventoNormalizado (o teste local envia esse shape).
     const p = payload as Partial<Extract<EventoNormalizado, { tipo: 'mensagem' }>> | null

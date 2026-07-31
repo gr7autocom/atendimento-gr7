@@ -54,4 +54,9 @@ export interface WhatsAppDriver {
   statusConexao(): Promise<ResultadoConexao>
   /** Inicia a conexão (QR sem phone, pairing code com phone). Ver POST /instance/connect. */
   conectar(phone?: string): Promise<ResultadoConexao>
+  /**
+   * Aponta o webhook do provedor para a nossa Edge Function, com os filtros que
+   * evitam loop e gasto de invocation. Ver POST /webhook.
+   */
+  configurarWebhook(url: string): Promise<void>
 }

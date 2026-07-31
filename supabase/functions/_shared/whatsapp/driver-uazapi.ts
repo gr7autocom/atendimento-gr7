@@ -3,17 +3,21 @@ import type {
   EventoNormalizado,
   ResultadoConexao,
   ResultadoEnvio,
-  StatusConexao,
   WhatsAppDriver,
 } from './tipos.ts'
+import { mapearStatusConexao, normalizarEventoUazapi } from './normalizar-uazapi.ts'
 
-// Driver real da uazapi. Endpoints e headers confirmados na doc oficial
-// (ver docs/whatsapp.md, "Referência da API uazapi"). Autenticação por header
-// `token` (endpoints normais) e `admintoken` (administrativos), não Bearer.
+// Driver real da uazapi. Endpoints, headers e formato das respostas conferidos no
+// spec OpenAPI oficial v2.1.1 (ver docs/whatsapp.md, "Referência da API uazapi").
+// Autenticação por header `token` (endpoints normais) e `admintoken`
+// (administrativos), não Bearer.
 
 const BASE = Deno.env.get('UAZAPI_BASE_URL') ?? ''
 const TOKEN = Deno.env.get('UAZAPI_TOKEN') ?? ''
 const ADMIN_TOKEN = Deno.env.get('UAZAPI_ADMIN_TOKEN') ?? ''
+
+/** Eventos que assinamos. Cada evento extra é uma invocation de Edge Function. */
+const EVENTOS_WEBHOOK = ['messages', 'messages_update', 'connection']
 
 function cabecalhos(admin = false): HeadersInit {
   return {
@@ -40,10 +44,24 @@ async function chamar(
   return (await resp.json().catch(() => ({}))) as Record<string, unknown>
 }
 
-function mapearStatus(estado: unknown): StatusConexao {
-  return estado === 'connected' || estado === 'connecting' || estado === 'hibernated'
-    ? estado
-    : 'disconnected'
+/**
+ * `/instance/status` e `/instance/connect` devolvem a mesma forma: o estado da
+ * sessão, o QR e o pairing code vivem **dentro de `instance`**, com as chaves em
+ * minúsculo (`status`, `qrcode`, `paircode`). Não existe `state`, `qrCode` nem
+ * `pairingCode` na raiz — ler de lá devolvia QR nulo e a aba Conexão nunca
+ * mostrava o código para escanear.
+ *
+ * Cuidado com o nome: a resposta tem **dois** campos "status". O de fora
+ * (`{ connected, loggedIn, jid }`) é o do socket; o estado de verdade é
+ * `instance.status`.
+ */
+function lerConexao(dados: Record<string, unknown>): ResultadoConexao {
+  const instancia = (dados['instance'] ?? {}) as Record<string, unknown>
+  return {
+    status: mapearStatusConexao(instancia['status']),
+    qrCode: (instancia['qrcode'] as string | undefined) ?? null,
+    pairingCode: (instancia['paircode'] as string | undefined) ?? null,
+  }
 }
 
 export class DriverUazapi implements WhatsAppDriver {
@@ -58,38 +76,46 @@ export class DriverUazapi implements WhatsAppDriver {
             text: conteudo.caption,
             docName: conteudo.docName,
           })
-    // ⚠️ A CONFIRMAR: nome exato do campo do id da mensagem na resposta da uazapi.
-    const id = dados['id'] ?? dados['messageid'] ?? (dados['key'] as Record<string, unknown>)?.['id'] ?? ''
-    return { wa_message_id: String(id) }
+    // Os dois endpoints respondem com o schema `Message`, que tem DOIS ids:
+    // `messageid` é o id do WhatsApp e `id` é interno da uazapi (formato
+    // `r`+hex). Só o `messageid` volta no webhook, então é ele que serve de
+    // `wa_message_id` — usar o `id` faria a deduplicação nunca casar e a mesma
+    // mensagem apareceria duas vezes na conversa.
+    return { wa_message_id: String(dados['messageid'] ?? '') }
   }
 
   async statusConexao(): Promise<ResultadoConexao> {
-    const dados = await chamar('GET', '/instance/status')
-    return {
-      status: mapearStatus(dados['state'] ?? (dados['instance'] as Record<string, unknown>)?.['status']),
-      qrCode: (dados['qrCode'] as string | null) ?? null,
-      pairingCode: (dados['pairingCode'] as string | null) ?? null,
-    }
+    return lerConexao(await chamar('GET', '/instance/status'))
   }
 
   async conectar(phone?: string): Promise<ResultadoConexao> {
-    const dados = await chamar('POST', '/instance/connect', phone ? { phone } : {})
-    return {
-      status: mapearStatus(dados['state'] ?? 'connecting'),
-      qrCode: (dados['qrCode'] as string | null) ?? null,
-      pairingCode: (dados['pairingCode'] as string | null) ?? null,
-    }
+    return lerConexao(await chamar('POST', '/instance/connect', phone ? { phone } : {}))
+  }
+
+  /**
+   * Aponta o webhook da instância para a nossa Edge Function. Modo simples do
+   * `POST /webhook` (sem `action` e sem `id`): a uazapi mantém um único webhook
+   * por instância e cria ou atualiza sozinha.
+   *
+   * `excludeMessages: ["wasSentByApi"]` não é opcional: sem ele, cada mensagem
+   * que o bot envia volta como webhook, o bot lê como se fosse do cliente e
+   * responde a si mesmo, em loop, queimando invocations.
+   */
+  async configurarWebhook(url: string): Promise<void> {
+    await chamar('POST', '/webhook', {
+      enabled: true,
+      url,
+      events: EVENTOS_WEBHOOK,
+      excludeMessages: ['wasSentByApi'],
+      // Os dois `false` de propósito: se ligados, a uazapi acrescenta o tipo do
+      // evento e da mensagem como path na URL (`/whatsapp-webhook/messages/...`)
+      // e a Function deixaria de ser encontrada.
+      addUrlEvents: false,
+      addUrlTypesMessages: false,
+    })
   }
 
   normalizarWebhook(payload: unknown): EventoNormalizado {
-    // ⚠️ A CONFIRMAR: o formato real do payload do webhook uazapi não foi validado
-    // ainda (a doc é SPA e não renderizou no fetch — ver docs/whatsapp.md). Quando
-    // houver token/admintoken, validar no painel de teste da doc e mapear aqui:
-    //   - evento de mensagem recebida  -> { tipo: 'mensagem', wa_message_id, telefone, corpo, nome_whatsapp }
-    //   - evento de status de mensagem -> { tipo: 'status_mensagem', wa_message_id, status }
-    //   - evento de conexão            -> { tipo: 'conexao', status }
-    // Até lá, ignora tudo para não gravar dado com shape errado.
-    void payload
-    return { tipo: 'ignorado' }
+    return normalizarEventoUazapi(payload)
   }
 }
