@@ -49,6 +49,7 @@ Regra geral: **classe utilitária do token, nunca o valor literal.** Antes havia
 
 - **Busca:** `CampoBusca` (lupa, `type=search`, botão de limpar com alvo de 24px). Estava copiado em três telas, nenhuma com o limpar.
 - **Confirmação de ação destrutiva:** `ModalConfirmar`. Nunca `confirm()` do navegador, que abre em tema claro do sistema e não diz o que vai acontecer.
+- **Falha ao salvar:** `AvisoErro` ([`ui/Estados.tsx`](../src/components/ui/Estados.tsx)), com `role="alert"`, alimentado pelo `erro` do `useCrud`. Use sempre que a tela grava algo. Sem ele a gravação recusada some em silêncio: o TanStack revalida, o campo volta ao valor antigo e o usuário conclui que o botão Salvar está quebrado — foi o que aconteceu em 2026-08-04 ao reordenar departamentos. O `Erro` é outro caso: ocupa a área toda quando a tela **não carrega**.
 - **Menu suspenso:** `useFecharFora` (clique fora + Esc), `PainelMenu` e `ItemMenu`, de [`ui/Menu.tsx`](../src/components/ui/Menu.tsx). O mesmo `useEffect` estava escrito três vezes e nenhuma fechava com Esc.
 - **Tabela:** `Tabela`/`Th`/`Tr`/`Td`. O painel de supervisão mantém casca própria (colunas fixas, linhas expansíveis) mas usa o `Th` padrão: exceção justificada não significa reescrever o cabeçalho.
 - **Tag:** `PillTag`, com `compacta` para a lista de chamados.

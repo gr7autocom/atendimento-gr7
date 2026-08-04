@@ -9,6 +9,7 @@ Registro das decisões fechadas no discovery/design, com justificativa. Data: 20
 ## ADR-02 — WhatsApp via uazapi + adapter
 **Decisão:** usar a **uazapi** (SaaS não-oficial, online 24/7 do lado do provedor), atrás de um **adapter**. NÃO usar API oficial da Meta por ora. Baileys self-host + Fly.io ficou **fora do escopo** (não manter processo/sessão do nosso lado).
 **Por quê:** backend serverless (Edge Functions) não hospeda processo persistente; uazapi encaixa (webhook + REST) e terceiriza a operação de sessão. Adapter mantém a decisão reversível (→ Evolution API ou API oficial da Meta). Risco de ban existe em não-oficial.
+**Status (2026-07-31):** o **adapter está pronto e conferido** contra o spec OpenAPI oficial v2.1.1 — endpoints, corpo do webhook e normalização do payload (com 22 testes). Falta apenas o pré-requisito externo: **conta uazapi + número dedicado em WhatsApp Business**. O único ponto em aberto é o **envelope real do webhook**, que precisa ser capturado ao vivo porque o spec se contradiz nele. Ver [whatsapp.md](whatsapp.md).
 
 ## ADR-10 — Visual próprio do Atendimento (revisa a decisão de "idêntico ao painel")
 **Decisão (2026-07-23):** o Atendimento terá **identidade visual própria** (dark), mais elaborada que o painel, definida numa **etapa de design dedicada no fim** da implementação. Os tokens de cor base seguem vindos do painel.

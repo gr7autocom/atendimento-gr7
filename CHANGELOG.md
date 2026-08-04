@@ -4,6 +4,14 @@
 
 ---
 
+## 2026-08-04 — Histórico do contato e aviso quando algo não salva
+
+- No painel do contato, a seção Histórico mostra os atendimentos anteriores da mesma pessoa, com protocolo, data, setor, quem atendeu e como terminou. Serve para saber o que já foi tratado antes de responder
+- Os contadores de atendimentos e mensagens do contato passaram a mostrar o total real. Antes o atendente via um número menor, porque contava só os chamados dele
+- Quando uma alteração não pode ser salva, a tela agora explica o motivo. Antes o campo voltava ao valor anterior sem dizer nada, e parecia que o botão Salvar estava quebrado
+
+---
+
 ## 2026-07-30 — Padronização visual e acessibilidade
 
 - A fonte do sistema agora é Roboto. Protocolo, telefone e hora usam Roboto Mono, que alinha os números em coluna

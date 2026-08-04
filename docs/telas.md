@@ -72,7 +72,7 @@ As três abas são **exclusivas**: um chamado aparece em uma só, nunca duplicad
 - Nome do contato (**editável**), **cargo** (editável, opcional), telefone (do WhatsApp), empresa vinculada com link para a ficha do painel. O rótulo do nome é **"Nome"**. O cargo aparece **só neste painel**, não no card da lista.
 - **Vincular empresa:** busca na base de `clientes` e associa (`cliente_id`), vínculo manual, principal no MVP. É o **mesmo dado** da aba **Contatos** do cadastro do cliente no painel (que grava direto em `contatos`), não uma cópia. O painel pode preencher também o **cargo** do contato (revisto 2026-07-25, migration `20260725190000`). Remover contato = `cliente_id = NULL` (nunca DELETE, por causa do CASCADE em `atendimentos`).
 - Tags do chamado (adicionar/remover).
-- **Histórico do contato:** atendimentos anteriores do mesmo contato.
+- **Histórico do contato:** atendimentos anteriores do mesmo contato — protocolo, data, status, setor, quem atendeu, motivo e nota. Mostra **3 por vez, com "Ver todos"**. Os itens **não são clicáveis**, e isso é decisão, não pendência: chamado finalizado é filtrado fora da lista de chamados, então não existe tela que exiba conversa encerrada (nem para quem a atendeu). Enquanto não houver essa tela, não há destino para o clique. Vem da RPC `atendimento_historico_contato`, que devolve só o resumo e nunca o corpo das mensagens (ver [db.md](db.md)).
 - **Contadores:** total de atendimentos e mensagens do contato.
 
 ## Administração (`/admin`)
