@@ -10,14 +10,15 @@ import { Botao } from '../../components/ui/Botao'
 import { Entrada } from '../../components/ui/Campo'
 import { CabecalhoAdmin } from '../../components/admin/CabecalhoAdmin'
 import { Selo } from '../../components/ui/Selo'
-import { Vazio, Skeleton } from '../../components/ui/Estados'
+import { Vazio, Skeleton, AvisoErro } from '../../components/ui/Estados'
 
 type Departamento = { id: string; nome: string; ordem: number; ativo?: boolean }
 type HorarioComercial = { dia_semana: number; hora_inicio: string; hora_fim: string; ativo?: boolean }
 
 export function Departamentos() {
   const navigate = useNavigate()
-  const { lista, criar, atualizar, remover } = useCrud<Departamento>('departamentos')
+  const crud = useCrud<Departamento>('departamentos')
+  const { lista, criar, atualizar, remover } = crud
   const comercial = useCrud<HorarioComercial & { id: string }>('atendimento_horarios', 'dia_semana')
   const horariosDep = useHorariosDepartamento()
 
@@ -60,6 +61,8 @@ export function Departamentos() {
         }
       />
 
+
+      <AvisoErro mensagem={crud.erro} />
       {lista.isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
           {Array.from({ length: 6 }).map((_, i) => (

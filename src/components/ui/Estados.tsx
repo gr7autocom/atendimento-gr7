@@ -42,6 +42,22 @@ export function LinhasCarregando({ linhas = 4 }: { linhas?: number }) {
   )
 }
 
+/**
+ * Falha de gravação, ao lado do que o usuário tentou salvar. Diferente do
+ * `Erro`, que ocupa a área inteira quando a tela não carrega: aqui o conteúdo
+ * continua na tela e só a ação falhou.
+ *
+ * `role="alert"` para o leitor de tela anunciar sem o usuário procurar.
+ */
+export function AvisoErro({ mensagem }: { mensagem: string | null }) {
+  if (!mensagem) return null
+  return (
+    <p role="alert" className="text-apoio text-err">
+      {mensagem}
+    </p>
+  )
+}
+
 export function Erro({ mensagem, onTentar }: { mensagem: string; onTentar?: () => void }) {
   return (
     <div className="flex flex-col items-center gap-2 py-10 px-4 text-center" role="alert">

@@ -5,7 +5,7 @@ import { Modal, ModalConfirmar } from '../../components/ui/Modal'
 import { Botao } from '../../components/ui/Botao'
 import { Entrada, AreaTexto, Selecao } from '../../components/ui/Campo'
 import { Selo } from '../../components/ui/Selo'
-import { Vazio, LinhasCarregando } from '../../components/ui/Estados'
+import { Vazio, LinhasCarregando, AvisoErro } from '../../components/ui/Estados'
 import { CabecalhoAdmin } from '../../components/admin/CabecalhoAdmin'
 
 type MsgRapida = {
@@ -19,7 +19,8 @@ type MsgRapida = {
 type Departamento = { id: string; nome: string; ativo?: boolean }
 
 export function MensagensRapidas() {
-  const { lista, criar, atualizar, remover } = useCrud<MsgRapida>('atendimento_mensagens_rapidas', 'atalho')
+  const crud = useCrud<MsgRapida>('atendimento_mensagens_rapidas', 'atalho')
+  const { lista, criar, atualizar, remover } = crud
   const departamentos = useCrud<Departamento>('departamentos', 'ordem')
 
   const [fMensagem, setFMensagem] = useState('')
@@ -91,6 +92,8 @@ export function MensagensRapidas() {
         }
       />
 
+
+      <AvisoErro mensagem={crud.erro} />
       <div className="rounded-2 border border-bd-1 bg-sf-1 p-3 mb-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
         <Entrada
           rotulo="Mensagem"

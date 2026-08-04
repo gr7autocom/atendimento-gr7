@@ -7,7 +7,7 @@ import { Entrada, Selecao, CampoBusca } from '../../components/ui/Campo'
 import { Selo } from '../../components/ui/Selo'
 import { PillTag } from '../../components/ui/PillTag'
 import { CabecalhoAdmin } from '../../components/admin/CabecalhoAdmin'
-import { Vazio, LinhasCarregando } from '../../components/ui/Estados'
+import { Vazio, LinhasCarregando, AvisoErro } from '../../components/ui/Estados'
 
 type Tag = {
   id: string
@@ -57,7 +57,8 @@ function CampoCor({
 }
 
 export function Tags() {
-  const { lista, criar, atualizar, remover } = useCrud<Tag>('atendimento_tags')
+  const crud = useCrud<Tag>('atendimento_tags')
+  const { lista, criar, atualizar, remover } = crud
   const departamentos = useCrud<Departamento>('departamentos', 'ordem')
   const [busca, setBusca] = useState('')
   const [aberto, setAberto] = useState(false)
@@ -130,6 +131,8 @@ export function Tags() {
               placeholder="Buscar tag"
               className="w-44"
             />
+
+      <AvisoErro mensagem={crud.erro} />
             <Botao variante="primario" tamanho="sm" onClick={abrirNovo} icone={<Plus size={15} />}>
               Nova tag
             </Botao>

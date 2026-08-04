@@ -7,7 +7,7 @@ import { Botao } from '../../components/ui/Botao'
 import { Entrada } from '../../components/ui/Campo'
 import { Modal } from '../../components/ui/Modal'
 import { Selo } from '../../components/ui/Selo'
-import { Skeleton } from '../../components/ui/Estados'
+import { Skeleton, AvisoErro } from '../../components/ui/Estados'
 import { GradeHorarios } from '../../components/admin/GradeHorarios'
 import { Abas, PainelAba, type AbaItem } from '../../components/admin/Abas'
 
@@ -28,7 +28,8 @@ const campoNovo =
 export function DepartamentoDetalhe() {
   const { id = '' } = useParams()
   const navigate = useNavigate()
-  const { lista, atualizar } = useCrud<Departamento>('departamentos')
+  const crud = useCrud<Departamento>('departamentos')
+  const { lista, atualizar } = crud
   const motivosCrud = useCrud<Motivo>('atendimento_motivos', 'ordem')
   const horariosDep = useHorariosDepartamento()
 
@@ -137,16 +138,19 @@ export function DepartamentoDetalhe() {
 
       {aba === 'dados' ? (
         <PainelAba idGrupo="departamento" aba="dados">
-          <div className="flex flex-wrap items-end gap-3">
-            <div className="w-24">
-              <Entrada rotulo="Número" type="number" min={1} value={numero} onChange={(e) => setNumero(e.target.value)} />
+          <div className="flex flex-col gap-2">
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="w-24">
+                <Entrada rotulo="Número" type="number" min={1} value={numero} onChange={(e) => setNumero(e.target.value)} />
+              </div>
+              <div className="flex-1 min-w-[200px]">
+                <Entrada rotulo="Nome" value={nome} onChange={(e) => setNome(e.target.value)} />
+              </div>
+              <Botao variante="primario" tamanho="sm" onClick={salvarDados} carregando={atualizar.isPending}>
+                Salvar
+              </Botao>
             </div>
-            <div className="flex-1 min-w-[200px]">
-              <Entrada rotulo="Nome" value={nome} onChange={(e) => setNome(e.target.value)} />
-            </div>
-            <Botao variante="primario" tamanho="sm" onClick={salvarDados} carregando={atualizar.isPending}>
-              Salvar
-            </Botao>
+            <AvisoErro mensagem={crud.erro} />
           </div>
         </PainelAba>
       ) : aba === 'horario' ? (
