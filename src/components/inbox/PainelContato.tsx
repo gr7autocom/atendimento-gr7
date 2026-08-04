@@ -12,6 +12,7 @@ import { Avatar } from '../ui/Avatar'
 import { Entrada } from '../ui/Campo'
 import { Skeleton } from '../ui/Estados'
 import { SecaoContato } from './SecaoContato'
+import { HistoricoContato } from './HistoricoContato'
 import { ParticipantesContato } from './ParticipantesContato'
 import { TarefasContato } from './TarefasContato'
 
@@ -162,6 +163,11 @@ export function PainelContato({
         contagem={(atendimento.responsavel_id ? 1 : 0) + (participantes.lista.data?.length ?? 0)}
       >
         <ParticipantesContato atendimento={atendimento} />
+      </SecaoContato>
+
+      {/* Anteriores: o chamado aberto agora não conta, por isso o -1. */}
+      <SecaoContato titulo="Histórico" contagem={Math.max((contadores.data?.atendimentos ?? 1) - 1, 0)}>
+        <HistoricoContato contatoId={contato?.id ?? null} atendimentoAtualId={atendimento.id} />
       </SecaoContato>
     </aside>
   )

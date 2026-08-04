@@ -106,7 +106,11 @@ export function useCriarAtendimento() {
       if (error) throw error
       return data as unknown as string
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['atendimentos'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['atendimentos'] })
+      // Chamado novo entra no histórico e nos contadores do contato.
+      qc.invalidateQueries({ queryKey: ['historico_contato'] })
+    },
   })
 }
 
@@ -252,28 +256,64 @@ export function useAtualizarContato() {
   })
 }
 
+/** Uma linha do histórico do contato, como a RPC devolve. */
+export type AtendimentoHistorico = {
+  id: string
+  protocolo: number
+  status: string
+  aberto_em: string
+  finalizado_em: string | null
+  departamento: string | null
+  atendente: string | null
+  motivo: string | null
+  avaliacao: number | null
+  mensagens: number
+}
+
 /**
- * Contadores do contato para o cabeçalho do painel: total de atendimentos e de
- * mensagens trocadas (todas as conversas dele). Conta pelo que a RLS deixa ver
- * (admin vê tudo; atendente vê os seus + a fila livre).
+ * Todos os atendimentos do contato, do mais recente para o mais antigo.
+ *
+ * Vem de RPC, e não de `select` na tabela, porque a visibilidade é **por dono**:
+ * consultando direto, o atendente veria só os chamados dele e a lista sairia
+ * pela metade, sem avisar que está incompleta. A `atendimento_historico_contato`
+ * é `SECURITY DEFINER` e devolve só o resumo (nunca o corpo das mensagens), com
+ * checagem de permissão na entrada. Ver docs/db.md.
+ */
+export function useHistoricoContato(contatoId: string | null) {
+  return useQuery({
+    queryKey: ['historico_contato', contatoId],
+    enabled: !!contatoId,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('atendimento_historico_contato', {
+        p_contato_id: contatoId as string,
+      })
+      if (error) throw error
+      return (data ?? []) as AtendimentoHistorico[]
+    },
+  })
+}
+
+/**
+ * Contadores do cabeçalho do painel: total de atendimentos e de mensagens do
+ * contato. Deriva do histórico (mesma `queryKey`, então o TanStack Query
+ * aproveita a requisição já feita) para que os números sejam os totais reais, e
+ * não só o que a RLS deixa o atendente ver.
  */
 export function useContadoresContato(contatoId: string | null) {
   return useQuery({
-    queryKey: ['contadores_contato', contatoId],
+    queryKey: ['historico_contato', contatoId],
     enabled: !!contatoId,
     queryFn: async () => {
-      const [at, msg] = await Promise.all([
-        supabase
-          .from('atendimentos')
-          .select('id', { count: 'exact', head: true })
-          .eq('contato_id', contatoId as string),
-        supabase
-          .from('atendimento_mensagens')
-          .select('id, atendimento:atendimentos!inner(contato_id)', { count: 'exact', head: true })
-          .eq('atendimento.contato_id', contatoId as string),
-      ])
-      return { atendimentos: at.count ?? 0, mensagens: msg.count ?? 0 }
+      const { data, error } = await supabase.rpc('atendimento_historico_contato', {
+        p_contato_id: contatoId as string,
+      })
+      if (error) throw error
+      return (data ?? []) as AtendimentoHistorico[]
     },
+    select: (lista) => ({
+      atendimentos: lista.length,
+      mensagens: lista.reduce((soma, a) => soma + Number(a.mensagens ?? 0), 0),
+    }),
   })
 }
 
@@ -477,6 +517,10 @@ export function useAcoesAtendimento() {
     qc.invalidateQueries({ queryKey: ['atendimentos'] })
     qc.invalidateQueries({ queryKey: ['atendimento_mensagens'] })
     qc.invalidateQueries({ queryKey: ['atendimento_eventos'] })
+    // O histórico e os contadores do painel leem os atendimentos do contato:
+    // assumir, transferir e finalizar mudam status e dono, e sem isto a seção
+    // Histórico só acerta depois de recarregar a página.
+    qc.invalidateQueries({ queryKey: ['historico_contato'] })
   }
 
   const assumir = useMutation({
