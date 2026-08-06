@@ -13,7 +13,8 @@
 
 ### Em meio de edição
 
-- **Fase 4 (canal na central), item 1 de 5.** O selo de canal está pronto: `Avatar` com prop `canal` no lugar do booleano `whatsapp`, distinguindo por ícone e não só por cor (`aria-label` com o canal), `src/lib/canal.ts` novo, `canal` no tipo `AtendimentoLista` e o rótulo em texto no cabeçalho da conversa. Type-check limpo e 136 testes passando, mas **não commitado e não validado no navegador**
+- **Fase 4 (canal na central), item 1 de 5.** O selo de canal está pronto: `Avatar` com prop `canal` no lugar do booleano `whatsapp`, distinguindo por ícone e não só por cor (`aria-label` com o canal), `src/lib/canal.ts` novo, `canal` no tipo `AtendimentoLista` e o rótulo em texto no cabeçalho da conversa. Commitado em `189183e`. **Validado no navegador em 2026-08-06** com um chamado web plantado pela Edge Function: selo azul renderizando nos três lugares, rótulo "Site" no cabeçalho, e o chamado caindo em Potenciais (correto, porque o contato de teste não tem empresa). O acesso saiu de um **magic link gerado pela API admin**, para não precisar digitar senha no chat — vale repetir esse caminho nas próximas validações, já que "trocar a senha exposta" é uma das pendências abertas
+- **Bug achado na validação e corrigido:** o painel do contato dizia "WhatsApp informou: sem nome" em chamado vindo do site. A dica agora é condicional ao canal e, no web, diz "Informado pelo cliente no site, sem verificação" — o que já entrega parte do item 4 da fase (aviso de identificação auto-declarada), pelo menos no campo Nome. **Ainda não commitado**
 - Falta da Fase 4: filtro por canal na lista (decidido: select que só aparece quando há mais de um canal na fila), presença do cliente, aviso de identificação auto-declarada no painel do contato, "Encerrar acesso do cliente" no menu ⋮ e a copy condicional de reabertura
 
 ### Tentado e descartado

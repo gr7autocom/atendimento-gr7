@@ -72,6 +72,7 @@ export function PainelContato({
   if (!atendimento) return null
 
   const contato = atendimento.contato
+  const canal = canalDoChamado(atendimento?.canal)
   const cls =
     variante === 'cheia'
       ? 'w-full h-full overflow-y-auto bg-sf-1'
@@ -86,7 +87,7 @@ export function PainelContato({
   return (
     <aside className={cls}>
       <div className="p-4 flex flex-col items-center text-center border-b border-bd-1">
-        <Avatar nome={nomeContato(atendimento)} tamanho={72} canal={canalDoChamado(atendimento.canal)} />
+        <Avatar nome={nomeContato(atendimento)} tamanho={72} canal={canal} />
         <button
           type="button"
           onClick={copiarProtocolo}
@@ -120,7 +121,15 @@ export function PainelContato({
               }}
               placeholder={contato?.nome_whatsapp ?? 'Nome do contato'}
               aria-label="Nome do contato"
-              dica={`WhatsApp informou: ${contato?.nome_whatsapp || 'sem nome'}`}
+              // A dica muda com o canal porque a origem do nome muda, e com ela a
+              // confiança que ele merece. No WhatsApp o nome vem do perfil da conta;
+              // no site a própria pessoa digitou e nada foi verificado, o que o
+              // atendente precisa saber antes de, por exemplo, passar uma senha.
+              dica={
+                canal === 'web'
+                  ? 'Informado pelo cliente no site, sem verificação'
+                  : `WhatsApp informou: ${contato?.nome_whatsapp || 'sem nome'}`
+              }
             />
           </div>
 
