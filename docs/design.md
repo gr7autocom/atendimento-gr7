@@ -11,7 +11,9 @@ Um design system só funciona se a decisão for tomada **uma vez** e o resto **c
 3. **Contraste medido, não estimado.** Texto 4,5:1 · borda de controle 3:1. Cor nova se mede antes de entrar.
 4. **Rode `npm test`.** A guarda em [`src/padroes-ui.test.ts`](../src/padroes-ui.test.ts) barra literal de token, borda de campo fraca, `confirm()` nativo, hex solto, emoji, spinner à mão e click-outside duplicado. Ela diz o arquivo, a linha e o substituto.
 
-O que a guarda **não** pega e continua dependendo de olhar: contraste de cor nova, hierarquia de título (um `h1` por tela), alvo de toque, copy de estado vazio e erro, e comportamento no mobile.
+O que a guarda **não** pega e continua dependendo de olhar: contraste de cor nova, hierarquia de título (um `h1` por tela), alvo de toque, copy de estado vazio e erro, comportamento no mobile e **texto que assume um canal**.
+
+> **Texto que assume um canal** entrou nessa lista em 2026-08-06, com um caso concreto: o painel do contato dizia "WhatsApp informou: sem nome" num chamado vindo do **site**. Passou por type-check, lint e 136 testes, porque a frase estava certa como código e falsa como conteúdo — nenhuma automação que temos lê significado. Enquanto só existia WhatsApp, citá-lo era seguro; com dois canais, qualquer frase que nomeie um deles precisa ser condicional ou neutra. Ainda há casos vivos: mensagens rápidas escritas para o WhatsApp ("digite #sair") ficam erradas no site. Ao escrever texto de interface, pergunte **de qual canal este chamado veio** antes de citar um.
 
 ## Regras invioláveis
 
