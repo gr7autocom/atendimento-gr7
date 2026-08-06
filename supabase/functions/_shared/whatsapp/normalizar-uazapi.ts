@@ -1,4 +1,5 @@
 import type { EventoNormalizado, StatusConexao } from './tipos.ts'
+import { e164 } from '../telefone.ts'
 
 /**
  * Tradução do payload cru da uazapi para o `EventoNormalizado` do domínio.
@@ -71,8 +72,11 @@ export function telefoneDeJid(jid: unknown): string {
   const arroba = bruto.indexOf('@')
   const dominio = arroba === -1 ? '' : bruto.slice(arroba + 1)
   if (dominio && dominio !== 's.whatsapp.net') return ''
-  const digitos = (arroba === -1 ? bruto : bruto.slice(0, arroba)).replace(/\D/g, '')
-  return digitos ? `+${digitos}` : ''
+  // A formatação sai daqui e vai para `_shared/telefone.ts`: o canal web grava na
+  // mesma coluna `contatos.telefone`, que é UNIQUE, e dois formatos diferentes
+  // criariam dois contatos para a mesma pessoa. O JID já traz o DDI, então é `e164`
+  // e não a normalização brasileira — cliente de fora do país continua funcionando.
+  return e164(arroba === -1 ? bruto : bruto.slice(0, arroba))
 }
 
 /**

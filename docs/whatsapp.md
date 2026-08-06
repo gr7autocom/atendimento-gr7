@@ -137,6 +137,27 @@ Anotados aqui para a próxima sessão não redescobrir (ver `PROGRESSO.md`):
 - **Enviar:** `whatsapp-send` chama `/send/text` ou `/send/media` da uazapi (header `token`) via `enviarMensagem`, grava mensagem `saida`, atualiza status pelo webhook de status.
 - **Conexão:** `whatsapp-conexao` chama `/instance/connect` (QR/pairing) e `/instance/status` para a aba **Conexão** (`/admin/conexao`) — o token fica na Edge Function, nunca no frontend. Uma **pílula de status na barra do topo** (`BarraTopo` + `useStatusBot`) mostra "Bot conectado/desconectado" para admin e atendente, para o time perceber quando a sessão cai. Hoje é casca (sempre desconectado); vira automático quando o adapter existir.
 
+## Convivência com o canal web (2026-08-05)
+
+Com o [canal web](canal-web.md) o **contato passa a ser compartilhado entre os canais**, de propósito: o telefone é a identidade, então quem fala pelos dois é uma pessoa só, com histórico unificado. Isso obrigou duas mudanças aqui, feitas **antes** de o canal web existir.
+
+**1. Toda busca de ticket filtra por canal.** As três buscas do `whatsapp-webhook` (`acharTicketAberto`, `acharTicketReabertura`, `acharTicketAvaliacao`) procuravam por `contato_id` sem olhar o canal. Como o mesmo contato pode ter chamado aberto nos dois, uma mensagem de WhatsApp capturaria o chamado aberto **na web** e rodaria o menu do bot em cima dele: o cliente veria o menu numerado no meio de uma conversa web, e o atendente veria a conversa virar triagem. Agora as três têm `.eq('canal', 'whatsapp')`, com a constante `CANAL` no topo do arquivo.
+
+**2. O formato do telefone saiu para `_shared/telefone.ts`.** O `telefoneDeJid` continua fazendo o trabalho do JID (descartar grupo, canal e o id oculto), mas a formatação final é do módulo compartilhado, porque o canal web grava na **mesma coluna** `contatos.telefone`, que é `UNIQUE`. Sem um formato único, `(16) 99123-4567` digitado no formulário e `+5516991234567` vindo do WhatsApp virariam dois contatos para a mesma pessoa, e a unificação do histórico evaporaria em silêncio. O JID usa `e164` (que só formata, porque o DDI já vem) e não a normalização brasileira, para cliente de fora do país continuar funcionando.
+
+**3. Despacho futuro.** Quando a uazapi for contratada e a resposta do atendente passar a ser despachada, ela **não pode** sair pelo WhatsApp se o chamado nasceu na web. A regra está em `_shared/canal.ts` (`despachaPeloWhatsApp`, falha fechada), com teste, e a defesa forte vai no banco na Fase 1 do canal web. Ver [canal-web.md](canal-web.md).
+
+### Pendência: mensagem enviada pelo celular não é registrada
+
+Hoje `normalizar-uazapi.ts` descarta tudo que tem `fromMe`, junto com o `wasSentByApi`. Efeito: **quem responder pelo aparelho, fora da plataforma, some do histórico** — diferente do Zintech, onde a resposta dada no celular aparece no painel.
+
+Os dois casos precisam ser separados quando isso for tratado:
+
+- `wasSentByApi`: eco do que nós mesmos enviamos. **Precisa continuar ignorado**, senão o bot lê a própria mensagem e responde a si mesmo em loop
+- `fromMe` sem `wasSentByApi`: mensagem digitada no celular. Deveria virar `direcao: 'saida'` do atendimento
+
+Só dá para tratar com número na mão, então é item da ativação da uazapi. Está em Próximos passos no [PROGRESSO.md](../PROGRESSO.md).
+
 ## Trabalhar 24/7 (após conectar)
 
 A sessão vive **no servidor da uazapi**, não no nosso app: ninguém precisa manter aba aberta. Mensagem que chega dispara o **webhook** → `whatsapp-webhook` grava no banco → realtime na inbox. Isso já é 24/7 por natureza (event-driven, sem browser).

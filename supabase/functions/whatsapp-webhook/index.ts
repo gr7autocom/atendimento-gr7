@@ -86,6 +86,18 @@ async function carregarFaixas(sb: ClienteServico, tabela: string, comAtivo: bool
 }
 
 /**
+ * Todas as buscas de ticket deste arquivo filtram por canal.
+ *
+ * O contato é COMPARTILHADO entre os canais de propósito (o telefone é a identidade,
+ * então quem fala pelo WhatsApp e pela web é uma pessoa só, com histórico unificado).
+ * A consequência é que o mesmo `contato_id` pode ter chamado aberto nos dois. Sem
+ * este filtro, uma mensagem de WhatsApp captura o chamado aberto na WEB e roda o menu
+ * do bot em cima dele: o cliente veria o menu numerado no meio de uma conversa web e o
+ * atendente veria a conversa se transformar em triagem. Ver docs/canal-web.md.
+ */
+const CANAL = 'whatsapp'
+
+/**
  * Ticket recém-finalizado que ficou sem a formalização da nota: reabrível.
  * `avaliacao_solicitada_em` não-nulo garante que foi o atendente quem finalizou
  * com a avaliação ativa (o #sair e a avaliação desligada não marcam esse campo);
@@ -97,6 +109,7 @@ async function acharTicketReabertura(sb: ClienteServico, contatoId: string, jane
     .from('atendimentos')
     .select('id, protocolo, departamento_id')
     .eq('contato_id', contatoId)
+    .eq('canal', CANAL)
     .eq('status', 'finalizado')
     .gte('finalizado_em', limite)
     .is('avaliacao', null)
@@ -113,6 +126,7 @@ async function acharTicketAberto(sb: ClienteServico, contatoId: string): Promise
     .from('atendimentos')
     .select(SELECT_TICKET)
     .eq('contato_id', contatoId)
+    .eq('canal', CANAL)
     .in('status', ['triagem', 'na_fila', 'em_atendimento'])
     .order('created_at', { ascending: false })
     .limit(1)
@@ -125,6 +139,7 @@ async function acharTicketAvaliacao(sb: ClienteServico, contatoId: string) {
     .from('atendimentos')
     .select('id, protocolo, avaliacao_solicitada_em')
     .eq('contato_id', contatoId)
+    .eq('canal', CANAL)
     .eq('status', 'finalizado')
     .not('avaliacao_solicitada_em', 'is', null)
     .is('avaliacao', null)
@@ -140,7 +155,7 @@ async function criarTicketTriagem(sb: ClienteServico, contatoId: string, etapa: 
       contato_id: contatoId,
       status: 'triagem',
       etapa_bot: etapa,
-      canal: 'whatsapp',
+      canal: CANAL,
       tentativas_menu: 0,
       aberto_em: agora(),
       ultima_mensagem_em: agora(),
