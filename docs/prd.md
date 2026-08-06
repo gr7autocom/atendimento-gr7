@@ -11,9 +11,9 @@ Decisão: construir **plataforma de atendimento própria**, interligada ao paine
 
 ## Objetivo
 
-Uma central de atendimento **WhatsApp**, operada pela equipe interna, que:
+Uma central de atendimento operada pela equipe interna, com **WhatsApp** como canal principal e **web** como segundo canal (ADR-11), que:
 
-- Centraliza as conversas dos clientes numa inbox por departamento
+- Centraliza as conversas dos clientes numa inbox por departamento, independente do canal de origem
 - Se conecta nativamente ao painel (cliente/projeto/tarefa) — mesmo banco
 - Fornece **métricas de atendimento** para a gestão (foco final)
 
@@ -21,12 +21,12 @@ Uma central de atendimento **WhatsApp**, operada pela equipe interna, que:
 
 - **Atendente (interno GR7):** usa a inbox, assume e responde tickets. Enxerga os **seus** mais a **fila livre** de todos os setores, e não vê o chamado que já é de outro atendente (visibilidade por dono, revista em 2026-07-24 — ver [db.md](db.md)). É um `usuario` já existente no painel.
 - **Gestor/CEO:** consome métricas e relatórios.
-- **Cliente final:** conversa **pelo WhatsApp**. **NÃO loga em nada** — não há portal do cliente.
+- **Cliente final:** conversa pelo **WhatsApp** ou pelo **PWA web** (ADR-11, ver [canal-web.md](canal-web.md)). **NÃO tem conta nem senha** — não há portal do cliente. No canal web ele apenas se identifica (nome e telefone) e alcança **uma conversa, só a dele**, por um token de dispositivo.
 
 ## Modelo de atendimento
 
-- **Inbox omnichannel (só WhatsApp por ora)** — o cliente conversa pelo WhatsApp; a equipe atende.
-- **Por ticket:** cada chamado é um ticket novo. O cliente escolhe o departamento num menu do bot; o ticket cai na fila desse departamento e aparece para os atendentes vinculados. Ao encerrar, o ticket é finalizado. Reabertura dentro de uma janela curta reaproveita o mesmo ticket.
+- **Inbox omnichannel** — o cliente conversa pelo WhatsApp ou pelo canal web; a equipe atende os dois na **mesma inbox**, com selo indicando a origem. A coluna `atendimentos.canal` distingue.
+- **Por ticket:** cada chamado é um ticket novo. O cliente escolhe o departamento (menu do bot no WhatsApp, lista clicável no web); o ticket cai na fila desse departamento e aparece para os atendentes. Ao encerrar, o ticket é finalizado. Reabertura dentro de uma janela curta reaproveita o mesmo ticket.
 
 ## Escopo do MVP
 
@@ -60,8 +60,8 @@ Uma central de atendimento **WhatsApp**, operada pela equipe interna, que:
 - **RNF2** **Isolamento do painel em produção** — migrations só aditivas; código não importa do painel
 - **RNF3** Provedor WhatsApp atrás de **adapter** (trocável)
 - **RNF4** Supabase **Free** no piloto → **Pro** na produção real
-- **RNF5** Sem multi-tenancy — cliente não loga
+- **RNF5** Sem multi-tenancy — cliente **não tem conta nem senha**. No canal web, acesso a uma conversa por token de dispositivo, sem policy nova para o role `anon` (ADR-09 + ADR-11)
 
 ## Fora de escopo (não fazer por ora)
 
-API oficial da Meta · portal do cliente · monorepo · distribuição automática no MVP.
+API oficial da Meta · **portal do cliente** (o canal web dá acesso a uma conversa, não a um portal com histórico e tarefas) · monorepo · distribuição automática no MVP.

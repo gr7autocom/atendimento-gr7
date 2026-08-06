@@ -15,9 +15,10 @@ WhatsApp ⇄ [uazapi (SaaS, mantém sessão 24/7)]
                  clientes, projetos, tarefas, usuarios, atendimento_*
 ```
 
-- **Frontend separado:** `Desktop/projeto/atendimento-gr7/` (irmão de `painel-implantacao-v2/`). Build/deploy próprios. Só atendentes usam.
+- **Frontend separado:** `Desktop/projeto/atendimento-gr7/` (irmão de `painel-implantacao-v2/`). Build/deploy próprios. A **central** é usada só por atendentes.
 - **Backend compartilhado:** mesmo projeto Supabase do painel (banco, auth, Edge Functions). Vínculo cliente/projeto/tarefa é nativo (mesmo banco), não integração por API.
-- **Identidade:** o atendente loga com a mesma conta do painel (`usuarios` + `can()`).
+- **Identidade do atendente:** loga com a mesma conta do painel (`usuarios` + `can()`).
+- **Identidade do cliente (canal web, ADR-11):** não existe conta nem senha. O cliente se identifica e recebe um **token de dispositivo** que dá acesso a **uma conversa, só a dele**. Ele nunca fala com o PostgREST: todo o tráfego passa por uma Edge Function com service role, e o role `anon` **continua sem nenhuma policy**. Ver [canal-web.md](canal-web.md).
 
 Por que assim: não incha o painel, não duplica cadastro/auth, e o vínculo com a implantação é `INSERT`/RPC no mesmo banco. Ver [decisoes.md](decisoes.md) ADR-01.
 
@@ -39,6 +40,6 @@ Resultado: o painel continua byte-a-byte igual; as tabelas novas são invisívei
 
 ## Deploy
 
-- Frontend: hospedagem própria (a definir — Apache/Plesk como o painel, ou Vercel/Netlify). Domínio próprio (ex.: `atendimento.gr7autocom.com.br`).
+- Frontend: hospedagem própria (a definir — Apache/Plesk como o painel, ou Vercel/Netlify). Domínio próprio (ex.: `atendimento.gr7autocom.com.br`). O **PWA do cliente** é um segundo entry point do mesmo build, servido em **subdomínio próprio**, com manifest e service worker só dele — a central nunca fica instalável (ADR-11).
 - Edge Functions: no mesmo projeto Supabase (`npx supabase functions deploy`). As três (`whatsapp-webhook`, `whatsapp-send`, `whatsapp-conexao`) estão **prontas e rodando em modo mock**; o `whatsapp-webhook` está **deployado** desde 2026-07-27 e roda o fluxo do bot. Falta a conta uazapi para sair do mock. Ver [whatsapp.md](whatsapp.md).
 - Provedor WhatsApp (uazapi): SaaS externo, sem infra nossa.

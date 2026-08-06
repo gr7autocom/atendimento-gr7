@@ -43,6 +43,22 @@ Registro das decisões fechadas no discovery/design, com justificativa. Data: 20
 ## ADR-09 — Sem multi-tenancy (cliente não loga)
 **Decisão:** só a equipe interna opera; o cliente final interage pelo WhatsApp e nunca acessa o sistema.
 **Por quê:** elimina o risco transversal de isolamento por tenant no RLS. Simplifica enormemente auth e segurança.
+**Status (2026-08-05):** **parcialmente revisto pelo [ADR-11](#adr-11--canal-web-pwa-do-cliente-revisa-parte-do-adr-09)**. O que continua valendo, e é o essencial: **não há multi-tenancy, não há conta de cliente e ninguém do lado do cliente tem senha**. O que deixou de valer é "nunca acessa o sistema": com o canal web, o cliente alcança uma conversa, e só ela, por um token de dispositivo emitido no servidor. Nenhuma policy nova foi criada para o role `anon`, então a premissa de RLS que motivou este ADR segue intacta.
+
+## ADR-11 — Canal web (PWA do cliente), revisa parte do ADR-09
+**Decisão (2026-08-05):** existe um **segundo canal de atendimento**, um PWA instalável na área de trabalho do cliente, com a conversa acontecendo pela web. O cliente **não cria conta e não tem senha**: informa nome e telefone (CNPJ opcional) e recebe um **token opaco por dispositivo**, guardado no navegador, que dá acesso a **uma conversa e só a ela**. Todo o tráfego passa por uma **Edge Function única com service role**, nunca pelo PostgREST, e o role `anon` continua sem nenhuma policy. O canal é distinguido pela coluna `atendimentos.canal`, que já existia e estava morta.
+
+**Por quê:** o cliente hoje depende do celular para pedir suporte. Quem está no balcão, com o sistema parado e o telefone longe, fica sem canal. Três fatos tornaram a decisão barata: a coluna `canal` já existe; a resposta do atendente já é gravada no banco e lida de lá, então **o canal web funciona sem depender da contratação da uazapi**; e o design system já está fechado e coberto por teste, então a interface do cliente reusa o que existe.
+
+**Alternativas descartadas:** criar policies para `anon` (mudança de maior risco possível num banco compartilhado com o painel em produção); usar o CNPJ como chave de acesso (é dado público, e daria a qualquer pessoa a conversa em andamento da empresa); repositório separado (duplicaria o design system pela segunda vez); rota dentro do app atual (tornaria a central da equipe instalável e arrastaria o bundle do admin para o cliente).
+
+**Trade-offs aceitos conscientemente:**
+
+- Sem login, **não há barreira de entrada**: qualquer pessoa abre chamado. É o mesmo grau de abertura do WhatsApp, com menos atrito, e o rate limit é a única defesa. O impacto é chamado falso, nunca vazamento de conversa
+- **Limpar o navegador perde a conversa em andamento.** Não há solução dentro de "sem login", então o aviso é explícito na tela
+- **Não há push**: com o PWA fechado o cliente não é avisado. Por isso o atendente vê presença do cliente na conversa
+
+Referência do canal em [canal-web.md](canal-web.md).
 
 ## Pendências de decisão (design em aberto)
 
