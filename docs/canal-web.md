@@ -2,7 +2,7 @@
 
 Referência do segundo canal de atendimento, como [whatsapp.md](whatsapp.md) é do primeiro. Decisão e trade-offs em [decisoes.md](decisoes.md) (ADR-11).
 
-> **Estado (2026-08-05):** planejado, nada implementado. As fases estão em [PROGRESSO.md](../PROGRESSO.md).
+> **Estado (2026-08-06):** o **backend está pronto e deployado**, verificado ponta a ponta por HTTP (32/32). Falta a interface do cliente (Fase 5) e a sinalização de canal na central (Fase 4). As fases estão em [PROGRESSO.md](../PROGRESSO.md).
 
 ## O que é
 
@@ -60,14 +60,39 @@ A razão é direta: a RLS inteira é construída sobre `usuarios` internos e **n
 
 Roteadas por path, não por campo `acao` no corpo, porque o log do Supabase separa por rota.
 
+Todas são **POST**, com JSON, e as autenticadas levam o token no header `x-sessao`. Corpo acima de 8 KB é recusado pelo tamanho **lido de fato**, não pelo `content-length`, que o cliente informa.
+
 | Rota | Entrada | Devolve |
 |---|---|---|
-| `/disponibilidade` | — | Se está aberto, o texto de fora de horário, os setores ativos |
-| `/identificar` | nome, telefone, cnpj?, departamento, primeira mensagem | token, protocolo, empresa |
-| `/conversa` | token, `desde?` | status, setor, primeiro nome do atendente, mensagens |
-| `/mensagem` | token, corpo, `client_msg_id` | ok |
-| `/encerrar` | token | ok |
-| `/avaliar` | token, nota 0-10 | ok |
+| `/disponibilidade` | — | `pode_abrir`, `plantao`, `mensagem_fora_horario`, `departamentos[]` |
+| `/identificar` | `nome`, `telefone`, `cnpj?`, `departamento_id`, `mensagem`, `aceite` | `token`, `expira_em`, `protocolo`, `departamento`, `empresa` |
+| `/conversa` | (token) | `protocolo`, `status`, `encerrado`, `departamento`, `atendente`, `aguardando_avaliacao`, `mensagens[]` |
+| `/mensagem` | `mensagem`, `client_msg_id` | `ok` |
+| `/encerrar` | (token) | `ok` |
+| `/avaliar` | `nota` 0-10 | `ok` |
+
+O `aceite` é obrigatório e grava `aceite_em` na sessão: é o registro do consentimento exigido pela LGPD.
+
+### Variáveis de ambiente
+
+- **`IP_HASH_SALT`** — sal do hash de IP. Sem ele o hash seria reversível por tabela pronta, já que o espaço de IPv4 inteiro cabe numa varredura de segundos. Configurado em 2026-08-06
+- **`PWA_ORIGENS`** — origens liberadas no CORS, separadas por vírgula. **Ainda não configurada**: o subdomínio só existe na Fase 5. Enquanto estiver vazia, a função responde sem `Allow-Origin`, então navegador nenhum a alcança (o que é o padrão seguro; `curl` continua funcionando)
+
+### Como as regras são mantidas
+
+Comentário no topo do arquivo não segura nada sozinho: depende de alguém abrir o arquivo. O projeto já aprendeu isso quando o `design.md` descrevia padrões que 24 problemas ignoraram, e a resposta foi a guarda em teste. Aqui vale o mesmo, com mais em jogo — esta função é pública, sem login e roda com service role.
+
+**`atendimento-web/padroes-canal-web.test.ts`** roda no `npm test` e falha se alguém:
+
+- ler identificador de registro do corpo da requisição (`corpo.atendimento_id` e afins)
+- localizar sessão por outra coisa que não `token_hash`
+- usar `select('*')` em qualquer consulta
+- pôr campo interno no `SELECT_MENSAGEM` ou em qualquer select
+- apagar o bloco de regras do topo do arquivo
+
+As três primeiras foram conferidas introduzindo a violação de propósito: a guarda barrou cada uma.
+
+**`npm run verificar:canal-web`** é o teste de fumaça contra o ambiente real, que o `npm test` não cobre porque precisa de rede, credencial e banco. Prova que as peças conversam: função deployada, constraints do banco e o caminho que o atendente usa na central. Cria dados de teste e apaga no fim. Rode antes de publicar mudança na função ou nas migrations do canal.
 
 ### Duas regras que a função nunca pode quebrar
 
