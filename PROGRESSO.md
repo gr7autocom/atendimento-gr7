@@ -4,7 +4,25 @@
 
 ## 🔄 Em Andamento
 
-_(nada no momento)_
+**Checkpoint salvo em 2026-08-06 09:50**
+
+### Feito nesta sessão
+
+- **Canal web (PWA do cliente) planejado e quatro das seis fases entregues.** Fase 0 (ADR-11 revisando o ADR-09, `docs/canal-web.md` novo), Fase 1 (duas migrations aplicadas: canal em `atendimento_mensagens` com trigger de cópia e o CHECK que torna o despacho errado impossível, mais as tabelas de sessão), Fase 2 (webhook filtrando por canal, `_shared/telefone.ts` e `_shared/canal.ts`) e Fase 3 (Edge Function `atendimento-web` deployada, com guarda em teste e `npm run verificar:canal-web`). Commitadas em `4d6e7de`, `47a47a2` e `9542a50`, mais duas no repo do painel
+- Migration do Histórico (`20260731160000`) versionada no painel: estava aplicada no banco e fora do git desde 31/07
+
+### Em meio de edição
+
+- **Fase 4 (canal na central), item 1 de 5.** O selo de canal está pronto: `Avatar` com prop `canal` no lugar do booleano `whatsapp`, distinguindo por ícone e não só por cor (`aria-label` com o canal), `src/lib/canal.ts` novo, `canal` no tipo `AtendimentoLista` e o rótulo em texto no cabeçalho da conversa. Type-check limpo e 136 testes passando, mas **não commitado e não validado no navegador**
+- Falta da Fase 4: filtro por canal na lista (decidido: select que só aparece quando há mais de um canal na fila), presença do cliente, aviso de identificação auto-declarada no painel do contato, "Encerrar acesso do cliente" no menu ⋮ e a copy condicional de reabertura
+
+### Tentado e descartado
+
+- Ler `atendimento_web_sessoes` direto do frontend para o indicador de presença — a policy da Fase 1 libera SELECT só para `e_admin()`, então o atendente comum não enxerga. Afrouxar a policy exporia `token_hash` e `ip_hash` a todo atendente. O caminho é uma **RPC nova** devolvendo só `ultimo_uso_em`, validando permissão na entrada, no mesmo padrão de `atendimento_historico_contato`. Ou seja, a Fase 4 ganhou uma migration não prevista
+
+### Próximo passo
+
+- Terminar a Fase 4: começar pela migration da RPC de presença, depois filtro por canal, aviso de auto-declarado, encerrar acesso e copy condicional. Decisões de UX já tomadas com a skill `ui-ux-pro-max`: limiar de 45s para considerar o cliente ausente (o polling é de 10s, então 45s tolera perder 3 ciclos sem falso negativo), copy "Cliente na conversa" / "Cliente ausente há X", aviso de auto-declarado em texto secundário sem cor de alerta (cor de alerta sugeriria cliente suspeito), e `ModalConfirmar` na revogação
 
 ### Ficou em aberto da auditoria visual
 
@@ -15,6 +33,7 @@ _(nada no momento)_
 - **Trocar a senha** usada no chat durante a sessão de 2026-07-30
 - **Contratar uazapi + número dedicado** (conta WhatsApp Business), que destrava a integração real, o indicador de não lidas e as três métricas do painel
 - **Zod:** está no `package.json` e não é usado em lugar nenhum. Adotar de fato na próxima validação ou remover a dependência
+- **`PWA_ORIGENS`** só pode ser configurada quando o subdomínio do PWA existir (Fase 5). Enquanto isso nenhum navegador alcança a Edge Function, que é o padrão seguro
 
 **Onde o produto está:** o **fluxo do bot** está implementado no `whatsapp-webhook` e **deployado**, completo em modo mock (boas-vindas, menu, identificação com auto-vínculo por CNPJ, fila, `#sair`, avaliação ao finalizar, fora de horário/plantão e reabertura em 3h). O adapter da uazapi está pronto e conferido contra o spec oficial. Falta ligar a aba Conexão/pílula ao mock e a **integração real** (conta uazapi + número, envio de fato).
 

@@ -37,6 +37,7 @@ import { ItemMenu } from '../ui/Menu'
 import { useFecharFora } from '../../lib/useFecharFora'
 import { LinhasCarregando } from '../ui/Estados'
 import { cn } from '../../lib/utils'
+import { canalDoChamado, ROTULO_CANAL } from '../../lib/canal'
 
 type Departamento = { id: string; nome: string; ativo: boolean }
 type Motivo = { id: string; nome: string; ativo: boolean; departamento_id?: string | null }
@@ -145,6 +146,7 @@ export function Conversa({
     )
   }
 
+  const canal = canalDoChamado(atendimento.canal)
   const souResponsavel = atendimento.responsavel_id === usuarioId
   const semDono = !atendimento.responsavel_id
   const souParticipante = (participantesChamado.lista.data ?? []).some((p) => p.usuario_id === usuarioId)
@@ -219,13 +221,21 @@ export function Conversa({
               <ArrowLeft size={18} />
             </button>
           )}
-          <Avatar nome={nomeContato(atendimento)} tamanho={34} whatsapp />
+          <Avatar nome={nomeContato(atendimento)} tamanho={34} canal={canal} />
           <div className="min-w-0">
             <div className="text-corpo font-medium text-tx-1 truncate">{nomeContato(atendimento)}</div>
             <div className="flex items-center gap-2 text-apoio text-tx-2">
               <span className="dado text-tx-3">#{atendimento.protocolo}</span>
               <span className="text-tx-3">·</span>
               <span className="truncate">{atendimento.departamento?.nome ?? 'Sem setor'}</span>
+              {/*
+                O canal em texto aparece só aqui, e não na lista: é neste cabeçalho
+                que o atendente decide COMO responder, e o selo do avatar sozinho
+                exigiria decorar o significado de cada ícone. Na lista o selo basta,
+                porque ali a tarefa é reconhecer, não decidir.
+              */}
+              <span className="text-tx-3">·</span>
+              <span className="shrink-0">{ROTULO_CANAL[canal]}</span>
               <PontoStatus status={atendimento.status} />
             </div>
           </div>

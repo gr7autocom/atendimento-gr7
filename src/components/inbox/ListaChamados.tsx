@@ -12,6 +12,7 @@ import { Vazio, LinhasCarregando } from '../ui/Estados'
 import { PillTag } from '../ui/PillTag'
 import { CampoBusca } from '../ui/Campo'
 import { CriarAtendimento } from './CriarAtendimento'
+import { canalDoChamado } from '../../lib/canal'
 
 type Fila = 'ativos' | 'pendentes' | 'potenciais'
 type Departamento = { id: string; nome: string; ativo: boolean }
@@ -207,7 +208,7 @@ export function ListaChamados({
                   aria-hidden="true"
                   className={cn('absolute left-0 top-0 bottom-0 w-[2px]', ativo ? 'bg-br-1' : 'bg-transparent')}
                 />
-                <Avatar nome={nomeContato(a)} tamanho={38} whatsapp />
+                <Avatar nome={nomeContato(a)} tamanho={38} canal={canalDoChamado(a.canal)} />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline justify-between gap-2">
                     <span className="text-corpo text-tx-1 font-medium truncate">{nomeContato(a)}</span>

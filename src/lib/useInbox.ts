@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from './supabase'
+import type { Canal } from './canal'
 
 export type EmpresaResumo = { id: string; razao_social: string | null; nome_fantasia: string | null }
 
@@ -23,6 +24,12 @@ export type AtendimentoLista = {
   id: string
   protocolo: number
   status: StatusAtendimento
+  /**
+   * Origem do chamado. Já vinha do banco, porque o SELECT usa `*`; faltava só
+   * declarar. Decide o selo do avatar, o filtro da lista, a copy de reabertura e
+   * o indicador de presença do cliente.
+   */
+  canal: Canal
   departamento_id: string | null
   responsavel_id: string | null
   ultima_mensagem_em: string

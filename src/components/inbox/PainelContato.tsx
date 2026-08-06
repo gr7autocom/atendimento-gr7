@@ -15,6 +15,7 @@ import { SecaoContato } from './SecaoContato'
 import { HistoricoContato } from './HistoricoContato'
 import { ParticipantesContato } from './ParticipantesContato'
 import { TarefasContato } from './TarefasContato'
+import { canalDoChamado } from '../../lib/canal'
 
 function nomeContato(a: AtendimentoLista) {
   return a.contato?.nome || a.contato?.nome_whatsapp || a.contato?.telefone || 'Sem nome'
@@ -85,7 +86,7 @@ export function PainelContato({
   return (
     <aside className={cls}>
       <div className="p-4 flex flex-col items-center text-center border-b border-bd-1">
-        <Avatar nome={nomeContato(atendimento)} tamanho={72} whatsapp />
+        <Avatar nome={nomeContato(atendimento)} tamanho={72} canal={canalDoChamado(atendimento.canal)} />
         <button
           type="button"
           onClick={copiarProtocolo}
