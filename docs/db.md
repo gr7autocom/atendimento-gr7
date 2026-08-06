@@ -36,13 +36,29 @@ Identidade do cliente no WhatsApp (o **telefone é a identidade**).
 - **O painel também escreve nesta tabela** desde 2026-07-25: a aba "Contatos" do cadastro de cliente lista/edita os contatos por `cliente_id`. Escrita liberada para `can('atendimento.responder') OR can('cliente.editar')` (migration `20260725190000`). O painel nunca faz DELETE: remover contato de uma empresa por lá é `cliente_id = NULL`, para não derrubar os atendimentos em cascata.
 
 ### `atendimentos` (tickets)
-- `id`, `protocolo BIGINT IDENTITY UNIQUE`, `contato_id` FK → `contatos`, `departamento_id` FK → `departamentos` (nullable até escolher), `responsavel_id` FK → `usuarios` (nullable), `motivo_id` FK → `atendimento_motivos` (nullable, ao Finalizar), `plantao_id` FK → `atendimento_plantoes` (nullable — marca ticket criado em plantão), `status` TEXT CHECK (`triagem` | `na_fila` | `em_atendimento` | `finalizado`), `canal` TEXT default `'whatsapp'`, `tentativas_menu INT default 0`, `etapa_bot TEXT` (sub-estado do bot em triagem: `identificacao` | `menu` | `avaliacao`; migration `20260727130000`), `avaliacao INT` (nullable, 0-10), `avaliacao_solicitada_em TIMESTAMPTZ`, `encerrado_por TEXT` (`atendente` | `cliente`, nullable), `aberto_em`, `assumido_em`, `finalizado_em`, `ultima_mensagem_em`, `created_at`, `updated_at`
+- `id`, `protocolo BIGINT IDENTITY UNIQUE`, `contato_id` FK → `contatos`, `departamento_id` FK → `departamentos` (nullable até escolher), `responsavel_id` FK → `usuarios` (nullable), `motivo_id` FK → `atendimento_motivos` (nullable, ao Finalizar), `plantao_id` FK → `atendimento_plantoes` (nullable — marca ticket criado em plantão), `status` TEXT CHECK (`triagem` | `na_fila` | `em_atendimento` | `finalizado`), `canal` TEXT NOT NULL default `'whatsapp'` CHECK (`whatsapp` | `web`) — **passou a decidir comportamento** com o canal web (ADR-11); antes existia e nunca era lida, `tentativas_menu INT default 0`, `etapa_bot TEXT` (sub-estado do bot em triagem: `identificacao` | `menu` | `avaliacao`; migration `20260727130000`), `avaliacao INT` (nullable, 0-10), `avaliacao_solicitada_em TIMESTAMPTZ`, `encerrado_por TEXT` (`atendente` | `cliente`, nullable), `aberto_em`, `assumido_em`, `finalizado_em`, `ultima_mensagem_em`, `created_at`, `updated_at`
 - Índices: `contato_id`, `departamento_id`, `responsavel_id`, `status`, `plantao_id`, `ultima_mensagem_em`
 - **Triggers do bot** (migrations `20260727140000`/`20260727150000`): `registrar_evento_atendimento` (grava `atendimento_eventos` nas mudanças de dono/status/departamento) e `solicitar_avaliacao_ao_finalizar` (ao finalizar pelo atendente com avaliação ativa, grava `solicitar_avaliacao` e marca `avaliacao_solicitada_em`/`etapa_bot='avaliacao'`).
 
 ### `atendimento_mensagens`
-- `id`, `atendimento_id` FK (CASCADE), `direcao` TEXT (`entrada` | `saida`), `origem` TEXT (`cliente` | `atendente` | `bot`), `corpo` TEXT, `remetente_usuario_id` FK → `usuarios` (nullable), `wa_message_id` TEXT, `status` TEXT (`enviado` | `entregue` | `lido` | `falhou`), `created_at`
-- Índices: `atendimento_id`; UNIQUE parcial em `wa_message_id`
+- `id`, `atendimento_id` FK (CASCADE), `direcao` TEXT (`entrada` | `saida`), `origem` TEXT (`cliente` | `atendente` | `bot`), `corpo` TEXT, `remetente_usuario_id` FK → `usuarios` (nullable), `wa_message_id` TEXT, `status` TEXT (`enviado` | `entregue` | `lido` | `falhou`), `canal` TEXT NOT NULL CHECK (`whatsapp` | `web`), `client_msg_id` UUID (nullable), `created_at`
+- Índices: `atendimento_id`; UNIQUE parcial em `wa_message_id`; UNIQUE parcial em `client_msg_id`
+- **`canal` é copiado do atendimento por trigger** (`atendimento_mensagem_herda_canal`, BEFORE INSERT), nunca informado por quem insere: assim ninguém precisa lembrar de preencher e não há como uma mensagem divergir do chamado a que pertence.
+- **`CHECK (canal <> 'web' OR wa_message_id IS NULL)` é o guard do despacho.** `wa_message_id` é a evidência de "isto passou pelo provedor de WhatsApp", então gravar despacho de WhatsApp numa conversa que nasceu na web é **impossível**, não apenas desaconselhado. Existe porque, no dia da uazapi, o despacho será plugado no lugar mais fácil (o `responder` do app, ou um trigger genérico aqui) e a regra de canal é o `if` que ninguém escreve. A mesma regra na camada de aplicação está em `_shared/canal.ts`.
+- **`client_msg_id` é a idempotência do canal web**, e não o `wa_message_id`: aquele significa "id no provedor de WhatsApp" e o CHECK acima o proíbe no web. Cliente que clica duas vezes, ou reenvia depois de perder a conexão, manda o mesmo valor e a segunda gravação é recusada em vez de duplicar a conversa.
+- Migration `20260805120000`.
+
+### `atendimento_web_sessoes` e `atendimento_web_tentativas`
+
+Sessão do cliente no canal web, sem login e sem senha. Migration `20260805120100`. Detalhe em [canal-web.md](canal-web.md).
+
+- **`atendimento_web_sessoes`**: `id`, `atendimento_id` FK (CASCADE), `contato_id` FK (CASCADE), `token_hash` TEXT UNIQUE, `token_prefixo` TEXT, `ip_hash` TEXT, `criada_em`, `ultimo_uso_em`, `expira_em`, `revogada_em`, `aceite_em`
+- **`atendimento_web_tentativas`**: `id`, `chave` TEXT (`ip:<hash>` ou `tel:<e164>`), `acao` TEXT, `created_at`. Contador de rate limit em tabela porque o isolate da Edge Function é efêmero e há mais de uma instância
+- **O escopo do token é UM ATENDIMENTO, não o contato.** Se fosse o contato, o cliente web passaria a enxergar o histórico do WhatsApp dele, que é o oposto do escopo "só a conversa atual"
+- **O token cru nunca é gravado**, só o SHA-256. Não é bcrypt de propósito: são 32 bytes aleatórios, não uma senha, e o hash é conferido a cada polling
+- **`ip_hash`, nunca o IP em claro**: para rate limit basta igualdade, e IP é dado pessoal sob a LGPD
+- RLS: `sessoes` só é legível por `e_admin()` e `tentativas` não tem policy nenhuma. **Nenhuma das duas tem policy de escrita** — quem opera é a Edge Function com service role
+- RPC `atendimento_web_revogar_sessao(p_atendimento_id)` (SECURITY DEFINER, `authenticated`): marca as sessões do chamado como revogadas. Valida com a mesma regra de quem pode atuar no atendimento. Existe para o cenário concreto de quem abriu o chamado sair da empresa com o token vivo na máquina
 
 ### `atendimento_eventos`
 Eventos internos do atendimento (base do histórico). Renderizados como **pílulas centralizadas** no chat do operador; **nunca vão para o cliente**. Migration `20260727140000`.
