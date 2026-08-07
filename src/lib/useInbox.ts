@@ -33,6 +33,14 @@ export type AtendimentoLista = {
   departamento_id: string | null
   responsavel_id: string | null
   ultima_mensagem_em: string
+  /*
+    Estado da avaliação e do fim do chamado. Como o `canal`, já vinham do banco
+    (o SELECT usa `*`), faltava declarar. Decidem a copy de reabertura do rodapé:
+    o mesmo protocolo só volta com a nota pendente e dentro da janela.
+  */
+  finalizado_em?: string | null
+  avaliacao?: number | null
+  avaliacao_solicitada_em?: string | null
   contato: ContatoResumo | null
   departamento: { nome: string } | null
   tags?: { tag: TagInfo | null }[] | null
@@ -355,6 +363,32 @@ export function usePresencaCliente(atendimentoId: string | null, ativo: boolean)
       // A função agrega sem GROUP BY, então sempre volta uma linha; o fallback é
       // para o caso de a resposta chegar vazia por algum motivo de transporte.
       return (data?.[0] ?? { ultimo_uso_em: null, sessoes_ativas: 0 }) as PresencaCliente
+    },
+  })
+}
+
+/**
+ * Encerra o acesso do cliente ao PWA: marca como revogadas todas as sessões vivas
+ * do atendimento. O cenário é quem abriu o chamado sair da empresa com o token
+ * ainda vivo na máquina.
+ *
+ * A RPC valida permissão por dentro (atendente logado, mais dono / fila livre /
+ * admin) e devolve quantas sessões caíram. Ver docs/db.md.
+ */
+export function useEncerrarAcessoCliente() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (atendimentoId: string) => {
+      const { data, error } = await supabase.rpc('atendimento_web_revogar_sessao', {
+        p_atendimento_id: atendimentoId,
+      })
+      if (error) throw error
+      return (data ?? 0) as number
+    },
+    // O cabeçalho passa a dizer "Cliente sem acesso" e o item do menu some, porque
+    // não sobrou o que encerrar. É o retorno da ação, então não há aviso extra.
+    onSuccess: (_qtd, atendimentoId) => {
+      qc.invalidateQueries({ queryKey: ['presenca_web', atendimentoId] })
     },
   })
 }

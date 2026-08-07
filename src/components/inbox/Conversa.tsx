@@ -10,12 +10,15 @@ import {
   ArrowLeft,
   MoreVertical,
   Info,
+  LogOut,
 } from 'lucide-react'
 import {
   useMensagens,
   useEventos,
   useAcoesAtendimento,
   useParticipantes,
+  usePresencaCliente,
+  useEncerrarAcessoCliente,
   nomeEmpresa,
   type AtendimentoLista,
   type EventoAtendimento,
@@ -28,16 +31,18 @@ import { aplicarVariaveis } from '../../lib/variaveis'
 import { AceitarPotencial } from './AceitarPotencial'
 import { PainelContato } from './PainelContato'
 import { SeletorTags, FaixaTagsAplicadas } from './TagsAtendimento'
-import { Modal } from '../ui/Modal'
+import { Modal, ModalConfirmar } from '../ui/Modal'
 import { Botao } from '../ui/Botao'
 import { Selecao } from '../ui/Campo'
 import { PontoStatus } from '../ui/Selo'
 import { Avatar } from '../ui/Avatar'
-import { ItemMenu } from '../ui/Menu'
+import { ItemMenu, PainelMenu } from '../ui/Menu'
 import { useFecharFora } from '../../lib/useFecharFora'
 import { LinhasCarregando } from '../ui/Estados'
 import { cn } from '../../lib/utils'
 import { canalDoChamado, ROTULO_CANAL } from '../../lib/canal'
+import { textoRodapeFinalizado, janelaEmHoras } from '../../lib/reabertura'
+import { useConfig } from '../../lib/useConfig'
 import { PresencaCliente } from './PresencaCliente'
 
 type Departamento = { id: string; nome: string; ativo: boolean }
@@ -127,8 +132,19 @@ export function Conversa({
   const [modalAceitar, setModalAceitar] = useState(false)
   const [menuAberto, setMenuAberto] = useState(false)
   const [mostrarDados, setMostrarDados] = useState(false)
+  const [menuDesktop, setMenuDesktop] = useState(false)
+  const [modalEncerrarAcesso, setModalEncerrarAcesso] = useState(false)
   // Clique fora e Esc: hook compartilhado (lib/useFecharFora).
   const menuRef = useFecharFora<HTMLDivElement>(menuAberto, () => setMenuAberto(false))
+  const menuDesktopRef = useFecharFora<HTMLDivElement>(menuDesktop, () => setMenuDesktop(false))
+  const encerrarAcesso = useEncerrarAcessoCliente()
+  /*
+    Compartilha a `queryKey` com o indicador do cabeçalho, então não há requisição
+    extra: aqui o dado serve para saber se existe acesso a encerrar. Fica com os
+    outros hooks porque abaixo há um early return, e hook não pode vir depois dele.
+  */
+  const presenca = usePresencaCliente(atendimento?.id ?? null, canalDoChamado(atendimento?.canal) === 'web')
+  const config = useConfig()
   const [destinoDep, setDestinoDep] = useState('')
   const [destinoUsuario, setDestinoUsuario] = useState('')
   const [motivoId, setMotivoId] = useState('')
@@ -157,6 +173,12 @@ export function Conversa({
   const semCadastro = !atendimento.contato?.cliente_id
   // Tag é aplicada pelo atendente depois de pegar o chamado (ou pelo admin).
   const podeEditarTags = !finalizado && (souResponsavel || isAdmin)
+  /*
+    Só há o que encerrar se o cliente tem acesso vivo. Como a condição some depois
+    da ação, não existe clicar duas vezes, e no desktop o menu ⋮ inteiro deixa de
+    ser montado em vez de abrir vazio.
+  */
+  const podeEncerrarAcesso = (presenca.data?.sessoes_ativas ?? 0) > 0
 
   function enviar(e: FormEvent) {
     e.preventDefault()
@@ -291,6 +313,39 @@ export function Conversa({
               </Botao>
             </>
           )}
+          {/*
+            Menu ⋮ do desktop, montado só quando existe ação secundária. Encerrar
+            acesso é raro e sem volta, então não disputa a barra com Assumir,
+            Transferir e Finalizar, que são o trabalho do dia.
+          */}
+          {podeEncerrarAcesso && (
+            <div className="relative" ref={menuDesktopRef}>
+              <button
+                type="button"
+                onClick={() => setMenuDesktop((v) => !v)}
+                aria-haspopup="menu"
+                aria-expanded={menuDesktop}
+                aria-label="Mais ações"
+                className="w-8 h-8 rounded-1 flex items-center justify-center text-tx-2 hover:text-tx-1 hover:bg-sf-2 transicao"
+              >
+                <MoreVertical size={16} />
+              </button>
+              {menuDesktop && (
+                <PainelMenu className="absolute right-0 top-[calc(100%+6px)] z-30 w-60" rotulo="Mais ações">
+                  <ItemMenu
+                    perigo
+                    icone={<LogOut size={16} />}
+                    onClick={() => {
+                      setModalEncerrarAcesso(true)
+                      setMenuDesktop(false)
+                    }}
+                  >
+                    Encerrar acesso do cliente
+                  </ItemMenu>
+                </PainelMenu>
+              )}
+            </div>
+          )}
           {aoFechar && (
             <button
               type="button"
@@ -329,6 +384,18 @@ export function Conversa({
               <ItemMenu onClick={() => { setMostrarDados(true); setMenuAberto(false) }} icone={<Info size={16} />}>
                 Dados do atendimento
               </ItemMenu>
+              {podeEncerrarAcesso && (
+                <ItemMenu
+                  perigo
+                  icone={<LogOut size={16} />}
+                  onClick={() => {
+                    setModalEncerrarAcesso(true)
+                    setMenuAberto(false)
+                  }}
+                >
+                  Encerrar acesso do cliente
+                </ItemMenu>
+              )}
               {!finalizado &&
                 semDono &&
                 (semCadastro ? (
@@ -471,7 +538,18 @@ export function Conversa({
         <div className="shrink-0 border-t border-bd-1 bg-sf-1 px-4 py-3">
           <div className="mx-auto w-full max-w-[820px] flex items-center gap-2 text-corpo text-tx-2">
             <CheckCheck size={15} className="text-ok shrink-0" />
-            Atendimento finalizado. Se o cliente escrever de novo em até 3h, o chamado reabre sozinho.
+            {textoRodapeFinalizado(
+              {
+                avaliacao_solicitada_em: atendimento.avaliacao_solicitada_em ?? null,
+                avaliacao: atendimento.avaliacao ?? null,
+                finalizado_em: atendimento.finalizado_em ?? null,
+                canal,
+              },
+              janelaEmHoras(config.lista.data?.janela_reabertura_horas),
+              // No WhatsApp isto é ignorado pela regra; no site, decide se o
+              // cliente ainda alcança a conversa para poder reabrir.
+              (presenca.data?.sessoes_ativas ?? 0) > 0
+            )}
           </div>
         </div>
       ) : (
@@ -554,6 +632,26 @@ export function Conversa({
           onFechar={() => setModalAceitar(false)}
         />
       )}
+
+      <ModalConfirmar
+        aberto={modalEncerrarAcesso}
+        titulo="Encerrar acesso do cliente"
+        descricao="O cliente perde a conversa aberta no site e precisa se identificar de novo para falar com a gente. Use quando quem abriu o chamado não deve mais ter acesso, por exemplo se saiu da empresa."
+        rotuloConfirmar="Encerrar acesso"
+        carregando={encerrarAcesso.isPending}
+        // O banco recusa quem não pode atuar no chamado. Sem mostrar aqui, o modal
+        // fecharia como se tivesse dado certo e o acesso continuaria de pé.
+        erro={encerrarAcesso.error ? 'Não foi possível encerrar o acesso. Recarregue a página e tente de novo.' : null}
+        aoConfirmar={() =>
+          encerrarAcesso.mutate(atendimento.id, {
+            onSuccess: () => setModalEncerrarAcesso(false),
+          })
+        }
+        aoCancelar={() => {
+          encerrarAcesso.reset()
+          setModalEncerrarAcesso(false)
+        }}
+      />
 
       <Modal titulo="Transferir atendimento" aberto={modalTransferir} onFechar={() => setModalTransferir(false)}>
         <div className="flex flex-col gap-3">
