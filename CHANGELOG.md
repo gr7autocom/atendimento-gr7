@@ -4,6 +4,14 @@
 
 ---
 
+## 2026-08-07 — A central mostra de onde veio cada chamado
+
+- O atendente distingue chamado do WhatsApp e do site pelo ícone no avatar e pelo rótulo no cabeçalho, e pode filtrar a fila por canal quando os dois estiverem em uso
+- Em chamado do site, o cabeçalho diz se o cliente está na conversa, ausente ou sem acesso. Serve para saber se a resposta vai ser lida agora ou se a pessoa está com a tela fechada
+- O painel do contato avisa que nome e telefone do site foram digitados pelo cliente e não foram verificados. No WhatsApp o número é garantido pelo provedor, no site não
+- O menu da conversa ganhou "Encerrar acesso do cliente", para quando quem abriu o chamado não deve mais entrar, por exemplo se saiu da empresa
+- O aviso de reabertura no chamado finalizado passou a dizer a verdade em cada caso. Antes prometia reabrir em 3 horas sempre, mesmo quando a próxima mensagem abriria um chamado novo, e ignorava o prazo configurado
+
 ## 2026-08-04 — Histórico do contato e aviso quando algo não salva
 
 - No painel do contato, a seção Histórico mostra os atendimentos anteriores da mesma pessoa, com protocolo, data, setor, quem atendeu e como terminou. Serve para saber o que já foi tratado antes de responder

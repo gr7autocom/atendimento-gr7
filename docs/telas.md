@@ -58,19 +58,26 @@ As três abas são **exclusivas**: um chamado aparece em uma só, nunca duplicad
 
 - Chamados de **plantão** entram em **Pendentes** com um **selo "plantão"** (não é aba separada).
 - Cada item: nome do contato, departamento, hora da última mensagem, selo de tag/plantão, indicador de anexo.
+- **Selo de canal no avatar** (WhatsApp ou site), distinguindo por **ícone** e não só por cor: verde e azul são o mesmo tom para boa parte das pessoas com daltonismo. O rótulo em texto fica no cabeçalho da conversa, que é onde se decide como responder; na lista a tarefa é reconhecer, e o selo basta.
+- **Filtro por canal** ao lado do de setor, montado **só quando há mais de um canal na fila**. Enquanto só houver WhatsApp, um seletor com uma opção real ocupa espaço e não decide nada. Se o canal filtrado sai da fila, o filtro se desfaz sozinho, senão a lista ficaria vazia por um filtro invisível.
+- Lista vazia distingue **fila vazia** de **recorte vazio**: com filtro ou busca ativos, o texto diz quantos chamados estão fora do recorte, em vez de afirmar que não há trabalho.
 - Filtro por departamento respeita a RLS (o atendente só vê os seus).
 
 ### Coluna 2 — Conversa
-- Cabeçalho: contato + protocolo + ações (buscar na conversa, tags, transferir, finalizar).
+- Cabeçalho: contato + protocolo + **canal** + ações (buscar na conversa, tags, transferir, finalizar).
+- **Presença do cliente**, só no canal do site: "Cliente na conversa" (último acesso há menos de 45s, que tolera três falhas do polling de 10s), "Cliente ausente há X" ou "Cliente sem acesso". Existe porque o PWA **não tem push**: quem fecha a janela não é avisado de nada, e sem o indicador o atendente escreve sem saber se está falando com uma tela fechada. No WhatsApp não aparece, porque quem diz se a pessoa está online é o aparelho dela.
+- **Menu ⋮ com "Encerrar acesso do cliente"** (site, com acesso vivo). No desktop o menu é montado só quando existe ação secundária, para a ação rara não disputar a barra com Assumir, Transferir e Finalizar. Confirmação diz o efeito real, e depois de encerrar o item some junto com o acesso.
 - Thread com bolhas por origem (cliente / atendente / bot), status de entrega, mídia (Cloudinary), auto-scroll.
 - **Mensagens de sistema** (eventos) como **pílulas centralizadas**, internas (o cliente não vê): "Atendimento #NNN", "Fim das mensagens com o bot", "X assumiu"/"X não faz mais parte", transferência, encerrado, reaberto. Base do histórico (`atendimento_eventos`, ver [db.md](db.md)).
 - Rodapé: **Assumir** (ou responder já assume), campo de resposta, **`/` mensagens rápidas**, anexo, enviar.
 - **Transferir:** modal com departamento e/ou atendente (registra em `atendimento_transferencias`).
 - **Finalizar:** modal que pede o **motivo** (catálogo).
+- **Rodapé do chamado finalizado é condicional** (regra em `src/lib/reabertura.ts`, com testes): promete reabrir o mesmo protocolo **só com a nota pendente e dentro da janela**, usando o prazo de `janela_reabertura_horas`; diz que a próxima mensagem abre chamado novo quando a nota foi dada, quando o cliente encerrou ou quando a janela venceu; e, no site com acesso encerrado, explica que o cliente precisa se identificar de novo.
 
 ### Coluna 3 — Painel do contato
 - Nome do contato (**editável**), **cargo** (editável, opcional), telefone (do WhatsApp), empresa vinculada com link para a ficha do painel. O rótulo do nome é **"Nome"**. O cargo aparece **só neste painel**, não no card da lista.
 - **Vincular empresa:** busca na base de `clientes` e associa (`cliente_id`), vínculo manual, principal no MVP. É o **mesmo dado** da aba **Contatos** do cadastro do cliente no painel (que grava direto em `contatos`), não uma cópia. O painel pode preencher também o **cargo** do contato (revisto 2026-07-25, migration `20260725190000`). Remover contato = `cliente_id = NULL` (nunca DELETE, por causa do CASCADE em `atendimentos`).
+- **Aviso de identificação auto-declarada** (só no canal do site): "Os dados vieram do formulário do site e não foram verificados." Um aviso por seção, não um por campo, e **sem cor de alerta**, porque a ressalva é sobre o que o sistema garante e não sobre a pessoa. O caso que ele resolve é o **telefone**: no WhatsApp o número é a identidade garantida pelo provedor, no site é campo digitado.
 - Tags do chamado (adicionar/remover).
 - **Histórico do contato:** atendimentos anteriores do mesmo contato — protocolo, data, status, setor, quem atendeu, motivo e nota. Mostra **3 por vez, com "Ver todos"**. Os itens **não são clicáveis**, e isso é decisão, não pendência: chamado finalizado é filtrado fora da lista de chamados, então não existe tela que exiba conversa encerrada (nem para quem a atendeu). Enquanto não houver essa tela, não há destino para o clique. Vem da RPC `atendimento_historico_contato`, que devolve só o resumo e nunca o corpo das mensagens (ver [db.md](db.md)).
 - **Contadores:** total de atendimentos e mensagens do contato.
