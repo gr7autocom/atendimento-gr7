@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Clock, ShieldCheck, MessageSquareText, MessagesSquare } from 'lucide-react'
 import { Botao } from '../components/ui/Botao'
-import { Entrada, AreaTexto } from '../components/ui/Campo'
-import { cn } from '../lib/utils'
-import type { Disponibilidade } from './dados-mentira'
+import { Entrada } from '../components/ui/Campo'
+import type { Disponibilidade } from './api'
 
 /**
  * Primeira tela do cliente: quem é você e qual o problema.
@@ -18,8 +17,6 @@ export type DadosIdentificacao = {
   nome: string
   telefone: string
   cnpj: string
-  departamento_id: string
-  mensagem: string
   aceite: boolean
 }
 
@@ -44,17 +41,21 @@ function mascararCnpj(valor: string): string {
 export function Identificacao({
   disponibilidade,
   enviando = false,
+  erroDoServidor,
+  recado,
   aoEnviar,
 }: {
   disponibilidade: Disponibilidade
   enviando?: boolean
+  /** Campo que o servidor recusou: ele valida de novo, e com regras que a tela não tem (dígito do CNPJ, telefone em E.164). */
+  erroDoServidor?: { campo: string; texto: string } | null
+  /** Falha que não é de campo: limite de tentativas, fora do horário, rede. */
+  recado?: string | null
   aoEnviar: (dados: DadosIdentificacao) => void
 }) {
   const [nome, setNome] = useState('')
   const [telefone, setTelefone] = useState('')
   const [cnpj, setCnpj] = useState('')
-  const [departamentoId, setDepartamentoId] = useState('')
-  const [mensagem, setMensagem] = useState('')
   const [aceite, setAceite] = useState(false)
   const [tentativas, setTentativas] = useState(0)
   const tentouEnviar = tentativas > 0
@@ -71,25 +72,26 @@ export function Identificacao({
     const alvo = formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"], [data-invalido="true"]')
     alvo?.focus()
     alvo?.scrollIntoView({ block: 'center', behavior: 'auto' })
-  }, [tentativas])
+  }, [tentativas, erroDoServidor])
 
   const digitosTelefone = telefone.replace(/\D/g, '')
+  const doServidor = (campo: string) => (erroDoServidor?.campo === campo ? erroDoServidor.texto : null)
   const erros = {
-    nome: nome.trim().length < 2 ? 'Escreva seu nome completo.' : null,
+    nome: doServidor('nome') ?? (nome.trim().length < 2 ? 'Escreva seu nome completo.' : null),
     // 10 dígitos cobre fixo com DDD; 11, celular. Sem DDD o servidor recusa,
     // porque adivinhar o DDD amarraria o chamado ao contato errado.
-    telefone: digitosTelefone.length < 10 ? 'Informe DDD e número.' : null,
-    departamento: !departamentoId ? 'Escolha o assunto.' : null,
-    mensagem: mensagem.trim().length < 5 ? 'Conte rapidamente o que está acontecendo.' : null,
-    aceite: !aceite ? 'Precisamos do seu aceite para começar.' : null,
+    telefone: doServidor('telefone') ?? (digitosTelefone.length < 10 ? 'Informe DDD e número.' : null),
+    aceite: doServidor('aceite') ?? (!aceite ? 'Precisamos do seu aceite para começar.' : null),
+    cnpj: doServidor('cnpj'),
   }
-  const temErro = Object.values(erros).some(Boolean)
+  const { cnpj: erroCnpj, ...errosQueBloqueiam } = erros
+  const temErro = Object.values(errosQueBloqueiam).some(Boolean)
 
   function enviar(e: FormEvent) {
     e.preventDefault()
     setTentativas((n) => n + 1)
     if (temErro) return
-    aoEnviar({ nome: nome.trim(), telefone, cnpj, departamento_id: departamentoId, mensagem: mensagem.trim(), aceite })
+    aoEnviar({ nome: nome.trim(), telefone, cnpj, aceite })
   }
 
   // Fora do horário o formulário nem aparece: abrir chamado que ninguém vai ler
@@ -116,10 +118,17 @@ export function Identificacao({
       <div className="flex flex-col gap-1.5 mb-6">
         <h1 className="text-destaque font-medium text-tx-1">Falar com o suporte</h1>
         <p className="text-corpo-lg text-tx-2">
-          Conte o que está acontecendo. Um atendente responde nesta mesma tela.
+          Só precisamos saber quem é você. No próximo passo você escolhe o assunto e conta o que
+          está acontecendo.
           {disponibilidade.plantao && ' Agora estamos em plantão, então a resposta pode demorar um pouco mais.'}
         </p>
       </div>
+
+      {recado && (
+        <p role="alert" className="mb-4 rounded-2 border border-bd-1 bg-sf-2 p-3 text-corpo text-warn">
+          {recado}
+        </p>
+      )}
 
       <form ref={formRef} onSubmit={enviar} className="flex flex-col gap-4" noValidate>
         <Entrada
@@ -153,56 +162,12 @@ export function Identificacao({
           onChange={(e) => setCnpj(mascararCnpj(e.target.value))}
           placeholder="00.000.000/0000-00"
           inputMode="numeric"
+          erro={erroCnpj}
           dica="Informando o CNPJ, já chegamos com o cadastro da sua empresa em mãos."
           className="h-11 text-corpo-lg dado"
         />
 
-        <fieldset className="flex flex-col gap-2">
-          <legend className="text-corpo text-tx-2 mb-2">Sobre o que é</legend>
-          {/*
-            Lista clicável, não um `select`: são cinco opções e a escolha define o
-            setor que atende. Num `select` fechado o cliente escolhe no escuro, e
-            errar o setor custa uma transferência do lado de cá.
-          */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {disponibilidade.departamentos.map((d, i) => {
-              const escolhido = departamentoId === d.id
-              return (
-                <button
-                  key={d.id}
-                  type="button"
-                  onClick={() => setDepartamentoId(d.id)}
-                  aria-pressed={escolhido}
-                  data-invalido={tentouEnviar && erros.departamento && i === 0 ? 'true' : undefined}
-                  className={cn(
-                    'min-h-11 px-3 py-2 rounded-1 border text-corpo-lg text-left transicao',
-                    'focus:outline-none focus:ring-2 focus:ring-[color:var(--br-soft)]',
-                    escolhido
-                      ? 'bg-br-soft border-br-2 text-br-2 font-medium'
-                      : 'bg-sf-2 border-bd-campo text-tx-2 hover:border-tx-3 hover:text-tx-1'
-                  )}
-                >
-                  {d.nome}
-                </button>
-              )
-            })}
-          </div>
-          {tentouEnviar && erros.departamento && (
-            <span role="alert" className="text-apoio text-err">
-              {erros.departamento}
-            </span>
-          )}
-        </fieldset>
 
-        <AreaTexto
-          rotulo="O que está acontecendo"
-          value={mensagem}
-          onChange={(e) => setMensagem(e.target.value)}
-          placeholder="Ex.: o sistema não emite nota fiscal desde ontem"
-          rows={4}
-          erro={tentouEnviar ? erros.mensagem : null}
-          className="text-corpo-lg"
-        />
 
         {/*
           Aceite obrigatório: grava `aceite_em` na sessão e é o registro do
@@ -234,7 +199,7 @@ export function Identificacao({
           icone={<MessageSquareText size={17} />}
           className="h-12 text-corpo-lg w-full"
         >
-          Iniciar atendimento
+          Continuar
         </Botao>
       </form>
 

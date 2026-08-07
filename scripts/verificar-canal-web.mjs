@@ -90,7 +90,9 @@ try {
   ok('disponibilidade lista setores', disp.json?.departamentos?.length > 0)
 
   // ---- entrada hostil recusada antes de tocar o banco
-  const base = { nome: 'Fulano de Teste', telefone: TEL, departamento_id: dep.id, mensagem: 'oi', aceite: true }
+  // O formulário só coleta identidade: setor e relato acontecem na conversa.
+  // O chamado nasce com tudo de uma vez: identidade, setor e o primeiro relato.
+  const base = { nome: 'Fulano de Teste', telefone: TEL, departamento_id: dep.id, mensagem: 'meu PDV nao abre', aceite: true }
   ok('nome curto recusado', (await chamar('identificar', { ...base, nome: 'x' })).json?.campo === 'nome')
   // Sem checar o DV, a rota vira oraculo da carteira de clientes.
   ok('CNPJ com DV errado recusado', (await chamar('identificar', { ...base, cnpj: '12345678000199' })).json?.campo === 'cnpj')
@@ -98,7 +100,7 @@ try {
   ok('telefone sem DDD recusado', (await chamar('identificar', { ...base, telefone: '99999' })).json?.campo === 'telefone')
 
   // ---- abertura
-  const ident = await chamar('identificar', { ...base, mensagem: 'meu PDV nao abre' })
+  const ident = await chamar('identificar', base)
   ok('identificar abre o chamado', ident.status === 201, `status=${ident.status} ${JSON.stringify(ident.json)}`)
   const token = ident.json?.token
   ok('devolve token de sessao', typeof token === 'string' && token.length === 43)
@@ -109,15 +111,22 @@ try {
 
   const { data: chamado } = await sb
     .from('atendimentos')
-    .select('id, canal, status, protocolo')
+    .select('id, canal, status, protocolo, departamento_id')
     .eq('contato_id', contatoId)
     .maybeSingle()
-  ok('chamado nasce canal=web em na_fila', chamado?.canal === 'web' && chamado?.status === 'na_fila')
+  // Nasce direto na fila, com setor: ate a primeira mensagem nada existia.
+  ok('chamado nasce canal=web em na_fila, com setor',
+    chamado?.canal === 'web' && chamado?.status === 'na_fila' && chamado?.departamento_id === dep.id,
+    `status=${chamado?.status}`)
 
-  // ---- conversa e o que nao pode vazar
+  // ---- conversa: o roteiro inteiro precisa estar gravado
   const conv1 = await chamar('conversa', {}, token)
-  ok('conversa traz mensagem do cliente e boas-vindas do bot',
-    conv1.json?.mensagens?.some((m) => m.origem === 'cliente') && conv1.json?.mensagens?.some((m) => m.origem === 'bot'))
+  const roteiro = (conv1.json?.mensagens ?? []).map((m) => m.origem).join(',')
+  ok('conversa guarda o caminho todo, inclusive a escolha do setor',
+    conv1.json?.mensagens?.some((m) => m.origem === 'cliente' && m.corpo === dep.nome) &&
+      conv1.json?.mensagens?.filter((m) => m.origem === 'bot').length >= 2,
+    `roteiro=${roteiro}`)
+  ok('setor invalido recusado', (await chamar('identificar', { ...base, departamento_id: '00000000-0000-0000-0000-000000000000' })).json?.erro === 'departamento_invalido')
 
   const campos = new Set((conv1.json?.mensagens ?? []).flatMap((m) => Object.keys(m)))
   const proibidos = ['remetente_usuario_id', 'wa_message_id', 'canal', 'client_msg_id', 'atendimento_id']

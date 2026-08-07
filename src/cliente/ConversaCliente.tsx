@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
-import { Send, WifiOff, CheckCircle2, LogOut, Copy, Check } from 'lucide-react'
+import { Send, WifiOff, CheckCircle2, LogOut, Copy, Check, RotateCw, AlertCircle } from 'lucide-react'
 import { Botao } from '../components/ui/Botao'
 import { ModalConfirmar } from '../components/ui/Modal'
 import { cn } from '../lib/utils'
-import type { Conversa, MensagemWeb } from './dados-mentira'
+import type { Conversa, DepartamentoWeb, MensagemWeb } from './api'
 
 /**
  * Segunda tela do cliente: a conversa em si.
@@ -13,6 +13,17 @@ import type { Conversa, MensagemWeb } from './dados-mentira'
  * o envio em vez de guardar a mensagem para depois: "mandei e ninguém recebeu" é
  * pior que "você está sem internet" (ver docs/canal-web.md, sem fila offline).
  */
+
+/**
+ * Mensagem que o cliente escreveu e ainda não voltou do servidor. Fica na tela
+ * desde o clique, e continua lá marcada como não enviada se a chamada falhar.
+ * O `client_msg_id` é o mesmo no reenvio, e é ele que impede duplicata no banco.
+ */
+export type MensagemPendente = {
+  client_msg_id: string
+  corpo: string
+  falhou: boolean
+}
 
 function hora(iso: string) {
   return new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
@@ -34,9 +45,82 @@ function Bolha({ mensagem, nomeAtendente }: { mensagem: MensagemWeb; nomeAtenden
             : 'bg-sf-2 text-tx-1 rounded-3 rounded-bl-1'
         )}
       >
-        {mensagem.corpo}
+        {mensagem.corpo ?? ''}
       </div>
-      <span className="text-mini text-tx-3 px-1">{hora(mensagem.criada_em)}</span>
+      <span className="text-mini text-tx-3 px-1">{hora(mensagem.created_at)}</span>
+    </div>
+  )
+}
+
+function BolhaPendente({ pendente, aoReenviar }: { pendente: MensagemPendente; aoReenviar: () => void }) {
+  return (
+    <div className="flex flex-col gap-1 items-end">
+      <div
+        className={cn(
+          'max-w-[85%] px-3.5 py-2.5 text-corpo-lg leading-relaxed whitespace-pre-wrap break-words rounded-3 rounded-br-1',
+          // Falhou fica com a cor de aviso; só enviando fica apagada, sem alarme.
+          pendente.falhou ? 'bg-sf-2 text-tx-1 border border-warn' : 'bg-br-1 text-white opacity-60'
+        )}
+      >
+        {pendente.corpo}
+      </div>
+      {pendente.falhou ? (
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center gap-1 text-mini text-warn">
+            <AlertCircle size={12} aria-hidden="true" />
+            Não enviada
+          </span>
+          <button
+            type="button"
+            onClick={aoReenviar}
+            className="inline-flex items-center gap-1 h-6 px-1.5 rounded-micro text-mini text-br-2 hover:bg-sf-2 transicao"
+          >
+            <RotateCw size={12} aria-hidden="true" />
+            Tentar de novo
+          </button>
+        </div>
+      ) : (
+        <span className="text-mini text-tx-3 px-1">Enviando…</span>
+      )}
+    </div>
+  )
+}
+
+/**
+ * Escolha do setor, dentro da conversa e logo abaixo da pergunta do bot.
+ *
+ * Botões e não menu numerado: no WhatsApp o cliente digita o número porque o
+ * canal só aceita texto. Aqui é uma tela, então um toque resolve e ninguém erra
+ * o número. A escolha vira mensagem do cliente na conversa, para o atendente ler
+ * o caminho completo.
+ */
+function EscolhaDeSetor({
+  departamentos,
+  escolhendo,
+  aoEscolher,
+}: {
+  departamentos: DepartamentoWeb[]
+  escolhendo: boolean
+  aoEscolher: (id: string) => void
+}) {
+  return (
+    <div className="flex flex-col gap-2 pl-1">
+      {departamentos.map((d) => (
+        <button
+          key={d.id}
+          type="button"
+          disabled={escolhendo}
+          onClick={() => aoEscolher(d.id)}
+          className={cn(
+            'min-h-11 w-full max-w-[85%] px-3.5 py-2 rounded-2 border text-corpo-lg text-left transicao',
+            'bg-sf-2 border-bd-campo text-tx-1 hover:border-br-2 hover:text-br-2',
+            'focus:outline-none focus:ring-2 focus:ring-[color:var(--br-soft)]',
+            'disabled:opacity-60 disabled:hover:border-bd-campo disabled:hover:text-tx-1'
+          )}
+        >
+          {d.nome}
+        </button>
+      ))}
     </div>
   )
 }
@@ -111,17 +195,32 @@ function CopiarProtocolo({ protocolo }: { protocolo: number }) {
 
 export function ConversaCliente({
   conversa,
+  aguardandoSetor = false,
+  departamentos = [],
+  pendentes = [],
   online = true,
   enviando = false,
+  recado,
+  aoDispensarRecado,
   aoEnviar,
+  aoEscolherSetor,
+  aoReenviar,
   aoEncerrar,
   aoAvaliar,
   aoAbrirOutro,
 }: {
   conversa: Conversa
+  /** Ainda falta escolher o setor. Enquanto isso, nada foi para o servidor. */
+  aguardandoSetor?: boolean
+  departamentos?: DepartamentoWeb[]
+  pendentes?: MensagemPendente[]
   online?: boolean
   enviando?: boolean
+  recado?: string | null
+  aoDispensarRecado?: () => void
   aoEnviar: (texto: string) => void
+  aoEscolherSetor: (departamentoId: string) => void
+  aoReenviar: (pendente: MensagemPendente) => void
   aoEncerrar: () => void
   aoAvaliar: (nota: number) => void
   aoAbrirOutro: () => void
@@ -138,9 +237,15 @@ export function ConversaCliente({
   useEffect(() => {
     const semMovimento = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     fim.current?.scrollIntoView({ behavior: semMovimento ? 'auto' : 'smooth' })
-  }, [conversa.mensagens.length])
+  }, [conversa.mensagens.length, pendentes.length, aguardandoSetor])
 
   const naFila = conversa.status === 'na_fila'
+  /*
+    Sem setor escolhido, escrever não leva a lugar nenhum: o chamado ainda está em
+    triagem e ninguém o vê. Bloquear é mais honesto que aceitar a mensagem e
+    deixar o cliente esperando resposta de uma fila em que ele não entrou.
+  */
+  const faltaEscolherSetor = aguardandoSetor
 
   function enviar(e: FormEvent) {
     e.preventDefault()
@@ -168,11 +273,11 @@ export function ConversaCliente({
               {conversa.atendente ? `Falando com ${conversa.atendente}` : 'Suporte GR7'}
             </div>
             <div className="flex items-center gap-1.5 text-apoio text-tx-2 min-w-0">
-              <CopiarProtocolo protocolo={conversa.protocolo} />
-              <span className="truncate">· {conversa.departamento}</span>
+              {conversa.protocolo !== null && <CopiarProtocolo protocolo={conversa.protocolo} />}
+              {conversa.departamento && <span className="truncate">· {conversa.departamento}</span>}
             </div>
           </div>
-          {!conversa.encerrado && (
+          {!conversa.encerrado && conversa.protocolo !== null && (
             <Botao
               variante="fantasma"
               tamanho="sm"
@@ -191,17 +296,37 @@ export function ConversaCliente({
         normal. Sem dizer isso, o cliente reescreve a mesma dúvida achando que a
         mensagem não chegou.
       */}
-      {naFila && (
+      {naFila && !faltaEscolherSetor && (
         <div className="shrink-0 bg-sf-1 border-b border-bd-1">
           <p className="mx-auto w-full max-w-[720px] px-4 py-2 text-apoio text-tx-2">
-            Você está na fila do setor {conversa.departamento}. Assim que um atendente assumir, ele
-            responde por aqui.
+            Você está na fila{conversa.departamento ? ` do setor ${conversa.departamento}` : ''}. Assim que
+            um atendente assumir, ele responde por aqui.
           </p>
         </div>
       )}
 
+      {recado && (
+        <div className="shrink-0 bg-sf-1 border-b border-bd-1">
+          <div className="mx-auto w-full max-w-[720px] px-4 py-2 flex items-start justify-between gap-3">
+            <p role="alert" className="text-apoio text-warn">
+              {recado}
+            </p>
+            {aoDispensarRecado && (
+              <button
+                type="button"
+                onClick={aoDispensarRecado}
+                aria-label="Dispensar aviso"
+                className="text-mini text-tx-2 hover:text-tx-1 h-6 px-1.5 rounded-micro shrink-0"
+              >
+                Ok
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="flex-1 overflow-y-auto">
-        <h1 className="sr-only">Conversa com o suporte da GR7, atendimento {conversa.protocolo}</h1>
+        <h1 className="sr-only">Conversa com o suporte da GR7</h1>
         {/*
           `role="log"` com `aria-live="polite"`: quem usa leitor de tela ouve a
           resposta do atendente chegar sem precisar sair procurando. `polite`
@@ -217,6 +342,16 @@ export function ConversaCliente({
           {conversa.mensagens.map((m) => (
             <Bolha key={m.id} mensagem={m} nomeAtendente={conversa.atendente} />
           ))}
+          {pendentes.map((p) => (
+            <BolhaPendente key={p.client_msg_id} pendente={p} aoReenviar={() => aoReenviar(p)} />
+          ))}
+          {aguardandoSetor && (
+            <EscolhaDeSetor
+              departamentos={departamentos}
+              escolhendo={enviando}
+              aoEscolher={aoEscolherSetor}
+            />
+          )}
           <div ref={fim} />
         </div>
       </div>
@@ -258,9 +393,11 @@ export function ConversaCliente({
                 onChange={(e) => setTexto(e.target.value)}
                 onKeyDown={teclar}
                 rows={1}
-                placeholder={online ? 'Escreva sua mensagem' : 'Sem conexão'}
+                placeholder={
+                  faltaEscolherSetor ? 'Escolha o assunto acima para continuar' : online ? 'Escreva sua mensagem' : 'Sem conexão'
+                }
                 aria-label="Sua mensagem"
-                disabled={!online}
+                disabled={!online || faltaEscolherSetor}
                 className={cn(
                   'flex-1 min-w-0 py-3 px-3.5 rounded-1 bg-sf-2 border border-bd-campo text-corpo-lg text-tx-1',
                   'placeholder:text-tx-3 transicao hover:border-tx-3 focus:border-br-2 focus:outline-none',
@@ -282,7 +419,7 @@ export function ConversaCliente({
                 variante="primario"
                 icone={<Send size={17} />}
                 carregando={enviando}
-                disabled={!online || !texto.trim()}
+                disabled={!online || faltaEscolherSetor || !texto.trim()}
                 className="h-12 px-4 shrink-0"
                 title="Enter envia, Shift+Enter quebra linha"
               >

@@ -64,6 +64,30 @@ const agora = () => new Date()
 // remetente_usuario_id, wa_message_id, canal e client_msg_id junto.
 const SELECT_MENSAGEM = 'id, direcao, origem, corpo, created_at'
 
+/*
+  Textos deste canal, editáveis na aba "Canal web" de Configurações do bot
+  (chaves `web_*` em `bot_mensagens`, migration 20260807120000).
+
+  Existem separados dos do WhatsApp porque os de lá mandam digitar o número do
+  setor e digitar #sair, instruções que aqui seriam falsas: a escolha é botão e
+  encerrar é botão.
+
+  Os valores abaixo são **reserva**, não a fonte: se a chave sumir do banco ou
+  vier vazia, o canal continua falando em vez de mandar mensagem em branco ao
+  cliente.
+*/
+const RESERVA = {
+  pergunta_setor: 'Sobre qual assunto você precisa falar? Escolha uma das opções abaixo.',
+  pedir_relato: 'Pode contar o que está acontecendo que já vamos te atender.',
+  entrou_fila:
+    'Protocolo {{protocolo}}. Você entrou na fila do setor {{departamento}} e um atendente responde por aqui. Para sair antes, use o botão Encerrar no topo da tela.',
+}
+
+/** Texto do canal web: o do banco quando existe, a reserva quando não. */
+function textoWeb(textos: Config, chave: keyof typeof RESERVA): string {
+  return (textos[`web_${chave}`] ?? '').trim() || RESERVA[chave]
+}
+
 type Config = Record<string, string>
 
 // ===== leitura de catálogo =====
@@ -172,6 +196,17 @@ async function rotaDisponibilidade(sb: ClienteServico, req: Request): Promise<Re
       ? null
       : aplicarVariaveis(textos.fora_horario ?? '', { horario: horario.resumo }),
     departamentos: deps ?? [],
+    /*
+      As falas do bot vao junto porque, ate a primeira mensagem do cliente, NAO
+      EXISTE chamado: a conversa acontece so na tela. Mandar os textos daqui
+      mantem o servidor como fonte da voz (o `bem_vindo` e o mesmo do WhatsApp) e
+      garante que o que a pessoa leu e exatamente o que sera gravado depois.
+    */
+    textos: {
+      bem_vindo: textos.bem_vindo ?? '',
+      pergunta_setor: textoWeb(textos, 'pergunta_setor'),
+      pedir_relato: textoWeb(textos, 'pedir_relato'),
+    },
   })
 }
 
@@ -244,8 +279,14 @@ async function rotaIdentificar(sb: ClienteServico, req: Request, corpo: Record<s
   }
 
   // ----- chamado -----
-  // Nasce em `na_fila` com setor: nunca passa por triagem, porque não há menu de
-  // bot para resolver. Sem empresa, cai naturalmente em Potenciais na inbox.
+  /*
+    Criado so agora, com setor E primeira mensagem (decisao de 2026-08-07).
+
+    Ate aqui a conversa aconteceu na tela do cliente, sem gravar nada: quem
+    desiste no meio da escolha do setor nao deixa contato orfao, chamado vazio
+    nem protocolo gasto. Nasce direto em `na_fila`, porque ja tem tudo o que a
+    fila precisa. Sem empresa, cai naturalmente em Potenciais na inbox.
+  */
   const { data: chamado, error: eChamado } = await sb
     .from('atendimentos')
     .insert({
@@ -260,26 +301,44 @@ async function rotaIdentificar(sb: ClienteServico, req: Request, corpo: Record<s
     .single()
   if (eChamado) throw eChamado
 
-  // Ordem espelha o WhatsApp: o cliente fala, o bot responde a saudação.
-  await sb.from('atendimento_mensagens').insert({
-    atendimento_id: chamado.id,
-    direcao: 'entrada',
-    origem: 'cliente',
-    corpo: mensagem,
-  })
+  /*
+    A conversa e gravada inteira, na mesma ordem em que o cliente a viveu na
+    tela. O atendente precisa ler o caminho todo, inclusive a escolha do setor:
+    sem isso ele abre um chamado que comeca no meio.
 
+    `bem_vindo` vem do banco (mesma voz do WhatsApp); a pergunta do setor e o
+    pedido de relato sao textos deste canal, porque o do banco
+    (`instrucao_menu`) manda digitar o NUMERO do setor, instrucao que aqui seria
+    falsa.
+  */
   const textos = await carregarTextos(sb)
   const bemVindo = aplicarVariaveis(textos.bem_vindo ?? '', {
     nome,
     departamento: dep.nome,
     protocolo: String(chamado.protocolo),
   })
-  if (bemVindo) {
+  const roteiro: { origem: 'bot' | 'cliente'; corpo: string }[] = [
+    ...(bemVindo ? [{ origem: 'bot' as const, corpo: bemVindo }] : []),
+    { origem: 'bot', corpo: textoWeb(textos, 'pergunta_setor') },
+    { origem: 'cliente', corpo: dep.nome },
+    { origem: 'bot', corpo: textoWeb(textos, 'pedir_relato') },
+    { origem: 'cliente', corpo: mensagem },
+    // Por último: o protocolo só existe depois de o chamado nascer, e é aqui que
+    // ele de fato entra na fila.
+    {
+      origem: 'bot',
+      corpo: aplicarVariaveis(textoWeb(textos, 'entrou_fila'), {
+        protocolo: String(chamado.protocolo),
+        departamento: dep.nome,
+      }),
+    },
+  ]
+  for (const fala of roteiro) {
     await sb.from('atendimento_mensagens').insert({
       atendimento_id: chamado.id,
-      direcao: 'saida',
-      origem: 'bot',
-      corpo: bemVindo,
+      direcao: fala.origem === 'cliente' ? 'entrada' : 'saida',
+      origem: fala.origem,
+      corpo: fala.corpo,
     })
   }
 
