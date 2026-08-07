@@ -324,6 +324,41 @@ export function useContadoresContato(contatoId: string | null) {
   })
 }
 
+export type PresencaCliente = {
+  /** Última vez que o PWA do cliente falou com o servidor. `null` = nenhum acesso vivo. */
+  ultimo_uso_em: string | null
+  sessoes_ativas: number
+}
+
+/**
+ * Presença do cliente no canal web, para o cabeçalho da conversa.
+ *
+ * Vem da RPC `atendimento_web_presenca` (SECURITY DEFINER) e não de `select`:
+ * `atendimento_web_sessoes` só é legível pelo admin, e liberar a tabela exporia
+ * `token_hash` e `ip_hash` a todo atendente. A função devolve dois números e mais
+ * nada. Ver docs/db.md.
+ *
+ * O intervalo acompanha o polling do PWA (10s): consultar mais rápido não traz
+ * dado novo, só invocation. Chamado de WhatsApp não tem sessão, então `ativo`
+ * corta a consulta na origem em vez de perguntar e receber zero.
+ */
+export function usePresencaCliente(atendimentoId: string | null, ativo: boolean) {
+  return useQuery({
+    queryKey: ['presenca_web', atendimentoId],
+    enabled: ativo && !!atendimentoId,
+    refetchInterval: 10_000,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('atendimento_web_presenca', {
+        p_atendimento_id: atendimentoId as string,
+      })
+      if (error) throw error
+      // A função agrega sem GROUP BY, então sempre volta uma linha; o fallback é
+      // para o caso de a resposta chegar vazia por algum motivo de transporte.
+      return (data?.[0] ?? { ultimo_uso_em: null, sessoes_ativas: 0 }) as PresencaCliente
+    },
+  })
+}
+
 export type Participante = {
   id: string
   usuario_id: string

@@ -55,6 +55,7 @@ Regra geral: **classe utilitária do token, nunca o valor literal.** Antes havia
 - **Menu suspenso:** `useFecharFora` (clique fora + Esc), `PainelMenu` e `ItemMenu`, de [`ui/Menu.tsx`](../src/components/ui/Menu.tsx). O mesmo `useEffect` estava escrito três vezes e nenhuma fechava com Esc.
 - **Tabela:** `Tabela`/`Th`/`Tr`/`Td`. O painel de supervisão mantém casca própria (colunas fixas, linhas expansíveis) mas usa o `Th` padrão: exceção justificada não significa reescrever o cabeçalho.
 - **Tag:** `PillTag`, com `compacta` para a lista de chamados.
+- **Estado como ponto colorido:** `Ponto` ([`ui/Selo.tsx`](../src/components/ui/Selo.tsx)), com a cor por parâmetro e o rótulo ao lado. `PontoStatus` (status do atendimento) e `PresencaCliente` (presença no canal web) são os dois consumidores. A cor é sempre **reforço**: o texto carrega a informação, senão quem não distingue as cores fica sem ela.
 - **Card de seção do admin:** `Bloco` (com título) ou `PainelAba` (dentro de abas), ambos `p-4` e ambos usando `Topicos` para a orientação em tópicos.
 
 ### Regras de contraste (auditoria de 2026-07-29)
