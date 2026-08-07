@@ -2,7 +2,7 @@
 
 Referência do segundo canal de atendimento, como [whatsapp.md](whatsapp.md) é do primeiro. Decisão e trade-offs em [decisoes.md](decisoes.md) (ADR-11).
 
-> **Estado (2026-08-06):** o **backend está pronto e deployado**, verificado ponta a ponta por HTTP (32/32). Falta a interface do cliente (Fase 5) e a sinalização de canal na central (Fase 4). As fases estão em [PROGRESSO.md](../PROGRESSO.md).
+> **Estado (2026-08-07):** o canal **funciona ponta a ponta**, com o cliente conversando pelo site e o atendente respondendo na central. Falta transformá-lo em **aplicativo instalável** (manifest, service worker, `vercel.json`) e o endurecimento da Fase 6. As fases estão em [PROGRESSO.md](../PROGRESSO.md).
 
 ## O que é
 
@@ -20,6 +20,10 @@ Um site instalável na área de trabalho do cliente, para ele pedir suporte sem 
 ## Identificação
 
 O cliente informa **nome e telefone**, com **CNPJ opcional**. Não há conta, senha nem login.
+
+**O formulário pede só isso.** O setor e o relato acontecem **na conversa** (decisão de 2026-08-07, revendo o formulário único): o bot dá as boas-vindas, pergunta o assunto com os setores em **botões**, e só então pede o relato. Botão e não menu numerado porque aqui é tela: no WhatsApp o cliente digita o número porque o canal só aceita texto.
+
+**Nada é gravado até a primeira mensagem.** Contato, chamado, protocolo e token nascem juntos, quando o cliente descreve o problema. Quem desiste no meio da escolha do setor não deixa contato órfão, chamado vazio nem protocolo gasto. A conversa que ele viu até ali é gravada junto, na mesma ordem, senão o atendente abriria um chamado que começa no meio.
 
 | Situação | Resultado |
 |---|---|
@@ -77,7 +81,7 @@ O `aceite` é obrigatório e grava `aceite_em` na sessão: é o registro do cons
 ### Variáveis de ambiente
 
 - **`IP_HASH_SALT`** — sal do hash de IP. Sem ele o hash seria reversível por tabela pronta, já que o espaço de IPv4 inteiro cabe numa varredura de segundos. Configurado em 2026-08-06
-- **`PWA_ORIGENS`** — origens liberadas no CORS, separadas por vírgula. **Ainda não configurada**: o subdomínio só existe na Fase 5. Enquanto estiver vazia, a função responde sem `Allow-Origin`, então navegador nenhum a alcança (o que é o padrão seguro; `curl` continua funcionando)
+- **`PWA_ORIGENS`** — origens liberadas no CORS, separadas por vírgula. **Configurada em 2026-08-07** com `https://suporte.gr7autocom.com.br` e `http://localhost:5173` (este para desenvolvimento; tirar quando o PWA estiver publicado). Enquanto esteve vazia, a função respondia sem `Allow-Origin` e navegador nenhum a alcançava, que é o padrão seguro. Ela não substitui autenticação: CORS é regra de navegador, e `curl` a ignora — quem protege as rotas é o token de sessão e o rate limit
 
 ### Como as regras são mantidas
 
@@ -123,8 +127,8 @@ Sem menu numerado, mas as regras de negócio não são do WhatsApp e se reaprove
 
 | Peça | No web |
 |---|---|
-| Boas-vindas | Roda, mesmo texto `bem_vindo` de `bot_mensagens` |
-| Escolha de setor | Lista clicável no formulário, não menu numerado |
+| Boas-vindas | Roda, mesmo texto `bem_vindo` de `bot_mensagens`, compartilhado entre os canais |
+| Escolha de setor | **Botões dentro da conversa**, não menu numerado. Antes da escolha nada foi ao servidor |
 | Protocolo e ticket | Idêntico, mesma numeração |
 | Fila e roteamento | Idêntico |
 | Fora de horário e plantão | Idêntico: abre com plantonista de janela ativa, não abre sem |
@@ -136,6 +140,22 @@ Sem menu numerado, mas as regras de negócio não são do WhatsApp e se reaprove
 O chamado web **nasce em `na_fila`** com setor preenchido e nunca passa por `triagem`. Dois efeitos saem de graça: o gatilho de eventos grava a abertura já no INSERT, e o chamado aparece para todos os atendentes pela regra da fila livre.
 
 Não reusar: `montarMenu`, `interpretarEscolha`, `tentativas_menu`, `etapa_bot`.
+
+## Textos do canal, editáveis pelo admin
+
+Três mensagens são **deste canal** e vivem em `bot_mensagens` com prefixo `web_` (migration `20260807120000`), editáveis na aba **Canal web** de Configurações do bot:
+
+| Chave | Quando aparece |
+|---|---|
+| `web_pergunta_setor` | Depois das boas-vindas, junto dos botões de setor |
+| `web_pedir_relato` | Assim que o cliente escolhe o setor |
+| `web_entrou_fila` | Quando o chamado nasce. Aceita `{{protocolo}}` e `{{departamento}}` |
+
+Existem separadas porque as equivalentes do WhatsApp mandam **digitar o número do setor** (`instrucao_menu`) e **digitar `#sair`** (`entrou_fila`), instruções que na tela seriam falsas. É o mesmo tipo de erro que o painel do contato cometeu ao dizer "WhatsApp informou" num chamado do site.
+
+O código guarda os textos originais como **reserva**: chave apagada ou salva em branco faz o bot falar a frase padrão, em vez de mandar bolha vazia ao cliente.
+
+O `bem_vindo` **não** foi duplicado: a abertura é a mesma voz nos dois canais, e duas cópias seriam duas verdades para manter.
 
 ## Convivência dos dois canais
 
@@ -163,7 +183,7 @@ Idempotência do envio do cliente usa coluna própria, `client_msg_id`. Reusar `
 
 ## Onde o PWA mora
 
-Segundo entry point no mesmo repositório: `cliente.html` mais `src/cliente/`, reusando `src/components/ui/` e `src/tema.css`. Endereço em subdomínio próprio.
+Segundo entry point no mesmo repositório: `cliente.html` mais `src/cliente/`, reusando `src/components/ui/` e `src/tema.css`. Endereço em subdomínio próprio: **`suporte.gr7autocom.com.br`** (decidido em 2026-08-07), separado do `atendimento.gr7autocom.com.br` da equipe. É esse o valor que entra em `PWA_ORIGENS`.
 
 - Manifest referenciado **só** no `cliente.html`, então a central da equipe nunca fica instalável
 - Service worker com escopo próprio, que por definição não intercepta as rotas da central. Escrito à mão, sem `vite-plugin-pwa`, que quer ser dono do build inteiro

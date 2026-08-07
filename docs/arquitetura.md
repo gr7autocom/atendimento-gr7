@@ -40,6 +40,6 @@ Resultado: o painel continua byte-a-byte igual; as tabelas novas são invisívei
 
 ## Deploy
 
-- Frontend: hospedagem própria (a definir — Apache/Plesk como o painel, ou Vercel/Netlify). Domínio próprio (ex.: `atendimento.gr7autocom.com.br`). O **PWA do cliente** é um segundo entry point do mesmo build, servido em **subdomínio próprio**, com manifest e service worker só dele — a central nunca fica instalável (ADR-11).
+- Frontend: hospedagem própria (a definir — Apache/Plesk como o painel, ou Vercel/Netlify). **Endereços decididos em 2026-08-07:** a central da equipe em **`atendimento.gr7autocom.com.br`** e o **PWA do cliente** em **`suporte.gr7autocom.com.br`**. São o mesmo build com duas entradas, servidas em subdomínios separados de propósito: o service worker do cliente fica com escopo próprio, a central nunca vira instalável (ADR-11), e o que cada um guarda no navegador não encosta no outro, porque origem diferente é armazenamento diferente. `suporte` é também o endereço que se fala ao telefone.
 - Edge Functions: no mesmo projeto Supabase (`npx supabase functions deploy`). As três (`whatsapp-webhook`, `whatsapp-send`, `whatsapp-conexao`) estão **prontas e rodando em modo mock**; o `whatsapp-webhook` está **deployado** desde 2026-07-27 e roda o fluxo do bot. Falta a conta uazapi para sair do mock. Ver [whatsapp.md](whatsapp.md).
 - Provedor WhatsApp (uazapi): SaaS externo, sem infra nossa.
