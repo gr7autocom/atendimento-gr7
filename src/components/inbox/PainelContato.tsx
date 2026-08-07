@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Copy, Check, Headset, MessageSquare } from 'lucide-react'
+import { Copy, Check, Headset, MessageSquare, Info } from 'lucide-react'
 import {
   useAtualizarContato,
   useContadoresContato,
@@ -109,6 +109,29 @@ export function PainelContato({
 
       <SecaoContato titulo="Informações" inicialAberta>
         <div className="flex flex-col gap-4">
+          {/*
+            No WhatsApp o número É a identidade: o provedor garante de qual aparelho
+            veio a mensagem. No site a pessoa digita nome e telefone e ninguém
+            confere nada. É a mesma tela com dois graus de confiança, e sem este
+            aviso o atendente trata os dois igual na hora de passar uma senha.
+
+            Um aviso por seção, e não um por campo: a mesma ressalva repetida em
+            nome, telefone e CNPJ vira ruído e ninguém lê.
+
+            Sem cor de alerta, de propósito. Vermelho ou âmbar diria "cliente
+            suspeito", e o normal é ser quem diz ser. A ressalva é sobre o que o
+            sistema garante, não sobre a pessoa.
+          */}
+          {canal === 'web' && (
+            <p className="flex gap-1.5 text-apoio text-tx-2">
+              <Info size={13} className="shrink-0 mt-0.5 text-tx-3" aria-hidden="true" />
+              <span>
+                Os dados vieram do formulário do site e não foram verificados. Confirme quem é antes
+                de passar senha ou dado da empresa.
+              </span>
+            </p>
+          )}
+
           <div>
             <div className="rotulo mb-1.5">Nome</div>
             <Entrada
@@ -121,15 +144,10 @@ export function PainelContato({
               }}
               placeholder={contato?.nome_whatsapp ?? 'Nome do contato'}
               aria-label="Nome do contato"
-              // A dica muda com o canal porque a origem do nome muda, e com ela a
-              // confiança que ele merece. No WhatsApp o nome vem do perfil da conta;
-              // no site a própria pessoa digitou e nada foi verificado, o que o
-              // atendente precisa saber antes de, por exemplo, passar uma senha.
-              dica={
-                canal === 'web'
-                  ? 'Informado pelo cliente no site, sem verificação'
-                  : `WhatsApp informou: ${contato?.nome_whatsapp || 'sem nome'}`
-              }
+              // Só no WhatsApp: ali a dica traz o nome do perfil da conta, que é
+              // informação nova. No site ela repetiria o aviso do topo da seção,
+              // que já cobre nome, telefone e CNPJ.
+              dica={canal === 'web' ? undefined : `WhatsApp informou: ${contato?.nome_whatsapp || 'sem nome'}`}
             />
           </div>
 
