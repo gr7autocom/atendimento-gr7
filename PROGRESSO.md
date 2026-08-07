@@ -4,7 +4,16 @@
 
 ## 🔄 Em Andamento
 
-_(nada em andamento. A próxima é a Fase 5 do canal web, o PWA do cliente.)_
+**Fase 5 (PWA do cliente), etapa 1 de 3: as duas telas, com dados de mentira.**
+
+- **Segunda entrada no build funcionando**: `cliente.html` + `src/cliente/`, com `vite.config.ts` declarando as duas entradas. O build gera os dois HTML, a central não muda e o cliente não baixa o código dela. `lang="pt-BR"` no `cliente.html` (a central está em `en`), porque leitor de tela pronuncia pelo idioma declarado e aqui quem lê é o cliente
+- **Tela de identificação:** nome, telefone com máscara, CNPJ opcional, setor em **lista clicável** (não `select`: errar o setor custa transferência do nosso lado) e a primeira mensagem, mais o **aceite** obrigatório como caixa marcável, que é o registro de consentimento da LGPD. Fora do horário o formulário **não aparece**, só a mensagem configurada. Fecha com o aviso que não tem solução dentro de "sem login": a conversa vive naquele navegador
+- **Tela de conversa:** bolhas por origem com o autor identificado (bot x atendente, senão o cliente responde à saudação automática achando que tem gente do outro lado), faixa de espera enquanto ninguém assume, seletor de nota **0 a 10 em botões** (no WhatsApp a nota é digitada porque o canal obriga; aqui a tela resolve), estado encerrado com "iniciar outro atendimento" e **offline explícito**, que bloqueia o envio em vez de enfileirar
+- Densidade menor que a da central, de propósito: alvos de 44 a 48px e texto um degrau acima. A central é ferramenta diária de quem tem prática; aqui a pessoa entra uma ou duas vezes por mês, muitas vezes pelo celular
+- `dados-mentira.ts` usa **os nomes e formatos que as rotas devolvem**, não um formato conveniente para a tela: mock que inventa formato empurra o custo para a integração. Junto vai uma barra de cenários temporária, que some com o mock
+- **Validado no navegador** a 430px e 1440px: os cinco erros do formulário aparecendo ao tentar enviar vazio, o telefone mascarando enquanto digita, os quatro estados da conversa, o corte de rede bloqueando campo e botão e voltando ao normal, e a central abrindo intacta e sem a barra de mock
+- **Refino aplicado depois da primeira validação**, com liberdade dada pelo usuário: **foco no primeiro campo com erro** ao tentar enviar (sem isso, quem usa teclado recebe cinco alertas e continua parado no botão, com o campo errado possivelmente fora da tela no celular); **campo de mensagem multilinha que cresce até 5 linhas**, com Enter enviando e Shift+Enter quebrando linha, porque o cliente está descrevendo um problema e não mandando "ok"; **protocolo copiável** no cabeçalho, já que ele costuma ser anotado e selecionar texto pequeno no celular é sofrido; **`role="log"` com `aria-live="polite"`** nas mensagens, para a resposta do atendente ser anunciada sem atropelar quem digita; e o **auto-scroll respeitando `prefers-reduced-motion`**, que o CSS global não alcança porque `scrollIntoView` é JavaScript. Junto, o `h1` que faltava na tela de conversa. Tudo conferido no navegador, incluindo a barra de rolagem do campo, que só aparece depois do teto
+- **Falta:** etapa 2, ligar na Edge Function (`identificar` → token → `conversa` com polling → `mensagem` → `encerrar` → `avaliar`); etapa 3, virar aplicativo instalável (manifest, service worker, `vercel.json`, `PWA_ORIGENS` e as duas regras novas na guarda de padrões)
 
 ### Ficou em aberto da auditoria visual
 
