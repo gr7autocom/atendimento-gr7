@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <!--
+      Segunda entrada do build, separada da central (index.html). O cliente nunca
+      baixa o código da equipe, e a central nunca vira instalável: o manifest do
+      PWA será referenciado só aqui (Fase 5, etapa do aplicativo).
+
+      `lang="pt-BR"` e não "en" como o index.html da central: leitor de tela
+      pronuncia o texto no idioma declarado, e aqui quem lê é o cliente.
+    -->
+    <title>Suporte GR7</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/cliente/main.tsx"></script>
+  </body>
+</html>
