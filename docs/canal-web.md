@@ -46,7 +46,8 @@ O CNPJ é dado público. Se fosse a chave de acesso, qualquer pessoa que o digit
 - **Escopo é o atendimento, não o contato.** Se fosse o contato, o cliente veria o histórico do WhatsApp, exatamente o que o escopo "só a conversa atual" evita
 - Expiração tripla: absoluta (12h), por inatividade (2h, mata token esquecido em máquina compartilhada) e ligada ao ciclo do chamado
 - **Finalizar não revoga na hora.** A sessão vale até `finalizado_em + janela_reabertura_horas`, senão avaliação e reabertura morrem junto
-- Revogação manual pelo menu da conversa, na central. O cenário é concreto: quem abriu o chamado sai da empresa
+- Revogação manual pelo menu da conversa, na central. O cenário é concreto: quem abriu o chamado sai da empresa. A RPC exige atendente logado desde a migration `20260806120100` — até ela, um visitante sem login revogava chamado da fila livre (ver [db.md](db.md), "REVOKE ... FROM PUBLIC não fecha função")
+- **Presença do cliente** na central sai da RPC `atendimento_web_presenca` (migration `20260806120000`): último uso e quantos acessos vivos, nunca token nem IP
 
 **Consequência que não pode ficar escondida:** limpar dados do navegador, trocar de máquina ou usar aba anônima faz o cliente perder a conversa em andamento e abrir outra. Não há solução dentro de "sem login", então o aviso é explícito na tela de identificação.
 
