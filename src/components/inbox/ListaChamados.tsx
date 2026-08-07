@@ -12,7 +12,7 @@ import { Vazio, LinhasCarregando } from '../ui/Estados'
 import { PillTag } from '../ui/PillTag'
 import { CampoBusca } from '../ui/Campo'
 import { CriarAtendimento } from './CriarAtendimento'
-import { canalDoChamado } from '../../lib/canal'
+import { canalDoChamado, ROTULO_CANAL, type Canal } from '../../lib/canal'
 
 type Fila = 'ativos' | 'pendentes' | 'potenciais'
 type Departamento = { id: string; nome: string; ativo: boolean }
@@ -53,6 +53,12 @@ export function ListaChamados({
 }) {
   const [fila, setFila] = useState<Fila>('ativos')
   const [busca, setBusca] = useState('')
+  /*
+    O canal fica aqui, e não no `filtro` que vem de fora: setor e atendente são
+    mandados pelo painel de supervisão (o admin clica num card e a lista obedece),
+    enquanto o canal é escolha de quem está olhando a lista, como a busca e a aba.
+  */
+  const [canalFiltro, setCanalFiltro] = useState<Canal | ''>('')
   const departamentos = useCrud<Departamento>('departamentos', 'ordem')
   const usuarios = useUsuarios()
   const { isAdmin } = usePermissao()
@@ -88,14 +94,38 @@ export function ListaChamados({
 
   // Busca por nome/telefone/protocolo/setor; filtros por departamento e por atendente
   // (estes vêm do painel de supervisão do admin, ou do seletor de setor).
+  /*
+    Canais presentes na fila inteira, não na aba aberta: calculado por aba, o
+    seletor apareceria e sumiria ao trocar de Ativos para Pendentes.
+
+    Enquanto só existir WhatsApp em operação, isto tem um item e o seletor não é
+    montado. Filtro com uma opção real ocupa espaço numa coluna de 320px e não
+    decide nada.
+  */
+  const canaisPresentes = [...new Set(base.map((a) => canalDoChamado(a.canal)))]
+  /*
+    Se o canal escolhido sumiu da fila (o último chamado do site foi finalizado), o
+    filtro se desfaz sozinho. Derivado em vez de `useEffect`: assim não existe o
+    instante em que a lista está vazia por causa de um filtro que ninguém vê.
+  */
+  const canalAtivo = canalFiltro && canaisPresentes.includes(canalFiltro) ? canalFiltro : ''
+
   const termo = busca.trim().toLowerCase()
   const lista = listas[fila].filter((a) => {
+    if (canalAtivo && canalDoChamado(a.canal) !== canalAtivo) return false
     if (setorFiltro && a.departamento_id !== setorFiltro) return false
     if (atendenteFiltro && a.responsavel_id !== atendenteFiltro) return false
     if (!termo) return true
     const alvo = `${nomeContato(a)} ${a.contato?.telefone ?? ''} ${a.protocolo} ${a.departamento?.nome ?? ''}`
     return alvo.toLowerCase().includes(termo)
   })
+
+  /*
+    A aba tem chamados, o recorte é que não tem. Sem distinguir os dois casos, a
+    lista diria "Fila vazia, nada esperando atendimento" com a fila cheia atrás do
+    filtro, e o atendente concluiria que não há trabalho.
+  */
+  const filtradoAVazio = lista.length === 0 && listas[fila].length > 0
 
   const vazio: Record<Fila, { titulo: string; descricao: string }> = {
     ativos: { titulo: 'Nenhum atendimento com você', descricao: 'Assuma um chamado em Pendentes para começar.' },
@@ -134,11 +164,13 @@ export function ListaChamados({
 
         <div className="flex items-center gap-1.5">
           <ListFilter size={15} className="text-tx-3 shrink-0" />
+          {/* `min-w-0` nos dois selects: sem ele cada um pede a largura da maior
+              opção ("DÚVIDAS NOTA FISCAL") e a dupla estoura a coluna de 320px. */}
           <select
             value={setorFiltro}
             onChange={(e) => aoFiltrar({ ...filtro, departamentoId: e.target.value || null })}
             aria-label="Filtrar por departamento"
-            className="flex-1 h-7 px-2 text-apoio rounded-1 bg-sf-2 border border-bd-campo text-tx-2 hover:border-tx-3 focus:border-br-2 focus:outline-none transicao"
+            className="flex-1 min-w-0 h-7 px-2 text-apoio rounded-1 bg-sf-2 border border-bd-campo text-tx-2 hover:border-tx-3 focus:border-br-2 focus:outline-none transicao"
           >
             <option value="">Todos os setores</option>
             {(departamentos.lista.data ?? []).map((d) => (
@@ -147,6 +179,22 @@ export function ListaChamados({
               </option>
             ))}
           </select>
+
+          {canaisPresentes.length > 1 && (
+            <select
+              value={canalAtivo}
+              onChange={(e) => setCanalFiltro((e.target.value as Canal) || '')}
+              aria-label="Filtrar por canal"
+              className="min-w-0 shrink h-7 px-2 text-apoio rounded-1 bg-sf-2 border border-bd-campo text-tx-2 hover:border-tx-3 focus:border-br-2 focus:outline-none transicao"
+            >
+              <option value="">Todos os canais</option>
+              {canaisPresentes.map((c) => (
+                <option key={c} value={c}>
+                  {ROTULO_CANAL[c]}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
 
         {nomeAtendente && (
@@ -186,7 +234,15 @@ export function ListaChamados({
         {carregando ? (
           <LinhasCarregando linhas={5} />
         ) : lista.length === 0 ? (
-          <Vazio icone={<IconeInbox size={20} />} titulo={vazio[fila].titulo} descricao={vazio[fila].descricao} />
+          <Vazio
+            icone={<IconeInbox size={20} />}
+            titulo={filtradoAVazio ? 'Nada com esses filtros' : vazio[fila].titulo}
+            descricao={
+              filtradoAVazio
+                ? `${listas[fila].length} ${listas[fila].length === 1 ? 'chamado está' : 'chamados estão'} fora do recorte. Limpe a busca ou os filtros para ver.`
+                : vazio[fila].descricao
+            }
+          />
         ) : (
           lista.map((a) => {
             const ativo = selecionadoId === a.id
