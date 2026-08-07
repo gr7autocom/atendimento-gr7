@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Settings2, Headset, UserPlus } from 'lucide-react'
+import { Settings2, Headset, UserPlus, Monitor } from 'lucide-react'
 import { useBotMensagens, useConfig } from '../../lib/useConfig'
 import { Botao } from '../../components/ui/Botao'
 import { AreaTexto, Entrada, Selecao } from '../../components/ui/Campo'
@@ -7,12 +7,13 @@ import { LinhasCarregando } from '../../components/ui/Estados'
 import { CabecalhoAdmin } from '../../components/admin/CabecalhoAdmin'
 import { Abas, PainelAba, type AbaItem } from '../../components/admin/Abas'
 
-type Aba = 'geral' | 'atendimento' | 'potenciais'
+type Aba = 'geral' | 'atendimento' | 'potenciais' | 'web'
 
 const ABAS: AbaItem<Aba>[] = [
   { id: 'geral', label: 'Geral', icone: Settings2 },
   { id: 'atendimento', label: 'Atendimento', icone: Headset },
   { id: 'potenciais', label: 'Potenciais', icone: UserPlus },
+  { id: 'web', label: 'Canal web', icone: Monitor },
 ]
 
 /** Campos numéricos/texto do comportamento, exibidos numa linha. */
@@ -73,6 +74,18 @@ const MSG: Record<string, { label: string; dica: string }> = {
     label: 'Identificação vinculada',
     dica: 'Enviada quando o CNPJ do cliente casa com a base e o vínculo é feito sozinho.',
   },
+  web_pergunta_setor: {
+    label: 'Escolha do assunto',
+    dica: 'Vem logo depois das boas-vindas, junto dos botões de setor.',
+  },
+  web_pedir_relato: {
+    label: 'Pedir o relato',
+    dica: 'Enviada assim que o cliente escolhe o setor.',
+  },
+  web_entrou_fila: {
+    label: 'Abertura de protocolo',
+    dica: 'Confirma o chamado com o número e o setor. Aceita {{protocolo}} e {{departamento}}.',
+  },
 }
 
 const MSGS_GERAIS = ['bem_vindo', 'instrucao_menu', 'voltar_menu', 'opcao_invalida']
@@ -87,6 +100,13 @@ const MSGS_ATENDIMENTO = [
   'avaliacao_invalida',
 ]
 const MSGS_POTENCIAIS = ['pedir_identificacao', 'identificacao_vinculada']
+/*
+  Mensagens do site, separadas das do WhatsApp de proposito: as de la mandam
+  digitar o numero do setor e digitar #sair, instrucoes que na tela do cliente
+  seriam falsas (a escolha e botao, encerrar e botao). As boas-vindas NAO estao
+  aqui porque sao compartilhadas: a abertura e a mesma voz nos dois canais.
+*/
+const MSGS_WEB = ['web_pergunta_setor', 'web_pedir_relato', 'web_entrou_fila']
 
 /** Valores usados enquanto a chave ainda não foi salva no banco. */
 const PADROES: Record<string, string> = {
@@ -224,6 +244,20 @@ export function ConfiguracoesBot() {
             <LegendaVariaveis />
             <div className="grid gap-4 lg:grid-cols-2 items-start">
               {MSGS_ATENDIMENTO.map((chave) => (
+                <CampoMensagem key={chave} chave={chave} />
+              ))}
+            </div>
+          </div>
+        ) : aba === 'web' ? (
+          <div className="flex flex-col gap-4">
+            <p className="text-corpo text-tx-2 sm:max-w-3xl">
+              Mensagens que o bot envia no <strong className="text-tx-1">atendimento pelo site</strong>. São
+              separadas das do WhatsApp porque lá o cliente digita o número do setor e digita #sair,
+              o que aqui não existe: no site ele escolhe e encerra por botão.
+            </p>
+            <LegendaVariaveis />
+            <div className="grid gap-4 lg:grid-cols-2 items-start">
+              {MSGS_WEB.map((chave) => (
                 <CampoMensagem key={chave} chave={chave} />
               ))}
             </div>
