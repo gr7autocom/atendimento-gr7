@@ -17,6 +17,11 @@ export type MensagemWeb = {
   origem: 'cliente' | 'atendente' | 'bot'
   corpo: string | null
   created_at: string
+  /** Editada pelo cliente. A tela marca, como o WhatsApp faz. */
+  editada_em?: string | null
+  /** Citação, com o trecho copiado no momento em que foi feita. */
+  resposta_corpo?: string | null
+  resposta_remetente?: string | null
 }
 
 export type Disponibilidade = {
@@ -31,6 +36,18 @@ export type Disponibilidade = {
   textos: { bem_vindo: string; pergunta_setor: string; pedir_relato: string }
 }
 
+/** Teto por anexo. Igual ao da central e ao da Edge Function (`MAX_ANEXO_BYTES`). */
+export const MAX_ANEXO_MB = 10
+
+export type AnexoWeb = {
+  id: string
+  mensagem_id: string
+  url: string
+  nome_arquivo: string | null
+  tipo_mime: string | null
+  tamanho_bytes: number | null
+}
+
 export type Conversa = {
   /** `null` enquanto a conversa só existe na tela: o protocolo nasce com o chamado. */
   protocolo: number | null
@@ -40,6 +57,8 @@ export type Conversa = {
   atendente: string | null
   aguardando_avaliacao: boolean
   mensagens: MensagemWeb[]
+  /** Todos os anexos do chamado; a tela agrupa por `mensagem_id`. */
+  anexos: AnexoWeb[]
 }
 
 export type SessaoAberta = {
@@ -63,6 +82,10 @@ export type CodigoErro =
   | 'sessao_encerrada'
   | 'avaliacao_indisponivel'
   | 'encerramento_indisponivel'
+  | 'arquivo_grande'
+  | 'arquivo_tipo'
+  | 'mensagem_indisponivel'
+  | 'prazo_encerrado'
   | 'erro_interno'
   | 'sem_rede'
 
@@ -150,6 +173,54 @@ export const api = {
   mensagem: (token: string, mensagem: string, client_msg_id: string) =>
     chamar<{ ok: true }>('mensagem', { mensagem, client_msg_id }, token),
 
+  /**
+   * Anexo. O arquivo vai em `multipart/form-data` para a Edge Function, que o
+   * manda ao Cloudinary com assinatura de servidor. O app do cliente NÃO fala
+   * com o Cloudinary direto: o preset aberto que a central usa não pode ser
+   * embarcado num app que qualquer pessoa da internet abre. Há guarda em
+   * `src/padroes-ui.test.ts` para isso.
+   *
+   * Sem `client_msg_id`: o reenvio de arquivo é decisão consciente de quem
+   * clica de novo, e deduplicar por id exigiria comparar o conteúdo, não a
+   * chamada. Mensagem de texto é diferente, ali o clique duplo é acidente.
+   */
+  anexo: async (token: string, arquivo: File, mensagem?: string) => {
+    const form = new FormData()
+    form.append('arquivo', arquivo)
+    if (mensagem?.trim()) form.append('mensagem', mensagem.trim())
+
+    let resposta: Response
+    try {
+      resposta = await fetch(`${BASE}/anexo`, {
+        method: 'POST',
+        // Sem `Content-Type`: quem o define é o navegador, junto com o
+        // `boundary` do multipart. Escrevê-lo à mão quebra o parse no servidor.
+        headers: { 'x-sessao': token },
+        body: form,
+      })
+    } catch {
+      throw new ErroApi('sem_rede')
+    }
+
+    if (!resposta.ok) {
+      const json = (await resposta.json().catch(() => ({}))) as Record<string, unknown>
+      throw new ErroApi((json.erro as CodigoErro) ?? 'erro_interno', undefined, resposta.status)
+    }
+    return { ok: true as const }
+  },
+
+  /*
+    Apagar e editar a própria mensagem, dentro do prazo (1h e 15min, como o
+    WhatsApp). Do lado do cliente a mensagem some; do lado da equipe ela
+    continua visível, com o texto, marcada. É de propósito: o histórico é prova
+    do atendimento, e quem manda na empresa lê a conversa depois.
+  */
+  apagarMensagem: (token: string, mensagem_id: string) =>
+    chamar<{ ok: true }>('apagar-mensagem', { mensagem_id }, token),
+
+  editarMensagem: (token: string, mensagem_id: string, mensagem: string) =>
+    chamar<{ ok: true }>('editar-mensagem', { mensagem_id, mensagem }, token),
+
   encerrar: (token: string) => chamar<{ ok: true }>('encerrar', {}, token),
 
   avaliar: (token: string, nota: number) => chamar<{ ok: true }>('avaliar', { nota }, token),
@@ -182,6 +253,16 @@ export function mensagemDeErro(erro: unknown): string {
       return 'Este atendimento não está mais aceitando nota.'
     case 'encerramento_indisponivel':
       return 'Este atendimento já foi encerrado.'
+    // Os dois dizem o que fazer, porque a saída é diferente: um arquivo grande
+    // se resolve mandando outro; um tipo recusado, não.
+    case 'arquivo_grande':
+      return `O arquivo passa de ${MAX_ANEXO_MB} MB. Envie um menor ou divida em partes.`
+    case 'arquivo_tipo':
+      return 'Esse tipo de arquivo não é aceito. Envie imagem, PDF, planilha ou áudio.'
+    case 'prazo_encerrado':
+      return 'O prazo para alterar essa mensagem já passou. Envie uma nova explicando a correção.'
+    case 'mensagem_indisponivel':
+      return 'Essa mensagem não está mais disponível. Atualize a conversa.'
     default:
       return 'Algo deu errado do nosso lado. Tente de novo em instantes.'
   }

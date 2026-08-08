@@ -23,6 +23,7 @@
  */
 
 import { criarClienteServico, type ClienteServico } from '../_shared/supabase.ts'
+import { MAX_ANEXO_BYTES, subirParaCloudinary, tipoAceito } from '../_shared/web/anexo.ts'
 import { preflightWeb, respostaDeErro, respostaJsonWeb } from '../_shared/cors-web.ts'
 import {
   ErroContrato,
@@ -62,7 +63,29 @@ const agora = () => new Date()
 
 // Só o que o cliente pode ver. Explícito de propósito: `select('*')` traria
 // remetente_usuario_id, wa_message_id, canal e client_msg_id junto.
-const SELECT_MENSAGEM = 'id, direcao, origem, corpo, created_at'
+/*
+  A mensagem apagada **não entra nesta lista**: ela é filtrada na consulta, e
+  some da tela do cliente. Do lado da equipe ela continua visível, com o corpo,
+  marcada como apagada, porque quem manda na empresa lê a conversa depois e
+  precisa saber o que foi enviado. É por isso que `excluida` não está aqui:
+  filtrar no servidor é mais forte que mandar o campo e confiar na tela.
+
+  `resposta_id` fica de fora pelo mesmo motivo de sempre, é id de linha; a
+  citação viaja pela cópia (`resposta_corpo` e `resposta_remetente`).
+
+  `editada_em` entra: o cliente vê "editada" na própria mensagem, como no
+  WhatsApp. `corpo_original` NÃO entra, é registro para a equipe.
+*/
+const SELECT_MENSAGEM = 'id, direcao, origem, corpo, created_at, editada_em, resposta_corpo, resposta_remetente'
+
+/** Quanto tempo o cliente tem para mexer no que mandou. Mesmos prazos do WhatsApp. */
+const JANELA_APAGAR_MIN = 60
+const JANELA_EDITAR_MIN = 15
+
+// Mesma disciplina do select acima. `public_id` fica de fora: é o identificador
+// interno no Cloudinary, serve para apagar do nosso lado e não diz nada ao
+// cliente, que só precisa da URL para ver o arquivo.
+const SELECT_ANEXO = 'id, mensagem_id, url, nome_arquivo, tipo_mime, tamanho_bytes'
 
 /*
   Textos deste canal, editáveis na aba "Canal web" de Configurações do bot
@@ -406,7 +429,21 @@ async function rotaConversa(sb: ClienteServico, req: Request): Promise<Response>
     .from('atendimento_mensagens')
     .select(SELECT_MENSAGEM)
     .eq('atendimento_id', sessao.atendimento_id)
+    // Apagada some para o cliente. Filtrar aqui, e não na tela, é o que garante
+    // que o texto nem chega ao navegador dele.
+    .eq('excluida', false)
     .order('created_at')
+
+  /*
+    Anexos em consulta separada, não aninhada no select acima. Aninhar
+    obrigaria a montar a string do `select` com a lista de campos do anexo
+    dentro da das mensagens, e a guarda que fecha `SELECT_MENSAGEM` deixaria de
+    conseguir lê-la. Duas listas explícitas valem mais que uma string composta.
+  */
+  const idsMensagem = (mensagens ?? []).map((m) => m.id)
+  const { data: anexos } = idsMensagem.length
+    ? await sb.from('atendimento_anexos').select(SELECT_ANEXO).in('mensagem_id', idsMensagem).order('created_at')
+    : { data: [] }
 
   return respostaJsonWeb(req, {
     protocolo: chamado.protocolo,
@@ -418,24 +455,26 @@ async function rotaConversa(sb: ClienteServico, req: Request): Promise<Response>
     atendente: primeiroNome(chamado.responsavel?.nome),
     aguardando_avaliacao: Boolean(chamado.avaliacao_solicitada_em) && chamado.avaliacao === null,
     mensagens: mensagens ?? [],
+    anexos: anexos ?? [],
   })
 }
 
-async function rotaMensagem(sb: ClienteServico, req: Request, corpo: Record<string, unknown>) {
-  const sessao = await exigirSessao(sb, req)
-  const texto = validarMensagem(corpo.mensagem)
-  const clientMsgId = validarClientMsgId(corpo.client_msg_id)
-
-  await conferirLimite(sb, `sess:${sessao.id}`, 'mensagemPorSessao')
-  await registrarTentativa(sb, `sess:${sessao.id}`, 'mensagemPorSessao')
-
+/**
+ * Garante que o chamado aceita mensagem nova, reabrindo dentro da janela.
+ *
+ * Extraído porque texto e anexo passam pela mesma regra: se cada rota tivesse a
+ * sua cópia, a próxima mudança de prazo acertaria uma e esqueceria a outra, e o
+ * cliente descobriria mandando um print que "não pode" logo depois de mandar um
+ * texto que pôde.
+ */
+async function garantirChamadoAberto(sb: ClienteServico, atendimentoId: string) {
   const cfg = await carregarConfig(sb)
   const janelaH = Number(cfg.janela_reabertura_horas ?? 3)
 
   const { data: chamado } = await sb
     .from('atendimentos')
     .select('id, status, finalizado_em')
-    .eq('id', sessao.atendimento_id)
+    .eq('id', atendimentoId)
     .maybeSingle()
   if (!chamado) throw new ErroContrato('sessao_invalida', 401)
 
@@ -449,6 +488,179 @@ async function rotaMensagem(sb: ClienteServico, req: Request, corpo: Record<stri
       .update({ status: 'na_fila', responsavel_id: null, etapa_bot: null })
       .eq('id', chamado.id)
   }
+}
+
+/**
+ * Anexo do cliente. Recebe o arquivo em `multipart/form-data`, confere, sobe ao
+ * Cloudinary pelo servidor (ver `_shared/web/anexo.ts`) e grava a mensagem com
+ * o anexo junto.
+ *
+ * Mensagem e anexo na mesma chamada de propósito: em duas chamadas, a queda de
+ * rede entre elas deixaria a conversa com "segue o print" e print nenhum.
+ */
+async function rotaAnexo(sb: ClienteServico, req: Request) {
+  const sessao = await exigirSessao(sb, req)
+
+  await conferirLimite(sb, `sess:${sessao.id}`, 'mensagemPorSessao')
+  await registrarTentativa(sb, `sess:${sessao.id}`, 'mensagemPorSessao')
+
+  let form: FormData
+  try {
+    form = await req.formData()
+  } catch {
+    throw new ErroContrato('requisicao_invalida', 400)
+  }
+
+  const arquivo = form.get('arquivo')
+  if (!(arquivo instanceof File)) throw new ErroContrato('requisicao_invalida', 400)
+  if (arquivo.size === 0 || arquivo.size > MAX_ANEXO_BYTES) throw new ErroContrato('arquivo_grande', 413)
+  if (!tipoAceito(arquivo.type)) throw new ErroContrato('arquivo_tipo', 415)
+
+  const legenda = form.get('mensagem')
+  const texto = typeof legenda === 'string' && legenda.trim() ? legenda.trim().slice(0, 2000) : null
+
+  await garantirChamadoAberto(sb, sessao.atendimento_id)
+
+  // O upload vem antes do insert: com o insert primeiro, uma falha no
+  // Cloudinary deixaria na conversa uma mensagem que promete um arquivo
+  // inexistente. Na ordem inversa o pior caso é um arquivo órfão lá, que não
+  // aparece para ninguém.
+  const enviado = await subirParaCloudinary(arquivo)
+
+  const { data: msg, error } = await sb
+    .from('atendimento_mensagens')
+    .insert({
+      atendimento_id: sessao.atendimento_id,
+      direcao: 'entrada',
+      origem: 'cliente',
+      corpo: texto,
+    })
+    .select('id')
+    .single()
+  if (error) throw error
+
+  const { error: errAnexo } = await sb.from('atendimento_anexos').insert({
+    mensagem_id: msg.id,
+    public_id: enviado.public_id,
+    url: enviado.url,
+    nome_arquivo: enviado.nome_arquivo,
+    tipo_mime: enviado.tipo_mime,
+    tamanho_bytes: enviado.tamanho_bytes,
+  })
+  if (errAnexo) throw errAnexo
+
+  await sb
+    .from('atendimentos')
+    .update({ ultima_mensagem_em: agora().toISOString() })
+    .eq('id', sessao.atendimento_id)
+
+  return respostaJsonWeb(req, { ok: true })
+}
+
+/**
+ * Localiza uma mensagem do PRÓPRIO cliente, dentro do prazo.
+ *
+ * Três conferências, e nenhuma é dispensável:
+ *
+ * - a mensagem pertence ao chamado **desta sessão**, senão o id vindo do corpo
+ *   viraria uma forma de mexer na conversa alheia;
+ * - a origem é `cliente`, senão ele apagaria a resposta do atendente;
+ * - está dentro da janela, senão daria para limpar um relato de semanas atrás
+ *   depois de o atendimento inteiro ter acontecido em cima dele.
+ */
+async function mensagemDoCliente(
+  sb: ClienteServico,
+  sessao: { id: string; atendimento_id: string },
+  idBruto: unknown,
+  janelaMin: number
+) {
+  if (typeof idBruto !== 'string' || !/^[0-9a-f-]{36}$/i.test(idBruto)) {
+    throw new ErroContrato('requisicao_invalida', 400)
+  }
+
+  const { data: msg } = await sb
+    .from('atendimento_mensagens')
+    .select('id, origem, corpo, created_at, excluida')
+    .eq('id', idBruto)
+    .eq('atendimento_id', sessao.atendimento_id)
+    .maybeSingle()
+
+  if (!msg || msg.origem !== 'cliente' || msg.excluida) throw new ErroContrato('mensagem_indisponivel', 404)
+
+  const idade = agora().getTime() - new Date(msg.created_at).getTime()
+  if (idade > janelaMin * 60_000) throw new ErroContrato('prazo_encerrado', 409)
+
+  return msg
+}
+
+/**
+ * Cliente apaga a própria mensagem.
+ *
+ * Ela some da tela dele e **continua** na da equipe, com o corpo, marcada. Não
+ * é meio-termo: é o que permite ao atendente saber que houve mensagem e o que
+ * ela dizia, num histórico que é prova do atendimento por cinco anos. Apagar de
+ * verdade transformaria o apagar numa forma de reescrever o relato depois de o
+ * trabalho ter começado em cima dele.
+ */
+async function rotaApagarMensagem(sb: ClienteServico, req: Request, corpo: Record<string, unknown>) {
+  const sessao = await exigirSessao(sb, req)
+  const msg = await mensagemDoCliente(sb, sessao, corpo.mensagem_id, JANELA_APAGAR_MIN)
+
+  const { error } = await sb
+    .from('atendimento_mensagens')
+    .update({ excluida: true, excluida_por: 'cliente', excluida_em: agora().toISOString() })
+    .eq('id', msg.id)
+  if (error) throw error
+
+  return respostaJsonWeb(req, { ok: true })
+}
+
+/**
+ * Cliente edita a própria mensagem.
+ *
+ * O texto novo vai para `corpo` e o primeiro fica em `corpo_original`, que só a
+ * equipe vê. Sem guardar o original, editar seria um jeito silencioso de trocar
+ * o que está no histórico, com o mesmo efeito que o apagar sem registro teria.
+ */
+async function rotaEditarMensagem(sb: ClienteServico, req: Request, corpo: Record<string, unknown>) {
+  const sessao = await exigirSessao(sb, req)
+  const texto = validarMensagem(corpo.mensagem)
+  const msg = await mensagemDoCliente(sb, sessao, corpo.mensagem_id, JANELA_EDITAR_MIN)
+
+  const { error } = await sb
+    .from('atendimento_mensagens')
+    .update({
+      corpo: texto,
+      // Só na primeira edição: editar duas vezes não pode apagar o texto que
+      // saiu do teclado da pessoa da primeira vez.
+      corpo_original: msg.corpo,
+      editada_em: agora().toISOString(),
+    })
+    .eq('id', msg.id)
+    .is('corpo_original', null)
+  if (error) throw error
+
+  // Segunda edição em diante: o original já está guardado, então só o texto
+  // atual e o carimbo mudam.
+  const { error: err2 } = await sb
+    .from('atendimento_mensagens')
+    .update({ corpo: texto, editada_em: agora().toISOString() })
+    .eq('id', msg.id)
+    .not('corpo_original', 'is', null)
+  if (err2) throw err2
+
+  return respostaJsonWeb(req, { ok: true })
+}
+
+async function rotaMensagem(sb: ClienteServico, req: Request, corpo: Record<string, unknown>) {
+  const sessao = await exigirSessao(sb, req)
+  const texto = validarMensagem(corpo.mensagem)
+  const clientMsgId = validarClientMsgId(corpo.client_msg_id)
+
+  await conferirLimite(sb, `sess:${sessao.id}`, 'mensagemPorSessao')
+  await registrarTentativa(sb, `sess:${sessao.id}`, 'mensagemPorSessao')
+
+  await garantirChamadoAberto(sb, sessao.atendimento_id)
 
   const { error } = await sb.from('atendimento_mensagens').insert({
     atendimento_id: sessao.atendimento_id,
@@ -523,6 +735,18 @@ Deno.serve(async (req: Request) => {
   try {
     if (req.method !== 'POST') throw new ErroContrato('requisicao_invalida', 405)
 
+    // Roteia por path, e não por campo `acao` no corpo, para o log do Supabase
+    // separar as chamadas por rota.
+    const rota = new URL(req.url).pathname.split('/').filter(Boolean).pop()
+
+    /*
+      O anexo sai antes de tudo porque o corpo dele é `multipart/form-data` com
+      um arquivo binário dentro. Lê-lo como texto aqui gastaria memória à toa e,
+      pior, consumiria o stream: o `req.formData()` lá dentro receberia um corpo
+      já vazio. O teto de tamanho dele é conferido na própria rota.
+    */
+    if (rota === 'anexo') return await rotaAnexo(criarClienteServico(), req)
+
     // Teto pelo corpo lido de fato, não pelo content-length, que o cliente informa.
     const bruto = await req.text()
     if (bruto.length > MAX_CORPO_BYTES) throw new ErroContrato('requisicao_invalida', 413)
@@ -537,9 +761,6 @@ Deno.serve(async (req: Request) => {
     }
 
     const sb = criarClienteServico()
-    // Roteia por path, e não por campo `acao` no corpo, para o log do Supabase
-    // separar as chamadas por rota.
-    const rota = new URL(req.url).pathname.split('/').filter(Boolean).pop()
 
     switch (rota) {
       case 'disponibilidade':
@@ -554,6 +775,10 @@ Deno.serve(async (req: Request) => {
         return await rotaEncerrar(sb, req)
       case 'avaliar':
         return await rotaAvaliar(sb, req, corpo)
+      case 'apagar-mensagem':
+        return await rotaApagarMensagem(sb, req, corpo)
+      case 'editar-mensagem':
+        return await rotaEditarMensagem(sb, req, corpo)
       default:
         throw new ErroContrato('rota_desconhecida', 404)
     }

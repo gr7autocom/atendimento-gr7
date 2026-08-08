@@ -128,9 +128,47 @@ try {
     `roteiro=${roteiro}`)
   ok('setor invalido recusado', (await chamar('identificar', { ...base, departamento_id: '00000000-0000-0000-0000-000000000000' })).json?.erro === 'departamento_invalido')
 
-  const campos = new Set((conv1.json?.mensagens ?? []).flatMap((m) => Object.keys(m)))
-  const proibidos = ['remetente_usuario_id', 'wa_message_id', 'canal', 'client_msg_id', 'atendimento_id']
-  ok('mensagem nao vaza campo interno', !proibidos.some((c) => campos.has(c)), `campos=${[...campos]}`)
+  /*
+    Vazamento: lista FECHADA, não lista de proibidos.
+
+    Antes aqui havia um `proibidos` com cinco nomes conhecidos. O problema é que
+    ela nunca pega o caso real, que é alguém acrescentar um campo novo achando
+    que é inofensivo: o nome dele não estaria na lista, e o teste passaria verde
+    enquanto o dado sai. Agora qualquer chave que não esteja explicitamente
+    liberada derruba a verificação.
+
+    Vale para a resposta inteira, e não só para as mensagens: protocolo, status,
+    departamento e atendente também vêm daqui.
+  */
+  /*
+    `excluida` NAO esta aqui, e a ausencia e o ponto: a mensagem apagada some
+    da tela do cliente porque e filtrada na consulta, nao porque o campo chega
+    e a tela decide esconde-la. `corpo_original` (o texto antes de uma edicao)
+    tambem fica fora: e registro para a equipe.
+  */
+  const PERMITIDO_MENSAGEM = [
+    'id', 'direcao', 'origem', 'corpo', 'created_at',
+    'editada_em', 'resposta_corpo', 'resposta_remetente',
+  ]
+  const PERMITIDO_CONVERSA = [
+    'protocolo', 'status', 'encerrado', 'departamento', 'atendente', 'aguardando_avaliacao', 'mensagens', 'anexos',
+  ]
+  const PERMITIDO_ANEXO = ['id', 'mensagem_id', 'url', 'nome_arquivo', 'tipo_mime', 'tamanho_bytes']
+  const sobrando = (obj, permitido) => Object.keys(obj ?? {}).filter((k) => !permitido.includes(k))
+
+  const extrasConversa = sobrando(conv1.json, PERMITIDO_CONVERSA)
+  const extrasMensagem = [...new Set((conv1.json?.mensagens ?? []).flatMap((m) => sobrando(m, PERMITIDO_MENSAGEM)))]
+  const extrasAnexo = [...new Set((conv1.json?.anexos ?? []).flatMap((a) => sobrando(a, PERMITIDO_ANEXO)))]
+  ok('conversa devolve so os campos previstos, nada alem',
+    extrasConversa.length === 0 && extrasMensagem.length === 0 && extrasAnexo.length === 0,
+    `extras: conversa=[${extrasConversa}] mensagem=[${extrasMensagem}] anexo=[${extrasAnexo}]`)
+
+  // O atendente é identificado pelo primeiro nome. Sobrenome junto identifica a
+  // pessoa fora do trabalho, e o cliente não precisa disso para ser atendido.
+  const nomeAtendente = conv1.json?.atendente
+  ok('do atendente sai so o primeiro nome',
+    nomeAtendente === null || (typeof nomeAtendente === 'string' && !nomeAtendente.trim().includes(' ')),
+    `atendente=${JSON.stringify(nomeAtendente)}`)
 
   ok('conversa sem token e recusada', (await chamar('conversa', {})).status === 401)
   ok('token inventado e recusado', (await chamar('conversa', {}, 'a'.repeat(43))).status === 401)
@@ -178,6 +216,43 @@ try {
   await chamar('mensagem', { mensagem: 'voltei', client_msg_id: crypto.randomUUID() }, token)
   const { data: pos } = await sb.from('atendimentos').select('status, protocolo').eq('id', chamado.id).maybeSingle()
   ok('reabertura mantem o protocolo', pos?.status === 'na_fila' && pos?.protocolo === chamado.protocolo)
+
+  // ---- apagar e editar a propria mensagem
+  const convApagar = await chamar('conversa', {}, token)
+  const minha = (convApagar.json?.mensagens ?? []).find((m) => m.origem === 'cliente')
+  const doBot = (convApagar.json?.mensagens ?? []).find((m) => m.origem === 'bot')
+
+  ok('cliente edita a propria mensagem',
+    (await chamar('editar-mensagem', { mensagem_id: minha?.id, mensagem: 'texto corrigido' }, token)).status === 200)
+  const posEdicao = await chamar('conversa', {}, token)
+  const editada = (posEdicao.json?.mensagens ?? []).find((m) => m.id === minha?.id)
+  ok('texto novo na conversa e marca de editada',
+    editada?.corpo === 'texto corrigido' && !!editada?.editada_em, `corpo=${editada?.corpo}`)
+  ok('cliente NAO recebe o texto anterior', editada && !('corpo_original' in editada),
+    `campos=${Object.keys(editada ?? {})}`)
+
+  // O que a guarda promete: o id do corpo so alcanca a propria conversa.
+  ok('nao apaga mensagem do bot', (await chamar('apagar-mensagem', { mensagem_id: doBot?.id }, token)).json?.erro === 'mensagem_indisponivel')
+  ok('nao apaga mensagem de outro chamado',
+    (await chamar('apagar-mensagem', { mensagem_id: '00000000-0000-0000-0000-000000000000' }, token)).json?.erro === 'mensagem_indisponivel')
+  ok('id fora de formato recusado',
+    (await chamar('apagar-mensagem', { mensagem_id: 'nao-e-uuid' }, token)).json?.erro === 'requisicao_invalida')
+
+  ok('cliente apaga a propria mensagem', (await chamar('apagar-mensagem', { mensagem_id: minha?.id }, token)).status === 200)
+  const posApagar = await chamar('conversa', {}, token)
+  ok('apagada SOME para o cliente',
+    !(posApagar.json?.mensagens ?? []).some((m) => m.id === minha?.id),
+    `restaram=${(posApagar.json?.mensagens ?? []).length}`)
+
+  // E continua para a equipe, com o corpo: e o que a auditoria le depois.
+  const { data: naBase } = await sb
+    .from('atendimento_mensagens')
+    .select('corpo, excluida, excluida_por, corpo_original')
+    .eq('id', minha?.id ?? '00000000-0000-0000-0000-000000000000')
+  ok('equipe continua vendo o texto, marcado como apagado pelo cliente',
+    naBase?.[0]?.excluida === true && naBase[0].excluida_por === 'cliente' && naBase[0].corpo === 'texto corrigido',
+    JSON.stringify(naBase?.[0]))
+  ok('texto anterior a edicao ficou guardado', !!naBase?.[0]?.corpo_original, `original=${naBase?.[0]?.corpo_original}`)
 
   ok('rota desconhecida devolve 404 tipado', (await chamar('inventada', {})).status === 404)
 } catch (erro) {

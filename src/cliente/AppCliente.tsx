@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Identificacao, type DadosIdentificacao } from './Identificacao'
 import { ConversaCliente, type MensagemPendente } from './ConversaCliente'
 import { Carregando, Recado } from './Estados'
+import { avisar, tocarAvisoSonoro } from '../lib/notificacoes'
 import {
   api,
   erroDeCampo,
@@ -46,6 +47,9 @@ function conversaLocal(rascunho: Rascunho): Conversa {
     departamento: rascunho.setor?.nome ?? null,
     atendente: null,
     aguardando_avaliacao: false,
+    // Antes da primeira mensagem nada foi gravado, então não há anexo: só o
+    // bot falou até aqui.
+    anexos: [],
     mensagens: rascunho.falas.map((f, i) => ({
       id: `local-${i}`,
       direcao: f.origem === 'cliente' ? 'entrada' : 'saida',
@@ -59,6 +63,12 @@ function conversaLocal(rascunho: Rascunho): Conversa {
 export function AppCliente() {
   const [disponibilidade, setDisponibilidade] = useState<Disponibilidade | null>(null)
   const [conversa, setConversa] = useState<Conversa | null>(null)
+  /*
+    Cópia em ref para o `buscarConversa` comparar o antes e o depois. Ela é
+    `useCallback` com dependências fixas: lendo o estado direto, veria sempre a
+    conversa do primeiro render e acharia que tudo é mensagem nova.
+  */
+  const conversaRef = useRef<Conversa | null>(null)
   const [token, setToken] = useState<string | null>(() => lerSessao()?.token ?? null)
   const [carregando, setCarregando] = useState(true)
   const [enviando, setEnviando] = useState(false)
@@ -90,7 +100,38 @@ export function AppCliente() {
     const t = tokenRef.current
     if (!t) return
     try {
-      setConversa(await api.conversa(t))
+      const nova = await api.conversa(t)
+      /*
+        Aviso de resposta do atendente.
+
+        Compara com o que já estava na tela: se apareceu mensagem que não é do
+        próprio cliente, é resposta chegando. Sem a comparação, cada volta do
+        polling (de 10 em 10 segundos) tocaria o som de novo.
+
+        Só o que veio de fora conta. A mensagem que o próprio cliente acabou de
+        mandar também aumenta a lista, e avisar a pessoa sobre o que ela mesma
+        escreveu seria ruído puro.
+      */
+      const antes = conversaRef.current
+      if (antes) {
+        const conhecidas = new Set(antes.mensagens.map((m) => m.id))
+        const chegaram = nova.mensagens.filter((m) => !conhecidas.has(m.id) && m.origem !== 'cliente')
+        if (chegaram.length > 0) {
+          tocarAvisoSonoro()
+          // Card do sistema só com a aba escondida: com o app à frente, a
+          // mensagem já apareceu na conversa.
+          if (document.visibilityState !== 'visible') {
+            avisar({
+              titulo: 'GR7 Atendimento',
+              corpo: chegaram[chegaram.length - 1].corpo ?? 'Você recebeu um arquivo.',
+              url: '/',
+              tag: 'resposta-atendimento',
+            })
+          }
+        }
+      }
+      conversaRef.current = nova
+      setConversa(nova)
     } catch (erro) {
       // Só a morte da sessão derruba o cliente para o formulário. Falha de rede
       // mantém a conversa na tela: ele volta do elevador e continua de onde parou.
@@ -285,6 +326,67 @@ export function AppCliente() {
     FICA na tela marcada como não enviada, com "tentar de novo": sumir em
     silêncio faria o cliente achar que pediu socorro.
   */
+  /**
+   * Manda um anexo. Devolve o texto do erro, ou `null` se deu certo.
+   *
+   * Sem envio otimista, ao contrário do texto: a bolha de texto aparece na hora
+   * porque o conteúdo já está na tela e é barato repetir. Aqui o arquivo ainda
+   * precisa viajar, e desenhar uma miniatura que talvez não exista no servidor
+   * seria a promessa exata que este canal evita fazer. O botão gira enquanto
+   * sobe e a conversa recarrega quando termina.
+   */
+  async function enviarArquivo(arquivo: File): Promise<string | null> {
+    const t = tokenRef.current
+    if (!t) return 'Sua conversa não está mais disponível neste aparelho.'
+    try {
+      await api.anexo(t, arquivo)
+      await buscarConversa()
+      return null
+    } catch (erro) {
+      if (sessaoMorreu(erro)) {
+        // Mesmo caminho do polling: derruba para o formulário com o motivo, em
+        // vez de deixar o cliente insistindo num token que já morreu.
+        limparSessao()
+        setToken(null)
+        tokenRef.current = null
+        setRecado(mensagemDeErro(erro))
+        return null
+      }
+      return mensagemDeErro(erro)
+    }
+  }
+
+  /**
+   * Apagar e editar a própria mensagem. Devolvem o texto do erro, ou `null`.
+   *
+   * A conversa é recarregada no sucesso em vez de a tela ajustar sozinha: o
+   * servidor é quem sabe se o prazo valia, e mexer na lista local antes da
+   * resposta mostraria uma mensagem sumindo que continua lá.
+   */
+  async function apagarMensagem(id: string): Promise<string | null> {
+    const t = tokenRef.current
+    if (!t) return 'Sua conversa não está mais disponível neste aparelho.'
+    try {
+      await api.apagarMensagem(t, id)
+      await buscarConversa()
+      return null
+    } catch (erro) {
+      return mensagemDeErro(erro)
+    }
+  }
+
+  async function editarMensagem(id: string, texto: string): Promise<string | null> {
+    const t = tokenRef.current
+    if (!t) return 'Sua conversa não está mais disponível neste aparelho.'
+    try {
+      await api.editarMensagem(t, id, texto)
+      await buscarConversa()
+      return null
+    } catch (erro) {
+      return mensagemDeErro(erro)
+    }
+  }
+
   async function enviarMensagem(texto: string, idExistente?: string) {
     const t = tokenRef.current
     if (!t) return
@@ -357,6 +459,15 @@ export function AppCliente() {
         recado={recado}
         aoDispensarRecado={() => setRecado(null)}
         aoEnviar={abrirChamado}
+        /*
+          Antes do chamado existir não há onde pendurar o anexo: contato,
+          protocolo e token nascem juntos com a primeira mensagem. Em vez de
+          esconder o botão (que sumiria e voltaria sem explicação), ele recusa
+          dizendo o que fazer.
+        */
+        aoEnviarArquivo={async () =>
+          'Descreva o problema primeiro. Depois disso você pode anexar arquivos.'
+        }
         aoEscolherSetor={escolherSetor}
         aoReenviar={() => {}}
         aoEncerrar={() => setRascunho(null)}
@@ -376,6 +487,9 @@ export function AppCliente() {
         recado={recado}
         aoDispensarRecado={() => setRecado(null)}
         aoEnviar={(texto) => enviarMensagem(texto)}
+        aoEnviarArquivo={enviarArquivo}
+        aoApagarMensagem={apagarMensagem}
+        aoEditarMensagem={editarMensagem}
         aoEscolherSetor={() => {}}
         aoReenviar={(p) => enviarMensagem(p.corpo, p.client_msg_id)}
         aoEncerrar={encerrar}

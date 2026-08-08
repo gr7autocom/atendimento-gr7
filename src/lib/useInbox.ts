@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from './supabase'
 import type { Canal } from './canal'
+import type { ArquivoEnviado } from './cloudinary'
 
 export type EmpresaResumo = { id: string; razao_social: string | null; nome_fantasia: string | null }
 
@@ -53,6 +54,25 @@ export type Mensagem = {
   corpo: string | null
   created_at: string
   remetente_usuario_id: string | null
+  /*
+    Citação com cópia (migration 20260808120000). O trecho e o autor são
+    gravados no momento da citação, não lidos por join: assim a citação
+    continua legível depois de a mensagem original ser apagada.
+  */
+  resposta_id: string | null
+  resposta_corpo: string | null
+  resposta_remetente: string | null
+  /*
+    Apagamento é lógico, e assimétrico: some para o cliente, continua aqui
+    **com o corpo à mostra**, marcado. Quem manda na empresa lê a conversa
+    depois e precisa ver o que foi enviado, não só que algo foi apagado.
+  */
+  excluida: boolean
+  excluida_por: 'atendente' | 'cliente' | null
+  excluida_em: string | null
+  /** Texto como foi enviado, quando o cliente editou depois. */
+  corpo_original: string | null
+  editada_em: string | null
 }
 
 const SELECT_ATENDIMENTO =
@@ -231,6 +251,58 @@ export function useEventos(atendimentoId: string | null) {
         .order('created_at')
       if (error) throw error
       return (data ?? []) as unknown as EventoAtendimento[]
+    },
+    refetchInterval: 10000,
+  })
+}
+
+export type Anexo = {
+  id: string
+  mensagem_id: string
+  public_id: string
+  url: string
+  nome_arquivo: string | null
+  tipo_mime: string | null
+  tamanho_bytes: number | null
+  created_at: string
+}
+
+/**
+ * Anexos do chamado, agrupados por mensagem.
+ *
+ * Consulta separada, e não `select` aninhado dentro das mensagens: a maioria
+ * dos chamados não tem anexo nenhum, e o join encareceria toda conversa por
+ * causa da minoria. A tabela é filtrada pelo mesmo predicado das mensagens na
+ * RLS, então o que volta aqui é o que o atendente já pode ver.
+ */
+export function useAnexos(atendimentoId: string | null) {
+  return useQuery({
+    queryKey: ['atendimento_anexos', atendimentoId],
+    enabled: !!atendimentoId,
+    queryFn: async () => {
+      const { data: msgs, error: errMsg } = await supabase
+        .from('atendimento_mensagens')
+        .select('id')
+        .eq('atendimento_id', atendimentoId as string)
+      if (errMsg) throw errMsg
+
+      const ids = (msgs ?? []).map((m) => (m as { id: string }).id)
+      if (ids.length === 0) return new Map<string, Anexo[]>()
+
+      const { data, error } = await supabase
+        .from('atendimento_anexos')
+        .select('id, mensagem_id, public_id, url, nome_arquivo, tipo_mime, tamanho_bytes, created_at')
+        .in('mensagem_id', ids)
+        .order('created_at')
+      if (error) throw error
+
+      const porMensagem = new Map<string, Anexo[]>()
+      for (const a of (data ?? []) as unknown as Anexo[]) {
+        const lista = porMensagem.get(a.mensagem_id) ?? []
+        lista.push(a)
+        porMensagem.set(a.mensagem_id, lista)
+      }
+      return porMensagem
     },
     refetchInterval: 10000,
   })
@@ -593,6 +665,7 @@ export function useAcoesAtendimento() {
     qc.invalidateQueries({ queryKey: ['atendimentos'] })
     qc.invalidateQueries({ queryKey: ['atendimento_mensagens'] })
     qc.invalidateQueries({ queryKey: ['atendimento_eventos'] })
+    qc.invalidateQueries({ queryKey: ['atendimento_anexos'] })
     // O histórico e os contadores do painel leem os atendimentos do contato:
     // assumir, transferir e finalizar mudam status e dono, e sem isto a seção
     // Histórico só acerta depois de recarregar a página.
@@ -621,21 +694,62 @@ export function useAcoesAtendimento() {
       corpo,
       usuarioId,
       precisaAssumir,
+      anexos,
+      resposta,
     }: {
       atendimentoId: string
       corpo: string
       usuarioId: string
       precisaAssumir: boolean
+      /** Já enviados ao Cloudinary pela tela; aqui só se grava o vínculo. */
+      anexos?: ArquivoEnviado[]
+      /** Mensagem citada, com o trecho copiado no momento da citação. */
+      resposta?: { id: string; corpo: string; remetente: string } | null
     }) => {
-      const { error } = await supabase.from('atendimento_mensagens').insert({
-        atendimento_id: atendimentoId,
-        direcao: 'saida',
-        origem: 'atendente',
-        corpo,
-        remetente_usuario_id: usuarioId,
-        status: 'enviado',
-      } as never)
+      /*
+        `.select('id')` e não insert cego: o anexo é filho da mensagem
+        (`atendimento_anexos.mensagem_id`), então sem o id de volta não há
+        como vincular. Uma segunda consulta "pela última mensagem" acertaria
+        errado com dois atendentes respondendo ao mesmo tempo.
+      */
+      const { data: msg, error } = await supabase
+        .from('atendimento_mensagens')
+        .insert({
+          atendimento_id: atendimentoId,
+          direcao: 'saida',
+          origem: 'atendente',
+          corpo,
+          remetente_usuario_id: usuarioId,
+          status: 'enviado',
+          resposta_id: resposta?.id ?? null,
+          // Recorte, não a mensagem inteira: a citação serve para reconhecer o
+          // que foi respondido, e um parágrafo longo citado empurraria a
+          // resposta para fora da tela.
+          resposta_corpo: resposta ? resposta.corpo.slice(0, 200) : null,
+          resposta_remetente: resposta?.remetente ?? null,
+        } as never)
+        .select('id')
+        .single()
       if (error) throw error
+
+      if (anexos?.length) {
+        const { error: errAnexo } = await supabase.from('atendimento_anexos').insert(
+          anexos.map((a) => ({
+            mensagem_id: (msg as { id: string }).id,
+            public_id: a.public_id,
+            url: a.url,
+            nome_arquivo: a.nome_arquivo,
+            tipo_mime: a.tipo_mime,
+            tamanho_bytes: a.tamanho_bytes,
+          })) as never
+        )
+        /*
+          O arquivo já está no Cloudinary quando isto falha, então a mensagem
+          existiria sem o anexo que a explica ("segue em anexo" e nada). Falhar
+          alto faz a tela mostrar o erro; o órfão no Cloudinary é o custo menor.
+        */
+        if (errAnexo) throw errAnexo
+      }
 
       const patch: Record<string, unknown> = { ultima_mensagem_em: new Date().toISOString() }
       if (precisaAssumir) {
@@ -645,6 +759,38 @@ export function useAcoesAtendimento() {
       }
       const { error: err2 } = await supabase.from('atendimentos').update(patch as never).eq('id', atendimentoId)
       if (err2) throw err2
+    },
+    onSuccess: invalidar,
+  })
+
+  /**
+   * Apagar mensagem. Marca, nunca remove.
+   *
+   * A conversa é prova do atendimento e fica cinco anos por causa do CDC, então
+   * um DELETE destruiria o que a retenção existe para guardar.
+   *
+   * O efeito é **assimétrico**, e é o ponto do recurso: a mensagem some da tela
+   * do cliente e continua na da equipe, em tom apagado e com o corpo à mostra.
+   * Quem manda na empresa lê a conversa depois e precisa ver o que foi enviado
+   * antes de ser apagado; "Mensagem apagada" sem o corpo esconderia justamente
+   * o que a auditoria procura. Quem faz a mensagem sumir do lado do cliente é a
+   * Edge Function, que não devolve o que está marcado como excluído.
+   *
+   * Quem pode é decidido no banco (policy `atendimento_mensagens_update_apagar`
+   * mais o GRANT por coluna): só o autor ou admin, e só a coluna `excluida`. A
+   * tela apenas não oferece o que o banco recusaria.
+   */
+  const apagarMensagem = useMutation({
+    mutationFn: async ({ id }: { id: string }) => {
+      const { error } = await supabase
+        .from('atendimento_mensagens')
+        .update({
+          excluida: true,
+          excluida_por: 'atendente',
+          excluida_em: new Date().toISOString(),
+        } as never)
+        .eq('id', id)
+      if (error) throw error
     },
     onSuccess: invalidar,
   })
@@ -694,5 +840,5 @@ export function useAcoesAtendimento() {
     onSuccess: invalidar,
   })
 
-  return { assumir, responder, finalizar, transferir }
+  return { assumir, responder, apagarMensagem, finalizar, transferir }
 }

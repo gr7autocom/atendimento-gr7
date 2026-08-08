@@ -27,6 +27,14 @@ export type CodigoErro =
   | 'sessao_encerrada'
   | 'avaliacao_indisponivel'
   | 'encerramento_indisponivel'
+  // Anexo: dois códigos separados porque a saída do cliente é diferente em cada
+  // caso. Arquivo grande ele resolve mandando outro menor; tipo recusado, não.
+  | 'arquivo_grande'
+  | 'arquivo_tipo'
+  // Apagar e editar a própria mensagem: separados porque a saída é diferente.
+  // Prazo vencido é definitivo; mensagem indisponível costuma ser tela velha.
+  | 'mensagem_indisponivel'
+  | 'prazo_encerrado'
   | 'erro_interno'
 
 export class ErroContrato extends Error {

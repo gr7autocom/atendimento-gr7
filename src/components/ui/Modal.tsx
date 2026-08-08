@@ -1,21 +1,36 @@
 import { useEffect, useRef, type ReactNode } from 'react'
 import { X } from 'lucide-react'
 import { Botao } from './Botao'
+import { cn } from '../../lib/utils'
 
 const FOCAVEIS =
   'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
 /** Mesma API do antigo AdminModal, para trocar sem refatorar as telas. */
+/*
+  Larguras por papel, não por gosto. `padrao` cobre formulário e confirmação,
+  que é a esmagadora maioria. `ampla` existe para conteúdo que perde sentido
+  espremido: a visualização de um anexo, onde o ponto é justamente enxergar o
+  arquivo. Acrescentar um terceiro valor pede o mesmo critério: um papel novo,
+  não uma tela que quis um pouco mais de espaço.
+*/
+const LARGURAS = {
+  padrao: 'max-w-md',
+  ampla: 'max-w-4xl',
+} as const
+
 export function Modal({
   titulo,
   aberto,
   onFechar,
   children,
+  largura = 'padrao',
 }: {
   titulo: string
   aberto: boolean
   onFechar: () => void
   children: ReactNode
+  largura?: keyof typeof LARGURAS
 }) {
   const caixa = useRef<HTMLDivElement>(null)
 
@@ -77,7 +92,7 @@ export function Modal({
         tabIndex={-1}
         onKeyDown={aoTeclar}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md rounded-2 bg-sf-3 border border-bd-2 shadow-2"
+        className={cn('w-full rounded-2 bg-sf-3 border border-bd-2 shadow-2', LARGURAS[largura])}
       >
         <div className="flex items-center justify-between px-4 h-12 border-b border-bd-1">
           <h2 className="text-corpo-lg font-semibold text-tx-1">{titulo}</h2>

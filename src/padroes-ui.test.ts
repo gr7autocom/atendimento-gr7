@@ -150,4 +150,45 @@ describe('padrões de UI (docs/design.md)', () => {
     const achados = procurar(/Loader2/, (arquivo) => arquivo === 'components/ui/Botao.tsx')
     expect(relatar(achados, 'Use a prop carregando do Botao, que também marca aria-busy e trava o clique.')).toBe('')
   })
+
+  /*
+    As duas regras abaixo valem só para `src/cliente/`, o app do cliente. Elas
+    estavam escritas em docs/canal-web.md desde o desenho do canal e nunca foram
+    verificadas por nada — e este projeto já tem o caso de 2026-08-06, em que as
+    regras da Edge Function estavam no comentário e só viraram teste depois.
+  */
+  it('o app do cliente não embarca o Supabase nem o login', () => {
+    const achados = procurar(/@supabase|lib\/supabase|lib\/auth/, (arquivo) => !arquivo.startsWith('cliente/'))
+    expect(
+      relatar(
+        achados,
+        'src/cliente/ fala com o servidor só pela Edge Function, por fetch (cliente/api.ts). ' +
+          'Importar o supabase-js aqui embarcaria a chave anônima num app que qualquer pessoa abre sem login.'
+      )
+    ).toBe('')
+  })
+
+  it('o app do cliente não sobe arquivo direto para o Cloudinary', () => {
+    const achados = procurar(/lib\/cloudinary/, (arquivo) => !arquivo.startsWith('cliente/'))
+    expect(
+      relatar(
+        achados,
+        'lib/cloudinary.ts manda o arquivo do navegador com um preset ABERTO. Na central tudo bem, ' +
+          'quem abre é funcionário logado. No app do cliente o navegador é de qualquer pessoa da ' +
+          'internet, e o preset exposto vira porta para encher a conta de lixo. Lá o upload passa ' +
+          'pela Edge Function (rota /anexo).'
+      )
+    ).toBe('')
+  })
+
+  it('o app do cliente não injeta HTML', () => {
+    const achados = procurar(/dangerouslySetInnerHTML/, (arquivo) => !arquivo.startsWith('cliente/'))
+    expect(
+      relatar(
+        achados,
+        'Renderize como texto. O token de sessão do cliente fica no localStorage, ' +
+          'então XSS aqui não é teórico: é a conversa de outra pessoa.'
+      )
+    ).toBe('')
+  })
 })

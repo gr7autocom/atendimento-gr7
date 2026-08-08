@@ -1,9 +1,13 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
-import { Send, WifiOff, CheckCircle2, LogOut, Copy, Check, RotateCw, AlertCircle } from 'lucide-react'
+import { Send, WifiOff, CheckCircle2, LogOut, Copy, Check, RotateCw, AlertCircle, Paperclip, Bell, Pencil, Trash2 } from 'lucide-react'
 import { Botao } from '../components/ui/Botao'
-import { ModalConfirmar } from '../components/ui/Modal'
+import { Modal, ModalConfirmar } from '../components/ui/Modal'
+import { ListaAnexos } from '../components/ui/Anexo'
+import { GravadorAudio, BotaoGravar } from '../components/ui/GravadorAudio'
+import { MenuContexto } from '../components/ui/MenuContexto'
+import { estadoDaPermissao, pedirPermissao, type EstadoPermissao } from '../lib/notificacoes'
 import { cn } from '../lib/utils'
-import type { Conversa, DepartamentoWeb, MensagemWeb } from './api'
+import type { AnexoWeb, Conversa, DepartamentoWeb, MensagemWeb } from './api'
 
 /**
  * Segunda tela do cliente: a conversa em si.
@@ -29,25 +33,79 @@ function hora(iso: string) {
   return new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
 }
 
-function Bolha({ mensagem, nomeAtendente }: { mensagem: MensagemWeb; nomeAtendente: string | null }) {
+function Bolha({
+  mensagem,
+  nomeAtendente,
+  anexos = [],
+  aoAbrirAcoes,
+}: {
+  mensagem: MensagemWeb
+  nomeAtendente: string | null
+  anexos?: AnexoWeb[]
+  aoAbrirAcoes?: (e: { x: number; y: number }, m: MensagemWeb) => void
+}) {
   const minha = mensagem.origem === 'cliente'
   // O bot se identifica, o atendente tem nome. Sem isso o cliente responde à
   // saudação automática achando que já tem gente do outro lado.
   const autor = minha ? null : mensagem.origem === 'bot' ? 'Atendimento GR7' : nomeAtendente ?? 'Atendimento GR7'
+  const soAnexo = anexos.length > 0 && !mensagem.corpo
   return (
     <div className={cn('flex flex-col gap-1', minha ? 'items-end' : 'items-start')}>
       {autor && <span className="text-mini text-tx-3 px-1">{autor}</span>}
       <div
+        /*
+          Botão direito no computador e toque longo no celular abrem as mesmas
+          ações. `onContextMenu` cobre os dois: no celular o navegador dispara
+          esse evento no toque longo, então não é preciso montar cronômetro de
+          pressão nem disputar com a seleção de texto do sistema.
+        */
+        onContextMenu={
+          aoAbrirAcoes && minha
+            ? (e) => {
+                e.preventDefault()
+                aoAbrirAcoes({ x: e.clientX, y: e.clientY }, mensagem)
+              }
+            : undefined
+        }
         className={cn(
-          'max-w-[85%] px-3.5 py-2.5 text-corpo-lg leading-relaxed whitespace-pre-wrap break-words',
-          minha
-            ? 'bg-br-1 text-white rounded-3 rounded-br-1'
-            : 'bg-sf-2 text-tx-1 rounded-3 rounded-bl-1'
+          'max-w-[85%] text-corpo-lg leading-relaxed break-words',
+          // Anexo sozinho dispensa o preenchimento colorido: a bolha viraria
+          // uma moldura grossa em volta da imagem, sem dizer nada.
+          soAnexo
+            ? 'p-1 bg-transparent'
+            : cn(
+                'px-3.5 py-2.5',
+                minha ? 'bg-br-1 text-white rounded-3 rounded-br-1' : 'bg-sf-2 text-tx-1 rounded-3 rounded-bl-1'
+              )
         )}
       >
-        {mensagem.corpo ?? ''}
+        {(
+          <>
+            {mensagem.resposta_corpo && (
+              <span
+                className={cn(
+                  'block mb-2 pl-2 py-0.5 border-l-2 rounded-r-micro',
+                  minha ? 'border-white/60 bg-black/15' : 'border-br-2 bg-sf-0/40'
+                )}
+              >
+                <span className={cn('block text-mini font-medium', minha ? 'text-white/90' : 'text-br-2')}>
+                  {mensagem.resposta_remetente ?? 'Mensagem'}
+                </span>
+                <span className={cn('block text-apoio line-clamp-2', minha ? 'text-white/75' : 'text-tx-2')}>
+                  {mensagem.resposta_corpo}
+                </span>
+              </span>
+            )}
+            <ListaAnexos anexos={anexos} className={mensagem.corpo ? 'mb-2' : undefined} />
+            {mensagem.corpo && <span className="whitespace-pre-wrap">{mensagem.corpo}</span>}
+          </>
+        )}
       </div>
-      <span className="text-mini text-tx-3 px-1">{hora(mensagem.created_at)}</span>
+      <span className="text-mini text-tx-3 px-1">
+        {hora(mensagem.created_at)}
+        {/* Como no WhatsApp: o cliente vê que aquela mensagem foi alterada. */}
+        {mensagem.editada_em ? ' · editada' : ''}
+      </span>
     </div>
   )
 }
@@ -203,6 +261,9 @@ export function ConversaCliente({
   recado,
   aoDispensarRecado,
   aoEnviar,
+  aoEnviarArquivo,
+  aoApagarMensagem,
+  aoEditarMensagem,
   aoEscolherSetor,
   aoReenviar,
   aoEncerrar,
@@ -219,6 +280,11 @@ export function ConversaCliente({
   recado?: string | null
   aoDispensarRecado?: () => void
   aoEnviar: (texto: string) => void
+  /** Devolve o texto do erro, ou `null` se deu certo. */
+  aoEnviarArquivo: (arquivo: File) => Promise<string | null>
+  /** Ausentes enquanto o chamado não existe: não há mensagem gravada para mexer. */
+  aoApagarMensagem?: (id: string) => Promise<string | null>
+  aoEditarMensagem?: (id: string, texto: string) => Promise<string | null>
   aoEscolherSetor: (departamentoId: string) => void
   aoReenviar: (pendente: MensagemPendente) => void
   aoEncerrar: () => void
@@ -227,7 +293,34 @@ export function ConversaCliente({
 }) {
   const [texto, setTexto] = useState('')
   const [modalEncerrar, setModalEncerrar] = useState(false)
+  const [enviandoAnexo, setEnviandoAnexo] = useState(false)
+  const [gravando, setGravando] = useState(false)
+  const [permissaoAviso, setPermissaoAviso] = useState<EstadoPermissao>(() => estadoDaPermissao())
+  const [menuMsg, setMenuMsg] = useState<{ x: number; y: number; m: MensagemWeb } | null>(null)
+  const [aApagar, setAApagar] = useState<MensagemWeb | null>(null)
+  const [aEditar, setAEditar] = useState<MensagemWeb | null>(null)
+  const [textoEdicao, setTextoEdicao] = useState('')
+  const [ocupado, setOcupado] = useState(false)
+  const [erroAcao, setErroAcao] = useState<string | null>(null)
+  const [erroAnexo, setErroAnexo] = useState<string | null>(null)
+  const inputArquivo = useRef<HTMLInputElement>(null)
   const fim = useRef<HTMLDivElement>(null)
+
+  async function enviarArquivo(arquivo: File | null) {
+    // Zera o input antes de qualquer coisa: sem isso, escolher o MESMO arquivo
+    // de novo (depois de um erro) não dispara `change`, e parece que o botão
+    // parou de funcionar.
+    if (inputArquivo.current) inputArquivo.current.value = ''
+    if (!arquivo) return
+
+    setErroAnexo(null)
+    setEnviandoAnexo(true)
+    const erro = await aoEnviarArquivo(arquivo)
+    setEnviandoAnexo(false)
+    // O erro fica na tela até a próxima tentativa. Anexo que falha em silêncio
+    // faz o cliente achar que mandou o print e ficar esperando resposta.
+    if (erro) setErroAnexo(erro)
+  }
 
   /*
     O projeto respeita `prefers-reduced-motion` no CSS, mas `scrollIntoView` é
@@ -298,10 +391,29 @@ export function ConversaCliente({
       */}
       {naFila && !faltaEscolherSetor && (
         <div className="shrink-0 bg-sf-1 border-b border-bd-1">
-          <p className="mx-auto w-full max-w-[720px] px-4 py-2 text-apoio text-tx-2">
-            Você está na fila{conversa.departamento ? ` do setor ${conversa.departamento}` : ''}. Assim que
-            um atendente assumir, ele responde por aqui.
-          </p>
+          <div className="mx-auto w-full max-w-[720px] px-4 py-2 flex flex-wrap items-center justify-between gap-2">
+            <p className="text-apoio text-tx-2">
+              Você está na fila{conversa.departamento ? ` do setor ${conversa.departamento}` : ''}. Assim que
+              um atendente assumir, ele responde por aqui.
+            </p>
+            {/*
+              O convite para ligar o aviso aparece aqui, na espera, que é o
+              único momento em que ele resolve um problema real: a pessoa vai
+              fechar a tela e quer saber quando responderem. Pedir a permissão
+              na abertura seria pedir sem motivo, e "bloquear" dado no susto é
+              quase definitivo.
+            */}
+            {permissaoAviso === 'a_perguntar' && (
+              <button
+                type="button"
+                onClick={async () => setPermissaoAviso(await pedirPermissao())}
+                className="inline-flex items-center gap-1.5 h-9 px-2.5 rounded-1 text-apoio text-br-2 hover:bg-sf-2 transicao focus:outline-none focus:ring-2 focus:ring-[color:var(--br-soft)]"
+              >
+                <Bell size={15} aria-hidden="true" />
+                Avisar quando responderem
+              </button>
+            )}
+          </div>
         </div>
       )}
 
@@ -340,7 +452,13 @@ export function ConversaCliente({
           className="mx-auto w-full max-w-[720px] px-4 py-5 flex flex-col gap-4"
         >
           {conversa.mensagens.map((m) => (
-            <Bolha key={m.id} mensagem={m} nomeAtendente={conversa.atendente} />
+            <Bolha
+              key={m.id}
+              mensagem={m}
+              nomeAtendente={conversa.atendente}
+              anexos={conversa.anexos.filter((a) => a.mensagem_id === m.id)}
+              aoAbrirAcoes={aoApagarMensagem ? (pos, msg) => setMenuMsg({ ...pos, m: msg }) : undefined}
+            />
           ))}
           {pendentes.map((p) => (
             <BolhaPendente key={p.client_msg_id} pendente={p} aoReenviar={() => aoReenviar(p)} />
@@ -381,7 +499,45 @@ export function ConversaCliente({
                 Você está sem internet. A mensagem não sai enquanto a conexão não voltar.
               </p>
             )}
+            {erroAnexo && (
+              <p role="alert" className="flex items-center gap-2 text-apoio text-err">
+                <AlertCircle size={15} className="shrink-0" />
+                {erroAnexo}
+              </p>
+            )}
+            {gravando ? (
+              <GravadorAudio
+                enviando={!!enviandoAnexo}
+                aoConfirmar={(arquivo) => {
+                  setGravando(false)
+                  enviarArquivo(arquivo)
+                }}
+                aoCancelar={() => setGravando(false)}
+              />
+            ) : (
             <div className="flex gap-2 items-end">
+              {/*
+                Anexo no app do cliente: o arquivo vai para a Edge Function, que
+                assina e sobe. Alvo de 44px como o resto desta tela, porque aqui
+                a pessoa está no celular e com pressa.
+              */}
+              <input
+                ref={inputArquivo}
+                type="file"
+                onChange={(e) => enviarArquivo(e.target.files?.[0] ?? null)}
+                className="hidden"
+                aria-hidden="true"
+                tabIndex={-1}
+              />
+              <Botao
+                variante="fantasma"
+                onClick={() => inputArquivo.current?.click()}
+                disabled={!online || faltaEscolherSetor}
+                carregando={enviandoAnexo}
+                icone={<Paperclip size={19} />}
+                aria-label="Anexar arquivo"
+                className="shrink-0 w-11 h-11 px-0"
+              />
               {/*
                 Textarea que cresce, e não campo de uma linha: o cliente está
                 descrevendo um problema, não mandando "ok". Em uma linha ele
@@ -414,21 +570,125 @@ export function ConversaCliente({
                   el.style.overflowY = el.scrollHeight > 120 ? 'auto' : 'hidden'
                 }}
               />
-              <Botao
-                type="submit"
-                variante="primario"
-                icone={<Send size={17} />}
-                carregando={enviando}
-                disabled={!online || faltaEscolherSetor || !texto.trim()}
-                className="h-12 px-4 shrink-0"
-                title="Enter envia, Shift+Enter quebra linha"
-              >
-                <span className="sr-only sm:not-sr-only">Enviar</span>
-              </Botao>
+              {/*
+                Microfone só enquanto não há texto: com algo escrito, o botão
+                da direita é Enviar. É a troca que todo mensageiro faz, e evita
+                três botões disputando o mesmo canto no celular.
+              */}
+              {!texto.trim() ? (
+                <BotaoGravar
+                  onClick={() => setGravando(true)}
+                  desabilitado={!online || faltaEscolherSetor}
+                  className="w-11 h-11"
+                />
+              ) : (
+                <Botao
+                  type="submit"
+                  variante="primario"
+                  icone={<Send size={17} />}
+                  carregando={enviando}
+                  disabled={!online || faltaEscolherSetor}
+                  className="h-12 px-4 shrink-0"
+                  title="Enter envia, Shift+Enter quebra linha"
+                >
+                  <span className="sr-only sm:not-sr-only">Enviar</span>
+                </Botao>
+              )}
             </div>
+            )}
           </div>
         </form>
       )}
+
+      {menuMsg && (
+        <MenuContexto
+          x={menuMsg.x}
+          y={menuMsg.y}
+          onFechar={() => setMenuMsg(null)}
+          itens={[
+            ...(aoEditarMensagem && menuMsg.m.corpo
+              ? [
+                  {
+                    rotulo: 'Editar',
+                    icone: Pencil,
+                    onClick: () => {
+                      setTextoEdicao(menuMsg.m.corpo ?? '')
+                      setAEditar(menuMsg.m)
+                    },
+                  },
+                ]
+              : []),
+            ...(aoApagarMensagem
+              ? [
+                  {
+                    rotulo: 'Apagar',
+                    icone: Trash2,
+                    variante: 'perigo' as const,
+                    onClick: () => setAApagar(menuMsg.m),
+                  },
+                ]
+              : []),
+          ]}
+        />
+      )}
+
+      <ModalConfirmar
+        aberto={!!aApagar}
+        titulo="Apagar mensagem"
+        descricao="A mensagem sai da sua conversa. O atendimento guarda o registro dela, como acontece com todo o histórico."
+        rotuloConfirmar="Apagar"
+        carregando={ocupado}
+        erro={erroAcao ?? undefined}
+        aoConfirmar={async () => {
+          if (!aApagar || !aoApagarMensagem) return
+          setOcupado(true)
+          const erro = await aoApagarMensagem(aApagar.id)
+          setOcupado(false)
+          setErroAcao(erro)
+          if (!erro) setAApagar(null)
+        }}
+        aoCancelar={() => {
+          setAApagar(null)
+          setErroAcao(null)
+        }}
+      />
+
+      <Modal titulo="Editar mensagem" aberto={!!aEditar} onFechar={() => setAEditar(null)}>
+        <div className="flex flex-col gap-3">
+          <textarea
+            value={textoEdicao}
+            onChange={(e) => setTextoEdicao(e.target.value)}
+            rows={4}
+            aria-label="Mensagem"
+            className="w-full py-2.5 px-3 rounded-1 bg-sf-2 border border-bd-campo text-corpo-lg text-tx-1 hover:border-tx-3 focus:border-br-2 focus:outline-none focus:ring-2 focus:ring-[color:var(--br-soft)] transicao resize-none"
+          />
+          {erroAcao && (
+            <p role="alert" className="text-apoio text-err">
+              {erroAcao}
+            </p>
+          )}
+          <div className="flex justify-end gap-2">
+            <Botao variante="neutro" onClick={() => setAEditar(null)}>
+              Cancelar
+            </Botao>
+            <Botao
+              variante="primario"
+              carregando={ocupado}
+              disabled={!textoEdicao.trim() || textoEdicao.trim() === aEditar?.corpo}
+              onClick={async () => {
+                if (!aEditar || !aoEditarMensagem) return
+                setOcupado(true)
+                const erro = await aoEditarMensagem(aEditar.id, textoEdicao.trim())
+                setOcupado(false)
+                setErroAcao(erro)
+                if (!erro) setAEditar(null)
+              }}
+            >
+              Salvar
+            </Botao>
+          </div>
+        </div>
+      </Modal>
 
       <ModalConfirmar
         aberto={modalEncerrar}

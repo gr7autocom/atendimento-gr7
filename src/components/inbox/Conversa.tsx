@@ -1,4 +1,4 @@
-import { Fragment, useRef, useState, type FormEvent } from 'react'
+import { Fragment, useRef, useState, type FormEvent, type MouseEvent as ReactMouseEvent } from 'react'
 import {
   Send,
   UserCheck,
@@ -9,11 +9,16 @@ import {
   X,
   ArrowLeft,
   MoreVertical,
+  Pencil,
   Info,
   LogOut,
+  Reply,
+  Trash2,
+  Ban,
 } from 'lucide-react'
 import {
   useMensagens,
+  useAnexos,
   useEventos,
   useAcoesAtendimento,
   useParticipantes,
@@ -22,6 +27,7 @@ import {
   nomeEmpresa,
   type AtendimentoLista,
   type EventoAtendimento,
+  type Mensagem,
 } from '../../lib/useInbox'
 import { useCrud } from '../../lib/useCrud'
 import { useUsuarios } from '../../lib/useVinculos'
@@ -44,6 +50,11 @@ import { canalDoChamado, ROTULO_CANAL } from '../../lib/canal'
 import { textoRodapeFinalizado, janelaEmHoras } from '../../lib/reabertura'
 import { useConfig } from '../../lib/useConfig'
 import { PresencaCliente } from './PresencaCliente'
+import { ListaAnexos } from '../ui/Anexo'
+import { GravadorAudio, BotaoGravar } from '../ui/GravadorAudio'
+import { MenuContexto } from '../ui/MenuContexto'
+import { enviarAnexo } from '../../lib/cloudinary'
+import { CampoAnexo, FilaAnexos, type AnexoPendente } from './CampoAnexo'
 
 type Departamento = { id: string; nome: string; ativo: boolean }
 type Motivo = { id: string; nome: string; ativo: boolean; departamento_id?: string | null }
@@ -114,9 +125,59 @@ export function Conversa({
   aoFechar?: () => void
 }) {
   const mensagens = useMensagens(atendimento?.id ?? null)
+  const anexos = useAnexos(atendimento?.id ?? null)
+  const anexosPorMensagem = anexos.data ?? new Map()
+  const [anexosPendentes, setAnexosPendentes] = useState<AnexoPendente[]>([])
+  const [gravando, setGravando] = useState(false)
+  const [erroAudio, setErroAudio] = useState<string | null>(null)
+  const [citada, setCitada] = useState<Mensagem | null>(null)
+  const [menu, setMenu] = useState<{ x: number; y: number; m: Mensagem } | null>(null)
+  const [aApagar, setAApagar] = useState<Mensagem | null>(null)
+
+  /** Quem escreveu, no rótulo que vai na citação. */
+  function autorDaMensagem(m: Mensagem): string {
+    if (m.origem === 'bot') return 'Bot'
+    if (m.origem === 'cliente') return atendimento?.contato?.nome ?? 'Cliente'
+    return m.remetente_usuario_id === usuarioId ? 'Você' : 'Atendente'
+  }
+
+  function abrirMenuDaMensagem(e: ReactMouseEvent, m: Mensagem) {
+    // Mensagem apagada não tem ação nenhuma: não dá para responder ao que não
+    // existe mais, nem apagar duas vezes.
+    if (m.excluida) return
+    e.preventDefault()
+    setMenu({ x: e.clientX, y: e.clientY, m })
+  }
+
+  /**
+   * Áudio gravado na hora. Sobe direto e vira mensagem, sem passar pela fila de
+   * anexos: quem grava um recado quer mandá-lo, não montá-lo junto com outros
+   * arquivos. O caminho de upload é o mesmo dos demais anexos.
+   */
+  async function enviarAudio(arquivo: File) {
+    if (!usuarioId || !atendimento) return
+    try {
+      const enviado = await enviarAnexo(arquivo)
+      responder.mutate(
+        {
+          atendimentoId: atendimento.id,
+          corpo: '',
+          usuarioId,
+          precisaAssumir: semDono,
+          anexos: [enviado],
+        },
+        { onSuccess: () => setGravando(false) }
+      )
+    } catch {
+      // O gravador continua aberto com o áudio gravado, então dá para tentar
+      // de novo sem regravar. Fechar aqui perderia o que a pessoa acabou de
+      // falar, que é o pior desfecho possível.
+      setErroAudio('Não conseguimos enviar o áudio. Tente de novo.')
+    }
+  }
   const eventos = useEventos(atendimento?.id ?? null)
   const participantesChamado = useParticipantes(atendimento?.id ?? null)
-  const { assumir, responder, finalizar, transferir } = useAcoesAtendimento()
+  const { assumir, responder, apagarMensagem, finalizar, transferir } = useAcoesAtendimento()
   const departamentos = useCrud<Departamento>('departamentos')
   const motivos = useCrud<Motivo>('atendimento_motivos')
   const usuarios = useUsuarios()
@@ -180,16 +241,45 @@ export function Conversa({
   */
   const podeEncerrarAcesso = (presenca.data?.sessoes_ativas ?? 0) > 0
 
+  /*
+    Anexos que terminaram de subir. Os que ainda estão viajando ou falharam não
+    entram: mandar a mensagem com metade dos arquivos criaria uma resposta que
+    cita anexos inexistentes, e o botão já fica travado enquanto há upload em
+    curso justamente para isso não acontecer sem querer.
+  */
+  const anexosProntos = anexosPendentes.map((p) => p.enviado).filter((a) => a !== null)
+  const subindoAlgum = anexosPendentes.some((p) => !p.enviado && !p.erro)
+  const temConteudo = !!texto.trim() || anexosProntos.length > 0
+
   function enviar(e: FormEvent) {
     e.preventDefault()
-    if (!texto.trim() || !usuarioId || !atendimento) return
-    responder.mutate({
-      atendimentoId: atendimento.id,
-      corpo: texto.trim(),
-      usuarioId,
-      precisaAssumir: semDono,
-    })
-    setTexto('')
+    if (!temConteudo || subindoAlgum || !usuarioId || !atendimento) return
+    responder.mutate(
+      {
+        atendimentoId: atendimento.id,
+        // Anexo sozinho é mensagem legítima: o print costuma dizer tudo.
+        corpo: texto.trim(),
+        usuarioId,
+        precisaAssumir: semDono,
+        anexos: anexosProntos,
+        resposta: citada
+          ? {
+              id: citada.id,
+              corpo: citada.corpo ?? 'Anexo',
+              remetente: autorDaMensagem(citada),
+            }
+          : null,
+      },
+      {
+        // Limpar só no sucesso: se a gravação falhar, o texto e a fila de
+        // anexos continuam na tela para tentar de novo, em vez de sumirem.
+        onSuccess: () => {
+          setTexto('')
+          setAnexosPendentes([])
+          setCitada(null)
+        },
+      }
+    )
   }
 
   // Mensagens rápidas: digitar "/" no campo abre a lista de atalhos aplicáveis
@@ -505,6 +595,7 @@ export function Conversa({
                   <Fragment key={m.id}>
                     {separador}
                     <div
+                      onContextMenu={(e) => abrirMenuDaMensagem(e, m)}
                       className={cn(
                         'max-w-[76%] px-3 py-2 text-corpo leading-relaxed shadow-sm',
                         entrada
@@ -515,7 +606,65 @@ export function Conversa({
                       )}
                     >
                       {bot && <div className="rotulo mb-0.5 text-tx-3">Bot</div>}
-                      <div className="whitespace-pre-wrap break-words">{m.corpo}</div>
+
+                      {m.excluida && (
+                        /*
+                          Apagada continua aqui COM O CORPO, ao contrário do que
+                          o cliente vê (lá ela some). Quem manda na empresa lê a
+                          conversa depois, e precisa saber o que foi enviado
+                          antes de ser apagado. Esconder o texto tiraria da
+                          auditoria justamente o que ela procura.
+                        */
+                        <div className="flex items-center gap-1.5 mb-1 text-mini opacity-80">
+                          <Ban size={12} aria-hidden="true" />
+                          Apagada {m.excluida_por === 'cliente' ? 'pelo cliente' : 'pelo atendente'}
+                          {m.excluida_em ? ` às ${hora(m.excluida_em)}` : ''}
+                          {' · '}
+                          não aparece para o cliente
+                        </div>
+                      )}
+                      <div className={cn(m.excluida && 'opacity-60')}>
+                          {m.resposta_id && (
+                            <div
+                              className={cn(
+                                'mb-1.5 pl-2 border-l-2 rounded-r-micro py-0.5',
+                                entrada || bot ? 'border-br-2 bg-sf-0/40' : 'border-white/60 bg-black/15'
+                              )}
+                            >
+                              <div className={cn('text-mini font-medium', entrada || bot ? 'text-br-2' : 'text-white/90')}>
+                                {m.resposta_remetente ?? 'Mensagem'}
+                              </div>
+                              <div className={cn('text-apoio line-clamp-2', entrada || bot ? 'text-tx-2' : 'text-white/75')}>
+                                {m.resposta_corpo || 'Anexo'}
+                              </div>
+                            </div>
+                          )}
+                          {/* Anexo antes do texto, como em qualquer mensageiro: o
+                              arquivo é o assunto e a linha costuma ser a legenda
+                              dele ("segue o print"). */}
+                          <ListaAnexos anexos={anexosPorMensagem.get(m.id) ?? []} className="mb-1.5" />
+                          {m.corpo && <div className="whitespace-pre-wrap break-words">{m.corpo}</div>}
+                          {/*
+                            Edição: o cliente pode reescrever o que mandou por
+                            alguns minutos. O texto novo fica acima; o original
+                            vem aqui, pelo mesmo motivo do apagar. Sem ele,
+                            editar seria um jeito silencioso de trocar o que
+                            está no histórico.
+                          */}
+                          {m.editada_em && (
+                            <div className="mt-1 text-mini opacity-80">
+                              <span className="inline-flex items-center gap-1">
+                                <Pencil size={11} aria-hidden="true" />
+                                Editada pelo cliente às {hora(m.editada_em)}
+                              </span>
+                              {m.corpo_original && (
+                                <div className="mt-0.5 pl-2 border-l-2 border-current/30 line-through opacity-70 whitespace-pre-wrap break-words">
+                                  {m.corpo_original}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                      </div>
                       <div
                         className={cn(
                           'flex items-center justify-end gap-1 mt-1',
@@ -587,7 +736,55 @@ export function Conversa({
                 Este chamado é de outro atendente. Peça a transferência para responder.
               </p>
             )}
+            {citada && (
+              <div className="mb-2 flex items-start gap-2 pl-2 py-1.5 pr-1 border-l-2 border-br-2 rounded-r-1 bg-sf-2">
+                <div className="min-w-0 flex-1">
+                  <div className="text-mini font-medium text-br-2">
+                    Respondendo {autorDaMensagem(citada)}
+                  </div>
+                  <div className="text-apoio text-tx-2 truncate">{citada.corpo || 'Anexo'}</div>
+                </div>
+                <Botao
+                  variante="fantasma"
+                  tamanho="sm"
+                  onClick={() => setCitada(null)}
+                  icone={<X size={14} />}
+                  aria-label="Cancelar resposta"
+                />
+              </div>
+            )}
+            <FilaAnexos
+              pendentes={anexosPendentes}
+              onRemover={(chave) => setAnexosPendentes((a) => a.filter((p) => p.chave !== chave))}
+            />
+            {erroAudio && (
+              <p role="alert" className="mb-2 text-apoio text-err">
+                {erroAudio}
+              </p>
+            )}
+            {gravando ? (
+              <GravadorAudio
+                enviando={responder.isPending}
+                aoConfirmar={(arquivo) => {
+                  setErroAudio(null)
+                  enviarAudio(arquivo)
+                }}
+                aoCancelar={() => {
+                  setGravando(false)
+                  setErroAudio(null)
+                }}
+              />
+            ) : (
             <div className="flex gap-2">
+              <CampoAnexo
+                onMudar={setAnexosPendentes}
+                desabilitado={!podeResponder || responder.isPending}
+              />
+              <BotaoGravar
+                onClick={() => setGravando(true)}
+                desabilitado={!podeResponder || responder.isPending}
+                className="w-9 h-9"
+              />
               <input
                 ref={inputRef}
                 value={texto}
@@ -613,16 +810,63 @@ export function Conversa({
               <Botao
                 variante="primario"
                 type="submit"
-                disabled={!texto.trim() || !podeResponder}
+                disabled={!temConteudo || subindoAlgum || !podeResponder}
                 carregando={responder.isPending}
                 icone={<Send size={15} />}
               >
                 Enviar
               </Botao>
             </div>
+            )}
           </div>
         </form>
       )}
+
+      {menu && (
+        <MenuContexto
+          x={menu.x}
+          y={menu.y}
+          onFechar={() => setMenu(null)}
+          itens={[
+            {
+              rotulo: 'Responder',
+              icone: Reply,
+              onClick: () => {
+                setCitada(menu.m)
+                inputRef.current?.focus()
+              },
+            },
+            /*
+              Apagar só aparece no que o próprio atendente escreveu. Mensagem do
+              cliente e do bot não tem dono do nosso lado, e apagar a fala do
+              cliente seria mexer no relato dele. O banco recusaria de qualquer
+              forma; a tela só não oferece o que não pode.
+            */
+            ...(menu.m.origem === 'atendente' && menu.m.remetente_usuario_id === usuarioId
+              ? [
+                  {
+                    rotulo: 'Apagar mensagem',
+                    icone: Trash2,
+                    variante: 'perigo' as const,
+                    onClick: () => setAApagar(menu.m),
+                  },
+                ]
+              : []),
+          ]}
+        />
+      )}
+
+      <ModalConfirmar
+        aberto={!!aApagar}
+        titulo="Apagar mensagem"
+        descricao="A mensagem some da tela do cliente. Aqui ela continua visível, com o texto, marcada como apagada, para o histórico do atendimento."
+        rotuloConfirmar="Apagar"
+        carregando={apagarMensagem.isPending}
+        aoConfirmar={() =>
+          aApagar && apagarMensagem.mutate({ id: aApagar.id }, { onSuccess: () => setAApagar(null) })
+        }
+        aoCancelar={() => setAApagar(null)}
+      />
 
       {modalAceitar && (
         <AceitarPotencial
