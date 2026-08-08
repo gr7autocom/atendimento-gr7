@@ -220,6 +220,19 @@ Três guardas rodam no `npm test`, e nenhuma delas depende de alguém abrir este
 
 O `.htaccess` de cada pasta vive em [deploy/](../deploy/) e é copiado pelo build. Editar o do `dist/` na mão não adianta: a próxima passada sobrescreve.
 
+## Aviso de mensagem nova
+
+Som e card do sistema nos dois lados, com **dois sons de papéis diferentes**, copiados do Talks do painel junto com os arquivos ([`lib/notificacoes.ts`](../src/lib/notificacoes.ts)):
+
+- **Alerta** (`nova-mensagem.mp3`): chegou mensagem em algo que a pessoa não está olhando. Na central, chamado que não está aberto na tela; no app do cliente, aba escondida, onde vem acompanhado do card do sistema.
+- **Discreto** (`envio-mensagem.mp3`): atividade na conversa que está à frente — a mensagem que acabou de sair, ou a que chegou nela.
+
+Usar o alerta para tudo é o que torna som de sistema irritante, e silêncio na conversa aberta esconde a mensagem que chega enquanto a pessoa olha outra janela. A regra de qual som toca em qual situação está coberta por teste ([`notificacoes.test.ts`](../src/lib/notificacoes.test.ts) e [`useAvisoMensagem.test.ts`](../src/lib/useAvisoMensagem.test.ts)): som errado não deixa rastro visual e só aparece como incômodo depois de semanas de uso.
+
+No app do cliente o som sai depois da confirmação do servidor, e não no clique: o envio é otimista e a falha fica na tela marcada como "Não enviada", então um som no gesto confirmaria mensagem que ainda pode não ter saído.
+
+Os dois `.mp3` entram nos **dois** pacotes do build (`COMUNS` no [`vite.config.ts`](../vite.config.ts)), porque valem para o atendente e para o cliente.
+
 ## O que fica de fora
 
-Histórico para o cliente, acompanhamento de tarefas, push, anexos e notificação sonora.
+Histórico para o cliente, acompanhamento de tarefas e push (a notificação depende do app aberto, mesmo que em outra aba).

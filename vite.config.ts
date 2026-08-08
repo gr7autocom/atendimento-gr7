@@ -58,13 +58,22 @@ const APPS = {
 /*
   Estáticos que as duas aplicações usam.
 
-  `icone-192.png` e `nova-mensagem.mp3` são das notificações, e por isso valem
-  para os dois lados: o card do sistema mostra o ícone e o som toca quando chega
-  mensagem, tanto para o atendente quanto para o cliente. Deixá-los só no pacote
+  `icone-192.png` e os dois `.mp3` são das notificações, e por isso valem para os
+  dois lados: o card do sistema mostra o ícone e os sons tocam quando a conversa
+  se move, tanto para o atendente quanto para o cliente. Deixá-los só no pacote
   do cliente daria notificação sem ícone na central, e o navegador não avisa
   quando o ícone não carrega, apenas mostra o padrão dele.
+
+  São dois sons com papéis diferentes (`lib/notificacoes.ts` explica): o alerta
+  de mensagem em conversa que não está à frente, e o discreto da conversa aberta.
 */
-const COMUNS = ['favicon.svg', 'marca-gr7.png', 'icone-192.png', 'nova-mensagem.mp3']
+const COMUNS = [
+  'favicon.svg',
+  'marca-gr7.png',
+  'icone-192.png',
+  'nova-mensagem.mp3',
+  'envio-mensagem.mp3',
+]
 
 /*
   Arquivo que está em `public/` e não vai para pacote nenhum. Manter a lista

@@ -13,6 +13,8 @@ O **suporte** vê só **Atendimentos** no menu; o **admin** vê tudo. Login comp
 
 **Dashboard de supervisão (só admin):** não é tela separada. Fica **dentro de Atendimentos**, na área da direita, como estado padrão quando nenhuma conversa está aberta. Ao abrir uma conversa aparece o chat; o **X** no cabeçalho da conversa fecha e volta ao dashboard. O atendente comum, sem conversa aberta, vê a marca d'água.
 
+**Aviso de mensagem nova:** o sino da `BarraTopo` é o controle da permissão do navegador, com três estados (a perguntar, concedida, negada). O som é o mesmo desenho dos dois lados e está descrito em [canal-web.md](canal-web.md#aviso-de-mensagem-nova): **alerta** para mensagem em chamado que não está aberto, **som discreto** para a conversa que está na tela. O card do sistema só sai com a aba fora de foco, e nunca do chamado aberto.
+
 **Sidebar no mobile:** a faixa de ícones some (`hidden lg:flex`). A navegação vai para um **menu de tela cheia** aberto ao tocar na **foto do usuário** (na `BarraTopo`): avatar + nome + perfil, seção "Menu" com os itens (por papel) e "Conta" com Sair. No desktop, o sidebar de ícones volta e a foto abre só um dropdown compacto (usuário + Sair).
 
 **Dashboard no mobile:** o painel de supervisão do admin **não aparece no mobile** (é `lg+`). No mobile o admin vê só a lista de conversas (com o filtro de setor). No desktop o dashboard ocupa a área direita quando não há conversa aberta.

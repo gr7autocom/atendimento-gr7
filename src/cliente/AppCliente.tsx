@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Identificacao, type DadosIdentificacao } from './Identificacao'
 import { ConversaCliente, type MensagemPendente } from './ConversaCliente'
 import { Carregando, Recado } from './Estados'
-import { avisar, tocarAvisoSonoro } from '../lib/notificacoes'
+import { avisar, tocarAvisoSonoro, tocarSomEnvio } from '../lib/notificacoes'
 import {
   api,
   erroDeCampo,
@@ -117,10 +117,15 @@ export function AppCliente() {
         const conhecidas = new Set(antes.mensagens.map((m) => m.id))
         const chegaram = nova.mensagens.filter((m) => !conhecidas.has(m.id) && m.origem !== 'cliente')
         if (chegaram.length > 0) {
-          tocarAvisoSonoro()
-          // Card do sistema só com a aba escondida: com o app à frente, a
-          // mensagem já apareceu na conversa.
-          if (document.visibilityState !== 'visible') {
+          /*
+            Com o app à frente, a mensagem já apareceu na conversa: som discreto
+            e nada de card. Com a aba escondida vale o alerta, que é o único
+            aviso que a pessoa tem de que a resposta chegou.
+          */
+          if (document.visibilityState === 'visible') {
+            tocarSomEnvio()
+          } else {
+            tocarAvisoSonoro()
             avisar({
               titulo: 'GR7 Atendimento',
               corpo: chegaram[chegaram.length - 1].corpo ?? 'Você recebeu um arquivo.',
@@ -340,6 +345,7 @@ export function AppCliente() {
     if (!t) return 'Sua conversa não está mais disponível neste aparelho.'
     try {
       await api.anexo(t, arquivo)
+      tocarSomEnvio()
       await buscarConversa()
       return null
     } catch (erro) {
@@ -397,6 +403,12 @@ export function AppCliente() {
     ])
     try {
       await api.mensagem(t, texto, id)
+      /*
+        Som depois da confirmação do servidor, e não no clique: aqui a mensagem
+        é otimista e a falha fica na tela marcada como "Não enviada", então um
+        "toc" no gesto confirmaria envio que ainda pode não ter acontecido.
+      */
+      tocarSomEnvio()
       await buscarConversa()
       setPendentes((atual) => atual.filter((p) => p.client_msg_id !== id))
     } catch (erro) {

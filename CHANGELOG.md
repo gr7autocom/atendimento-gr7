@@ -12,6 +12,8 @@
 - **Mensagem apagada some para o cliente**, e continua visível para a equipe com o texto, marcada com quem apagou e a que horas. É o que permite conferir depois o que foi enviado
 - O cliente pode apagar o que mandou por 1 hora e editar por 15 minutos, como no WhatsApp. A equipe vê a marca de editada e o texto anterior
 - Chegou mensagem, toca um som. Com a janela em segundo plano, aparece também o aviso do Windows. O sino no topo liga ou desliga esses avisos, e antes ele não fazia nada
+- Agora são dois sons, com papéis diferentes: um mais forte avisa que chegou mensagem em outro chamado, e um curto confirma o que sai e o que chega na conversa que está aberta na tela
+- Responder um cliente passou a ter som de confirmação, nos dois lados. Ele toca depois que a mensagem é gravada de verdade, então som ouvido é mensagem entregue
 - O aviso de privacidade passou a explicar que arquivos e áudios também ficam guardados, e pede para enviar só o necessário
 
 ## 2026-08-07 — O cliente sabe o que acontece com os dados dele

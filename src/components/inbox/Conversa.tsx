@@ -54,6 +54,7 @@ import { ListaAnexos } from '../ui/Anexo'
 import { GravadorAudio, BotaoGravar } from '../ui/GravadorAudio'
 import { MenuContexto } from '../ui/MenuContexto'
 import { enviarAnexo } from '../../lib/cloudinary'
+import { tocarSomEnvio } from '../../lib/notificacoes'
 import { CampoAnexo, FilaAnexos, type AnexoPendente } from './CampoAnexo'
 
 type Departamento = { id: string; nome: string; ativo: boolean }
@@ -166,7 +167,12 @@ export function Conversa({
           precisaAssumir: semDono,
           anexos: [enviado],
         },
-        { onSuccess: () => setGravando(false) }
+        {
+          onSuccess: () => {
+            setGravando(false)
+            tocarSomEnvio()
+          },
+        }
       )
     } catch {
       // O gravador continua aberto com o áudio gravado, então dá para tentar
@@ -273,10 +279,15 @@ export function Conversa({
       {
         // Limpar só no sucesso: se a gravação falhar, o texto e a fila de
         // anexos continuam na tela para tentar de novo, em vez de sumirem.
+        //
+        // O som segue a mesma regra, e por isso não toca no clique: aqui a
+        // mensagem não é otimista, então um "toc" de confirmação antes da
+        // gravação confirmaria resposta que pode não ter saído.
         onSuccess: () => {
           setTexto('')
           setAnexosPendentes([])
           setCitada(null)
+          tocarSomEnvio()
         },
       }
     )

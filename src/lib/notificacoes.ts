@@ -75,26 +75,54 @@ export async function avisar(aviso: Aviso): Promise<void> {
   n.onclick = () => window.focus()
 }
 
+/*
+ ─────────────────────────────────────────────────────────────────────────────
+ OS DOIS SONS TÊM PAPÉIS DIFERENTES
+
+ Desenho copiado do Talks do painel (módulo `scrap`), junto com os arquivos:
+
+ - **Alerta** (`nova-mensagem.mp3`): chegou mensagem em algum lugar que a pessoa
+   não está olhando. Mais alto, para ser ouvido de outro programa.
+ - **Discreto** (`envio-mensagem.mp3`): atividade na conversa que está aberta na
+   tela — a resposta que acabou de sair, ou a mensagem que chegou nela. Confirma
+   sem assustar.
+
+ Usar o alerta para tudo é o que torna som de sistema irritante: quem está
+ digitando na conversa não precisa de sirene a cada linha trocada.
+ ─────────────────────────────────────────────────────────────────────────────
+*/
+
 /**
- * Som curto de mensagem nova.
- *
- * Um único `Audio` reaproveitado: criar um a cada mensagem deixa objetos de
- * mídia soltos e, em rajada, o navegador começa a recusar a reprodução.
- * `currentTime = 0` reinicia o mesmo som.
+ * Um único `Audio` por som, reaproveitado: criar um a cada mensagem deixa
+ * objetos de mídia soltos e, em rajada, o navegador começa a recusar a
+ * reprodução. `currentTime = 0` reinicia o mesmo som.
  *
  * O `catch` vazio é proposital e não é falha engolida: navegador bloqueia
  * áudio antes de o usuário interagir com a página, e insistir só encheria o
  * console de erro sem nada a fazer a respeito.
  */
-let audio: HTMLAudioElement | null = null
-
-export function tocarAvisoSonoro(): void {
-  if (typeof Audio === 'undefined') return
-  if (!audio) {
-    audio = new Audio('/nova-mensagem.mp3')
-    audio.volume = 0.5
-    audio.preload = 'auto'
+function tocador(arquivo: string, volume: number) {
+  let audio: HTMLAudioElement | null = null
+  return () => {
+    if (typeof Audio === 'undefined') return
+    if (!audio) {
+      audio = new Audio(arquivo)
+      audio.volume = volume
+      audio.preload = 'auto'
+    }
+    audio.currentTime = 0
+    void audio.play().catch(() => {})
   }
-  audio.currentTime = 0
-  void audio.play().catch(() => {})
 }
+
+/** Mensagem nova em conversa que não está à frente de quem usa. */
+export const tocarAvisoSonoro = tocador('/nova-mensagem.mp3', 0.5)
+
+/**
+ * Mensagem enviada, ou recebida na conversa que está aberta na tela.
+ *
+ * Um pouco abaixo do alerta: no painel os dois saem no mesmo volume e a
+ * diferença fica só no timbre, mas lá o som de envio dispara na conversa que a
+ * pessoa está lendo, com a janela à frente e o ouvido perto.
+ */
+export const tocarSomEnvio = tocador('/envio-mensagem.mp3', 0.4)

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { avisar, tocarAvisoSonoro, estadoDaPermissao } from './notificacoes'
+import { avisar, tocarAvisoSonoro, tocarSomEnvio, estadoDaPermissao } from './notificacoes'
 import type { AtendimentoLista } from './useInbox'
 
 /**
@@ -14,8 +14,9 @@ import type { AtendimentoLista } from './useInbox'
  *
  * - **A primeira carga não avisa.** Sem isso, abrir a central de manhã dispararia
  *   um card para cada chamado da fila.
- * - **Não avisa do chamado que está aberto na tela.** A pessoa está lendo; o card
- *   por cima do que ela lê é ruído.
+ * - **O chamado aberto na tela leva o som discreto, não o alerta.** A pessoa está
+ *   lendo aquela conversa: sirene e card por cima do que ela lê é ruído, mas
+ *   silêncio total esconde a mensagem que chega enquanto ela olha outra janela.
  * - **Não avisa com a aba em foco**, só som. O card do sistema serve para quem
  *   está em outro programa; com a central à frente, a conversa já se atualiza
  *   sozinha.
@@ -46,6 +47,10 @@ export function useAvisoMensagem(lista: AtendimentoLista[] | undefined, abertoId
 
     conhecidos.current = agora
     if (novidades.length === 0) return
+
+    // O chamado aberto sai da lista de alertas, mas não fica muda: som discreto
+    // de conversa em movimento, o mesmo que sai ao responder.
+    if (novidades.some((a) => a.id === abertoRef.current)) tocarSomEnvio()
 
     const relevantes = novidades.filter((a) => a.id !== abertoRef.current)
     if (relevantes.length === 0) return
