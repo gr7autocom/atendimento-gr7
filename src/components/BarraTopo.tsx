@@ -1,12 +1,14 @@
 import { useState, type ReactNode } from 'react'
 import { NavLink, Link } from 'react-router-dom'
-import { MessagesSquare, Bell, ChevronDown, LogOut, ArrowLeft } from 'lucide-react'
+import { Bell, BellOff, ChevronDown, LogOut, ArrowLeft } from 'lucide-react'
+import { estadoDaPermissao, pedirPermissao, type EstadoPermissao } from '../lib/notificacoes'
 import { useAuth } from '../lib/auth'
 import { usePermissao } from '../lib/permissoes'
 import { useStatusBot } from '../lib/useStatusBot'
 import { ITENS_NAV } from './SidebarRecolhida'
 import { Avatar } from './ui/Avatar'
 import { PainelMenu, ItemMenu } from './ui/Menu'
+import { Marca } from './ui/Marca'
 import { useFecharFora } from '../lib/useFecharFora'
 import { cn } from '../lib/utils'
 
@@ -42,11 +44,56 @@ function PilulaStatusBot({ isAdmin }: { isAdmin: boolean }) {
 }
 
 /**
+ * Sino do topo: liga a notificação do sistema.
+ *
+ * Antes era um ícone sem função nenhuma, o que é pior que não existir: quem
+ * clicava concluía que o produto estava quebrado. Agora ele tem três estados,
+ * e cada um diz a verdade sobre o que acontece.
+ *
+ * O pedido de permissão sai daqui, de um clique, e não sozinho ao carregar a
+ * página: navegador pune quem pede sem contexto, e um "bloquear" dado no susto
+ * é praticamente definitivo, porque o caminho para desfazer está escondido nas
+ * configurações do site.
+ */
+function BotaoNotificacoes() {
+  const [estado, setEstado] = useState<EstadoPermissao>(() => estadoDaPermissao())
+  if (estado === 'indisponivel') return null
+
+  const rotulo =
+    estado === 'concedida'
+      ? 'Avisos do sistema ligados'
+      : estado === 'negada'
+        ? 'Avisos bloqueados pelo navegador. Libere nas permissões do site.'
+        : 'Ligar avisos de mensagem nova'
+
+  return (
+    <button
+      type="button"
+      onClick={async () => {
+        if (estado === 'a_perguntar') setEstado(await pedirPermissao())
+      }}
+      aria-label={rotulo}
+      title={rotulo}
+      className={cn(
+        'w-8 h-8 rounded-1 flex items-center justify-center transicao',
+        estado === 'concedida'
+          ? 'text-br-2 hover:bg-sf-2'
+          : estado === 'negada'
+            ? 'text-tx-3 hover:bg-sf-2'
+            : 'text-tx-2 hover:text-tx-1 hover:bg-sf-2'
+      )}
+    >
+      {estado === 'negada' ? <BellOff size={17} /> : <Bell size={17} />}
+    </button>
+  )
+}
+
+/**
  * Barra horizontal do topo, comum às duas cascas (Atendimento e Admin).
  * Marca à esquerda, notificações e usuário à direita. O menu do usuário
  * guarda o "Sair" e qualquer navegação secundária passada em `menu`.
  */
-export function BarraTopo({ titulo, menu }: { titulo: string; menu?: ReactNode }) {
+export function BarraTopo({ menu }: { menu?: ReactNode }) {
   const { signOut, usuario } = useAuth()
   const { isAdmin } = usePermissao()
   const [aberto, setAberto] = useState(false)
@@ -57,21 +104,12 @@ export function BarraTopo({ titulo, menu }: { titulo: string; menu?: ReactNode }
   return (
     <header className="h-14 shrink-0 px-3 sm:px-4 flex items-center justify-between gap-3 bg-sf-1 border-b border-bd-1">
       <div className="flex items-center gap-2.5 min-w-0">
-        <div className="w-7 h-7 rounded-1 bg-br-1 flex items-center justify-center shrink-0">
-          <MessagesSquare size={15} className="text-white" />
-        </div>
-        <span className="text-corpo-lg font-semibold text-tx-1 truncate">{titulo}</span>
+        <Marca />
         <PilulaStatusBot isAdmin={isAdmin} />
       </div>
 
       <div className="flex items-center gap-1.5">
-        <button
-          type="button"
-          aria-label="Notificações"
-          className="w-8 h-8 rounded-1 flex items-center justify-center text-tx-2 hover:text-tx-1 hover:bg-sf-2 transicao"
-        >
-          <Bell size={17} />
-        </button>
+        <BotaoNotificacoes />
 
         <div className="relative" ref={ref}>
           <button
@@ -156,7 +194,9 @@ export function BarraTopo({ titulo, menu }: { titulo: string; menu?: ReactNode }
             </button>
           </nav>
 
-          <div className="shrink-0 text-center text-mini text-tx-3 py-3">GR7 Atendimento</div>
+          <div className="shrink-0 flex justify-center py-3">
+            <Marca tamanho="sm" />
+          </div>
         </div>
       )}
         </div>

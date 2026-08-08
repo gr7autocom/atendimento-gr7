@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useAtendimentos } from '../lib/useInbox'
+import { useAvisoMensagem } from '../lib/useAvisoMensagem'
 import { useUsuarioAtual } from '../lib/auth'
 import { usePermissao } from '../lib/permissoes'
 import { ListaChamados } from '../components/inbox/ListaChamados'
@@ -18,6 +19,10 @@ export function Inbox() {
   const [filtro, setFiltro] = useState<FiltroInbox>(SEM_FILTRO)
 
   const lista = atendimentos.data ?? []
+  // Som e card do sistema quando chega mensagem. Mora aqui, e não dentro da
+  // conversa, porque o aviso precisa valer para os chamados que NÃO estão
+  // abertos na tela: justamente os que passariam despercebidos.
+  useAvisoMensagem(atendimentos.data, selecionadoId)
   const selecionado = lista.find((a) => a.id === selecionadoId) ?? null
 
   if (atendimentos.isError) {
