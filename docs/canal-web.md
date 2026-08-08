@@ -2,7 +2,15 @@
 
 Referência do segundo canal de atendimento, como [whatsapp.md](whatsapp.md) é do primeiro. Decisão e trade-offs em [decisoes.md](decisoes.md) (ADR-11).
 
-> **Estado (2026-08-07):** o canal **funciona ponta a ponta**, com o cliente conversando pelo site e o atendente respondendo na central. Falta transformá-lo em **aplicativo instalável** (manifest, service worker, `vercel.json`) e o endurecimento da Fase 6. As fases estão em [PROGRESSO.md](../PROGRESSO.md).
+> **Estado (2026-08-07):** as **seis fases estão entregues**. O canal funciona ponta a ponta, o cliente tem aplicativo instalável e o endurecimento foi feito (aviso de privacidade, teste de vazamento com lista fechada e limpeza automática de sessões). Falta só **publicar no servidor**. As fases estão em [PROGRESSO.md](../PROGRESSO.md).
+
+### Privacidade e retenção
+
+- O **aceite** grava `aceite_em` e é o registro do consentimento. Ao lado dele, o link "Como usamos seus dados" abre o aviso ([`src/cliente/AvisoPrivacidade.tsx`](../src/cliente/AvisoPrivacidade.tsx)): consentimento sem a pessoa poder ler o que aceita não é consentimento.
+- **Sessões expiradas são apagadas por rotina diária** (migration `20260807150000`, função `atendimento_web_limpar_sessoes`, agendada às 3h de Brasília). Apaga o que morreu pelas três vias com folga de 7 dias, para o cliente que volta em cima da hora continuar reconhecido.
+- **O anexo trouxe dado novo, e o aviso precisou acompanhar** (2026-08-08). O cliente passou a enviar prints, fotos, documentos e áudios, que ficam no **Cloudinary** e não no nosso banco (`atendimento_anexos` guarda a URL). São dados pessoais como quaisquer outros, e um print de tela costuma trazer dado de terceiro junto, por isso o aviso pede para enviar só o necessário. Ao acrescentar coleta nova neste canal, revisar o [`AvisoPrivacidade.tsx`](../src/cliente/AvisoPrivacidade.tsx) **na mesma tarefa**: consentimento que não descreve o que é coletado não vale como consentimento.
+- **Não existe `docs/lgpd/` neste projeto** (conferido em 2026-08-08): inventário de tratamentos, lista de subprocessadores e política publicada não estão escritos em lugar nenhum. O Cloudinary é o segundo subprocessador do canal, ao lado do Supabase. Enquanto isso não existir, o aviso ao cliente é o único documento de privacidade do produto.
+- **O direito de exclusão da LGPD ainda não tem caminho técnico.** `atendimento_mensagens` não tem policy de DELETE, e a retenção de 5 anos é justificada pelo CDC. Com anexo, apagar passou a ter uma segunda ponta: o arquivo no Cloudinary, que o `public_id` identifica. O aviso manda escrever para `suporte@gr7autocom.com.br`, que é o caminho humano enquanto isso.
 
 ## O que é
 
@@ -75,6 +83,9 @@ Todas são **POST**, com JSON, e as autenticadas levam o token no header `x-sess
 | `/mensagem` | `mensagem`, `client_msg_id` | `ok` |
 | `/encerrar` | (token) | `ok` |
 | `/avaliar` | `nota` 0-10 | `ok` |
+| `/anexo` | `arquivo` + `mensagem` opcional (multipart) | `ok` |
+
+O `/anexo` é a única rota que não recebe JSON. Ele sai do roteamento **antes** da leitura do corpo, porque ler um arquivo binário como texto consumiria o stream e o `req.formData()` receberia um corpo vazio. Teto de 10 MB e lista fechada de tipos (imagem, PDF, planilha, documento e áudio). O upload é assinado no servidor com `CLOUDINARY_API_SECRET`: **o app do cliente não fala com o Cloudinary direto**, porque o preset aberto que a central usa não pode ser embarcado num app que qualquer pessoa da internet abre. Mensagem e anexo entram na mesma chamada, senão uma queda de rede entre as duas deixaria "segue o print" sem print.
 
 O `aceite` é obrigatório e grava `aceite_em` na sessão: é o registro do consentimento exigido pela LGPD.
 
@@ -185,13 +196,29 @@ Idempotência do envio do cliente usa coluna própria, `client_msg_id`. Reusar `
 
 Segundo entry point no mesmo repositório: `cliente.html` mais `src/cliente/`, reusando `src/components/ui/` e `src/tema.css`. Endereço em subdomínio próprio: **`suporte.gr7autocom.com.br`** (decidido em 2026-08-07), separado do `atendimento.gr7autocom.com.br` da equipe. É esse o valor que entra em `PWA_ORIGENS`.
 
-- Manifest referenciado **só** no `cliente.html`, então a central da equipe nunca fica instalável
-- Service worker com escopo próprio, que por definição não intercepta as rotas da central. Escrito à mão, sem `vite-plugin-pwa`, que quer ser dono do build inteiro
-- **Nunca cachear resposta da Edge Function.** Guardar conversa de cliente em disco é o oposto do que se quer. O cache cobre só a casca do app
+- Manifest (`public/cliente.webmanifest`) referenciado **só** no `cliente.html`, então a central da equipe nunca fica instalável. Não é configuração de servidor nem preferência: é a ausência da tag no outro HTML
+- Service worker (`public/sw.js`) com escopo próprio, que por definição não intercepta as rotas da central. Escrito à mão, sem `vite-plugin-pwa`, que quer ser dono de um build que aqui tem duas saídas. Registrado **só em produção** (`import.meta.env.PROD`), porque em desenvolvimento os dois apps dividem o `localhost:5173` e um escopo `/` passaria a atender a central também
+- **Nunca cachear resposta da Edge Function.** Guardar conversa de cliente em disco é o oposto do que se quer, e sobreviveria à revogação da sessão pelo atendente. O cache cobre só a casca do app
 - **Sem fila offline.** "Mandei e ninguém recebeu" é pior que "sem internet": estado offline explícito e envio bloqueado
-- O PWA **não embarca** a chave do Supabase nem o `supabase-js`. Só `fetch`
+- O PWA **não embarca** a chave do Supabase nem o `supabase-js`. Só `fetch` — conferido no pacote gerado, onde a chave anônima aparece apenas no bundle da central
+- Os ícones (192, 512 e a versão recortável do Android) são gerados da logo sobre o fundo `sf-0`. A arte é transparente, e ícone transparente aparece sobre fundo claro do sistema, onde a marca branca sumiria
 
-O código vive em `src/`, então já nasce coberto pela guarda de [padroes-ui.test.ts](../src/padroes-ui.test.ts), que ganha duas regras: `src/cliente/` não importa o cliente Supabase nem o auth, e não usa `dangerouslySetInnerHTML` (com token em `localStorage`, XSS é o vetor real).
+### Como as regras do PWA são mantidas
+
+Três guardas rodam no `npm test`, e nenhuma delas depende de alguém abrir este arquivo:
+
+- [`src/cliente/sw.test.ts`](../src/cliente/sw.test.ts) monta um ambiente de service worker falso, executa o `sw.js` real e dispara requisições. Se alguém trocar a ordem dos `if` e a conversa passar a ser cacheada, o teste fica vermelho.
+- [`padroes-ui.test.ts`](../src/padroes-ui.test.ts) ganhou duas regras: `src/cliente/` não importa o cliente Supabase nem o auth, e não usa `dangerouslySetInnerHTML` (com token em `localStorage`, XSS é o vetor real).
+
+### Como o PWA é publicado
+
+`npm run build` gera **duas pastas independentes**: `dist/atendimento/` (equipe) e `dist/suporte/` (cliente). Cada uma vai para o document root do seu subdomínio. Três consequências que importam para este canal:
+
+- O service worker, o manifesto e os ícones ficam **só** em `dist/suporte/`. A central não vira instalável porque os arquivos não estão lá, não porque alguma regra os esconde.
+- `cliente.html` é renomeado para `index.html` na publicação: é a única página da pasta, e é o nome que o servidor procura sozinho em `/`.
+- A versão do cache do service worker é o **hash do JavaScript gerado**, injetado pelo build. É o que faz a casca antiga sair do aparelho do cliente quando publicamos; com um número fixo escrito à mão, o cache do primeiro dia sobreviveria a todas as publicações seguintes.
+
+O `.htaccess` de cada pasta vive em [deploy/](../deploy/) e é copiado pelo build. Editar o do `dist/` na mão não adianta: a próxima passada sobrescreve.
 
 ## O que fica de fora
 

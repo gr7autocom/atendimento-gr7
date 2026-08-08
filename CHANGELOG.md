@@ -4,6 +4,31 @@
 
 ---
 
+## 2026-08-08 — Anexo, áudio e as ações do chat
+
+- Atendente e cliente podem enviar arquivos: print, foto, PDF, planilha e documento. Imagem aparece aberta na conversa e abre em tamanho maior ao clicar; o resto vira uma linha com o nome e o tamanho
+- Dá para gravar áudio pelo microfone, escutar antes de enviar e descartar se não ficou bom
+- Botão direito (ou toque longo, no celular) abre as ações da mensagem: responder citando e apagar
+- **Mensagem apagada some para o cliente**, e continua visível para a equipe com o texto, marcada com quem apagou e a que horas. É o que permite conferir depois o que foi enviado
+- O cliente pode apagar o que mandou por 1 hora e editar por 15 minutos, como no WhatsApp. A equipe vê a marca de editada e o texto anterior
+- Chegou mensagem, toca um som. Com a janela em segundo plano, aparece também o aviso do Windows. O sino no topo liga ou desliga esses avisos, e antes ele não fazia nada
+- O aviso de privacidade passou a explicar que arquivos e áudios também ficam guardados, e pede para enviar só o necessário
+
+## 2026-08-07 — O cliente sabe o que acontece com os dados dele
+
+- Ao lado do aceite, um link "Como usamos seus dados" abre em janela e explica o que é pedido, para que serve, quem vê e por quanto tempo fica guardado. Antes a pessoa marcava a caixa sem ter onde ler o que estava aceitando
+- Quem quiser corrigir ou apagar os dados tem para onde escrever, e a resposta diz o que pode ser apagado e o que a lei obriga a manter
+- As sessões do canal web que já venceram passaram a ser apagadas sozinhas, uma vez por dia. Elas guardam telefone e vínculo com o chamado, e sessão morta não é usada por nada
+
+## 2026-08-07 — O cliente pode instalar o Atendimento como aplicativo
+
+- O site do cliente virou aplicativo instalável: abre em janela própria, com ícone na área de trabalho e na tela inicial do celular, sem barra de endereço
+- Aberto sem internet, o app carrega e explica que não conseguiu falar com o servidor, em vez de mostrar a página de erro do navegador. A conversa em si nunca fica guardada no aparelho
+- A central da equipe continua sendo só site, e o navegador não oferece instalação dela
+- A marca passou a aparecer com a logo da GR7 em todas as telas: topo da central, login, entrada do cliente e menu do celular
+- A tela de login dizia "Central de WhatsApp da equipe" e agora diz "Central de atendimento da equipe", porque o chamado também chega pelo site
+- A publicação passou a gerar duas pastas prontas, uma para cada endereço: `dist/atendimento/` para a equipe e `dist/suporte/` para o cliente. Sobe cada uma no seu subdomínio e acabou
+
 ## 2026-08-07 — A central mostra de onde veio cada chamado
 
 - O atendente distingue chamado do WhatsApp e do site pelo ícone no avatar e pelo rótulo no cabeçalho, e pode filtrar a fila por canal quando os dois estiverem em uso

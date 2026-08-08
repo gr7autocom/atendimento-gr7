@@ -26,6 +26,7 @@ Plataforma de atendimento via WhatsApp da GR7, operada pela equipe interna, **in
 - **URL:** `https://ghweohedmmmkufqhxdzn.supabase.co` (mesma do painel)
 - Env vars (valores no `.env`, nunca commitar): `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
 - Copiar os valores do `.env` do painel (mesmo projeto Supabase). Service role só em Edge Functions/CLI.
+- **Copiar do painel traz lixo junto, e um deles quebrou o build em silêncio.** O `.env` veio com `NODE_ENV=development` (o painel é uma aplicação Node; aqui nada usa essa variável). O Vite lê `NODE_ENV` dos arquivos `.env` e é dele que sai `import.meta.env.PROD`, então o `npm run build` produzia pacote de **desenvolvimento** e apagava na compilação todo bloco `if (import.meta.env.PROD)` — foi assim que o registro do service worker do PWA sumiu do build sem nenhum erro, em 2026-08-07. A defesa é o **`.env.production` versionado** (sem credencial, exceção explicada no `.gitignore`), que vence qualquer `.env` local. Não apague.
 
 ## Mapa de documentação
 
@@ -41,6 +42,14 @@ Plataforma de atendimento via WhatsApp da GR7, operada pela equipe interna, **in
 | Fluxo do bot, ciclo de vida do ticket | [docs/bot.md](docs/bot.md) |
 | Por que decidimos X | [docs/decisoes.md](docs/decisoes.md) |
 | Contatos, vínculo com empresa, o que o painel grava | [docs/prompt-alinhamento-contatos-painel.md](docs/prompt-alinhamento-contatos-painel.md) |
+
+## Coleta nova pede revisão do aviso de privacidade
+
+Sempre que uma tarefa fizer o produto **coletar algo que ele não coletava**, revisar o [`AvisoPrivacidade.tsx`](src/cliente/AvisoPrivacidade.tsx) **na mesma tarefa**. O aceite do canal web é o registro do consentimento da LGPD, e consentimento que não descreve o que é coletado não vale como consentimento.
+
+Aconteceu em 2026-08-08: o anexo passou a receber prints, fotos e áudios do cliente, que vão para o **Cloudinary**, e o aviso continuou falando só de nome, telefone e mensagens. Só apareceu no fechamento da tarefa.
+
+Não existe `docs/lgpd/` neste projeto: inventário de tratamentos, subprocessadores e política publicada não estão escritos em lugar nenhum. Hoje o aviso dentro do app é o único documento de privacidade do produto.
 
 ## Regras específicas
 
