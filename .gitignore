@@ -16,6 +16,10 @@ dist-ssr
 .env
 .env.*
 !.env.example
+# .env.production é exceção de propósito: não tem credencial nenhuma, só força
+# NODE_ENV=production no build. Precisa ser versionado, senão a proteção vale
+# só nesta máquina (ver o próprio arquivo).
+!.env.production
 
 # Artefatos de teste de navegador (Playwright MCP)
 .playwright-mcp/

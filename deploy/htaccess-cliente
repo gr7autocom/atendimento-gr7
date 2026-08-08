@@ -1,0 +1,43 @@
+# Vai para `dist/suporte/.htaccess` no build, e daí para o document root de
+# suporte.gr7autocom.com.br.
+#
+# Esta pasta contém SÓ o aplicativo do cliente. A tela de login da equipe não
+# existe aqui, então não há como alcançá-la por este endereço — não depende de
+# nenhuma regra estar certa.
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # Arquivo ou pasta que existe é entregue como está: o JavaScript, o CSS, as
+  # fontes, o service worker, o manifesto e os ícones. Precisa vir antes da
+  # regra de baixo, senão ela engole tudo.
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  RewriteRule ^ /index.html [L]
+</IfModule>
+
+<IfModule mod_mime.c>
+  # Sem esta linha o Apache entrega o manifesto como texto puro e o navegador o
+  # ignora em silêncio: o aplicativo deixa de ser instalável, sem mensagem
+  # nenhuma que aponte para a causa.
+  AddType application/manifest+json .webmanifest
+</IfModule>
+
+<IfModule mod_headers.c>
+  # Arquivo gerado pelo Vite tem hash no nome, então pode ficar guardado para
+  # sempre.
+  <FilesMatch "-[A-Za-z0-9_]{8,}\.(js|css)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+
+  # O oposto para os de nome fixo. O service worker é o caso crítico: guardado
+  # pelo navegador, prende o aplicativo numa versão antiga, e é ele quem decide
+  # o que mais fica guardado. Publicar corrigido e não ver efeito é o pior tipo
+  # de bug para diagnosticar.
+  <FilesMatch "^(sw\.js|cliente\.webmanifest|index\.html)$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+</IfModule>
