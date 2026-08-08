@@ -43,11 +43,6 @@ supabase/.temp/
 # nao versionado. O que importa dele esta resumido em docs/whatsapp.md.
 docs/uazapi-openapi-spec.yaml
 
-# Copia de trabalho da marca. E o mesmo arquivo de public/marca-gr7.png (mesmo
-# md5), que e o que o app usa e esta versionado. Fica de fora para nao existirem
-# dois lugares de onde trocar a logo.
-assets/
-
 # O deno.lock NAO entra aqui, de proposito: ele e o que fixa a versao do
 # supabase-js das Edge Functions (2.111.0) com o hash de integridade, entao
 # fora do git cada maquina resolve a sua e um deploy pode sair com versao
