@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { Clock, ShieldCheck, MessageSquareText, MessagesSquare } from 'lucide-react'
+import { Clock, ShieldCheck, MessageSquareText } from 'lucide-react'
 import { Botao } from '../components/ui/Botao'
 import { Entrada } from '../components/ui/Campo'
+import { Marca } from '../components/ui/Marca'
+import { AvisoPrivacidade } from './AvisoPrivacidade'
 import type { Disponibilidade } from './api'
 
 /**
@@ -57,6 +59,7 @@ export function Identificacao({
   const [telefone, setTelefone] = useState('')
   const [cnpj, setCnpj] = useState('')
   const [aceite, setAceite] = useState(false)
+  const [avisoAberto, setAvisoAberto] = useState(false)
   const [tentativas, setTentativas] = useState(0)
   const tentouEnviar = tentativas > 0
   const formRef = useRef<HTMLFormElement>(null)
@@ -182,10 +185,22 @@ export function Identificacao({
             className="mt-0.5 w-5 h-5 shrink-0 accent-[color:var(--br-1)] cursor-pointer"
           />
           <span className="text-corpo text-tx-2 leading-relaxed">
-            Autorizo a GR7 a usar meu nome e telefone para este atendimento e para o registro do
-            chamado.
+            Autorizo a GR7 Autocom a usar meu nome e telefone para este atendimento e para o
+            registro do chamado.
           </span>
         </label>
+        {/*
+          Fora do `label` de propósito: dentro dele, clicar no link marcaria a
+          caixa de aceite, e a pessoa acabaria consentindo sem ler, no gesto de
+          ir ler. O recuo alinha o link ao texto do aceite, não à caixa.
+        */}
+        <button
+          type="button"
+          onClick={() => setAvisoAberto(true)}
+          className="self-start ml-8 -mt-1 text-apoio text-br-2 underline underline-offset-2 hover:text-tx-1 transicao"
+        >
+          Como usamos seus dados
+        </button>
         {tentouEnviar && erros.aceite && (
           <span role="alert" className="text-apoio text-err -mt-2">
             {erros.aceite}
@@ -202,6 +217,8 @@ export function Identificacao({
           Continuar
         </Botao>
       </form>
+
+      <AvisoPrivacidade aberto={avisoAberto} onFechar={() => setAvisoAberto(false)} />
 
       {/*
         O aviso mais importante da tela, e o único que não tem solução técnica
@@ -227,11 +244,8 @@ export function Moldura({ children }: { children: React.ReactNode }) {
           A marca abre a tela porque o cliente chega por um link e precisa saber
           de cara com quem está falando antes de digitar telefone e CNPJ.
         */}
-        <div className="flex items-center gap-2.5 mb-7">
-          <div className="w-9 h-9 rounded-1 bg-br-1 flex items-center justify-center shrink-0">
-            <MessagesSquare size={20} className="text-white" />
-          </div>
-          <span className="text-corpo-lg font-medium text-tx-1">GR7 Atendimento</span>
+        <div className="mb-7">
+          <Marca tamanho="lg" />
         </div>
         {children}
       </div>
