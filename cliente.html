@@ -8,12 +8,19 @@
     <!--
       Segunda entrada do build, separada da central (index.html). O cliente nunca
       baixa o código da equipe, e a central nunca vira instalável: o manifest do
-      PWA será referenciado só aqui (Fase 5, etapa do aplicativo).
+      PWA é referenciado só aqui, e é o que faz o navegador oferecer "Instalar".
 
       `lang="pt-BR"` e não "en" como o index.html da central: leitor de tela
       pronuncia o texto no idioma declarado, e aqui quem lê é o cliente.
     -->
-    <title>Suporte GR7</title>
+    <link rel="manifest" href="/cliente.webmanifest" />
+    <!-- theme-color pinta a barra da janela do app instalado e a barra do
+         navegador no Android. Mesmo valor de background_color e do token sf-0,
+         senão a moldura aparece clara em volta de uma tela escura. -->
+    <meta name="theme-color" content="#0d0f13" />
+    <!-- O iOS ignora o manifest para o ícone da tela inicial. -->
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <title>GR7 Atendimento</title>
   </head>
   <body>
     <div id="root"></div>

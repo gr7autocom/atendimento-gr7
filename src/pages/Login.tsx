@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { MessagesSquare } from 'lucide-react'
+import { Marca } from '../components/ui/Marca'
 import { useAuth } from '../lib/auth'
 import { Botao } from '../components/ui/Botao'
 import { Entrada } from '../components/ui/Campo'
@@ -35,14 +35,14 @@ export function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-sf-0">
       <div className="w-full max-w-[360px]">
-        <div className="flex items-center justify-center gap-2.5 mb-6">
-          <div className="w-9 h-9 rounded-2 bg-br-1 flex items-center justify-center">
-            <MessagesSquare size={18} className="text-white" />
-          </div>
-          <div>
-            <div className="text-titulo font-semibold text-tx-1 leading-tight">GR7 Atendimento</div>
-            <div className="text-apoio text-tx-3 leading-tight">Central de WhatsApp da equipe</div>
-          </div>
+        <div className="flex flex-col items-center gap-1 mb-6">
+          <Marca tamanho="lg" />
+          {/*
+            Dizia "Central de WhatsApp da equipe". Desde o canal web o chamado
+            também chega pelo site, então nomear um canal aqui virou informação
+            errada (ver docs/design.md, texto que assume um canal).
+          */}
+          <div className="text-apoio text-tx-3">Central de atendimento da equipe</div>
         </div>
 
         <form
