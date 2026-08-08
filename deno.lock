@@ -1,0 +1,42 @@
+{
+  "version": "5",
+  "redirects": {
+    "https://esm.sh/@supabase/supabase-js@2": "https://esm.sh/@supabase/supabase-js@2.111.0"
+  },
+  "remote": {
+    "https://esm.sh/@supabase/supabase-js@2.111.0": "276104e20b7318fac2be1c67eb9be93f4280f5ec9f2fc5ac7b32e1f0ed6f31ba"
+  },
+  "workspace": {
+    "packageJson": {
+      "dependencies": [
+        "npm:@fontsource/roboto-mono@^5.3.0",
+        "npm:@fontsource/roboto@^5.3.0",
+        "npm:@supabase/supabase-js@^2.110.8",
+        "npm:@tailwindcss/vite@^4.3.3",
+        "npm:@tanstack/react-query@^5.101.4",
+        "npm:@testing-library/dom@^10.4.1",
+        "npm:@testing-library/jest-dom@^6.9.1",
+        "npm:@testing-library/react@^16.3.2",
+        "npm:@testing-library/user-event@^14.6.1",
+        "npm:@types/node@^24.13.2",
+        "npm:@types/react-dom@^19.2.3",
+        "npm:@types/react@^19.2.17",
+        "npm:@vitejs/plugin-react@^6.0.3",
+        "npm:clsx@^2.1.1",
+        "npm:jsdom@^29.1.1",
+        "npm:lucide-react@^1.26.0",
+        "npm:oxlint@^1.71.0",
+        "npm:react-dom@^19.2.7",
+        "npm:react-router-dom@^7.18.1",
+        "npm:react@^19.2.7",
+        "npm:supabase@^2.111.0",
+        "npm:tailwind-merge@^3.6.0",
+        "npm:tailwindcss@^4.3.3",
+        "npm:typescript@~6.0.2",
+        "npm:vite@^8.1.1",
+        "npm:vitest@^4.1.10",
+        "npm:zod@^3.25.76"
+      ]
+    }
+  }
+}

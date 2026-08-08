@@ -48,8 +48,8 @@ docs/uazapi-openapi-spec.yaml
 # dois lugares de onde trocar a logo.
 assets/
 
-# Lockfile do Deno (Edge Functions), gerado ao rodar deno check/lint na maquina.
-# Fora do git por decisao do usuario em 2026-08-08. Consequencia: a versao do
-# supabase-js das functions passa a ser resolvida por maquina, entao um deploy
-# pode sair com versao diferente da que foi testada aqui.
-deno.lock
+# O deno.lock NAO entra aqui, de proposito: ele e o que fixa a versao do
+# supabase-js das Edge Functions (2.111.0) com o hash de integridade, entao
+# fora do git cada maquina resolve a sua e um deploy pode sair com versao
+# diferente da testada. Nao contem credencial nenhuma, so URL publica, hash e
+# a lista de dependencias que ja esta no package.json (conferido em 2026-08-08).
