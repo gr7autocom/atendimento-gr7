@@ -19,6 +19,39 @@ export function nomeEmpresa(e: EmpresaResumo | null | undefined) {
   return e?.nome_fantasia || e?.razao_social || null
 }
 
+/*
+  Titular que pediu eliminação dos dados (LGPD).
+
+  `contatos.telefone` é NOT NULL UNIQUE e é a identidade do contato em todo o
+  sistema, então a anonimização não pode deixá-lo vazio: grava
+  `anonimizado:<uuid>`, único por construção e sem colidir com telefone real,
+  que é sempre E.164.
+
+  O prefixo é detalhe de banco e **não pode aparecer na tela**. Sem estes
+  helpers ele vaza como se fosse o nome do cliente na lista e no cabeçalho da
+  conversa — foi o que a primeira validação pela tela mostrou.
+*/
+const PREFIXO_ANONIMO = 'anonimizado:'
+
+export function ehTitularAnonimizado(telefone: string | null | undefined) {
+  return !!telefone?.startsWith(PREFIXO_ANONIMO)
+}
+
+export const ROTULO_ANONIMO = 'Titular anonimizado'
+
+/**
+ * Como o contato é chamado na lista e no cabeçalho da conversa.
+ *
+ * Estava escrita igual em `Conversa.tsx` e `ListaChamados.tsx`. Virou uma só
+ * aqui porque o caso do titular anonimizado precisava entrar nas duas, e regra
+ * de exibição duplicada é regra que vai divergir.
+ */
+export function nomeDoContato(a: { contato?: ContatoResumo | null }) {
+  const c = a.contato
+  if (ehTitularAnonimizado(c?.telefone)) return ROTULO_ANONIMO
+  return c?.nome || c?.nome_whatsapp || c?.telefone || 'Sem nome'
+}
+
 export type StatusAtendimento = 'triagem' | 'na_fila' | 'em_atendimento' | 'finalizado'
 
 export type AtendimentoLista = {

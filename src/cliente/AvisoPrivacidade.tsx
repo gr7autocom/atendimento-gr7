@@ -38,8 +38,10 @@ export function AvisoPrivacidade({ aberto, onFechar }: { aberto: boolean; onFech
 
         <Secao titulo="Quem tem acesso">
           Apenas a equipe de atendimento da GR7 Autocom. Seus dados não são compartilhados com
-          terceiros para fins comerciais. Usamos serviços contratados para hospedar o sistema e
-          armazenar os arquivos enviados, que atuam sob nossa responsabilidade.
+          terceiros para fins comerciais. Dois serviços contratados atuam sob nossa
+          responsabilidade: o <span className="text-tx-1">Supabase</span>, que hospeda o sistema e o
+          banco de dados, e o <span className="text-tx-1">Cloudinary</span>, que guarda os arquivos
+          enviados na conversa.
         </Secao>
 
         <Secao titulo="Por quanto tempo mantemos">
@@ -50,8 +52,9 @@ export function AvisoPrivacidade({ aberto, onFechar }: { aberto: boolean; onFech
 
         <Secao titulo="Para corrigir ou excluir seus dados">
           Envie sua solicitação para{' '}
-          <span className="text-tx-1">suporte@gr7autocom.com.br</span>. Informamos o que pode ser
-          excluído e o que a legislação exige manter.
+          <span className="text-tx-1">suporte@gr7autocom.com.br</span>. Retiramos seu nome, seu
+          telefone, as mensagens e os arquivos. O registro do chamado permanece pelos cinco anos,
+          sem identificar você, porque é a comprovação do atendimento.
         </Secao>
       </div>
     </Modal>

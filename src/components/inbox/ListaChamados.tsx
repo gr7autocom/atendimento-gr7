@@ -1,6 +1,12 @@
 import { useState } from 'react'
 import { Inbox as IconeInbox, ListFilter, RotateCw, X, Building2 } from 'lucide-react'
-import { nomeEmpresa, useMeusAtendimentosParticipante, type AtendimentoLista } from '../../lib/useInbox'
+import {
+  nomeEmpresa,
+  nomeDoContato,
+  ehTitularAnonimizado,
+  useMeusAtendimentosParticipante,
+  type AtendimentoLista,
+} from '../../lib/useInbox'
 import type { FiltroInbox } from '../../pages/Dashboard'
 import { useCrud } from '../../lib/useCrud'
 import { useUsuarios } from '../../lib/useVinculos'
@@ -16,10 +22,6 @@ import { canalDoChamado, ROTULO_CANAL, type Canal } from '../../lib/canal'
 
 type Fila = 'ativos' | 'pendentes' | 'potenciais'
 type Departamento = { id: string; nome: string; ativo: boolean }
-
-function nomeContato(a: AtendimentoLista) {
-  return a.contato?.nome || a.contato?.nome_whatsapp || a.contato?.telefone || 'Sem nome'
-}
 
 function hora(iso: string) {
   const d = new Date(iso)
@@ -116,7 +118,7 @@ export function ListaChamados({
     if (setorFiltro && a.departamento_id !== setorFiltro) return false
     if (atendenteFiltro && a.responsavel_id !== atendenteFiltro) return false
     if (!termo) return true
-    const alvo = `${nomeContato(a)} ${a.contato?.telefone ?? ''} ${a.protocolo} ${a.departamento?.nome ?? ''}`
+    const alvo = `${nomeDoContato(a)} ${a.contato?.telefone ?? ''} ${a.protocolo} ${a.departamento?.nome ?? ''}`
     return alvo.toLowerCase().includes(termo)
   })
 
@@ -264,10 +266,10 @@ export function ListaChamados({
                   aria-hidden="true"
                   className={cn('absolute left-0 top-0 bottom-0 w-[2px]', ativo ? 'bg-br-1' : 'bg-transparent')}
                 />
-                <Avatar nome={nomeContato(a)} tamanho={38} canal={canalDoChamado(a.canal)} />
+                <Avatar nome={nomeDoContato(a)} tamanho={38} canal={canalDoChamado(a.canal)} />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline justify-between gap-2">
-                    <span className="text-corpo text-tx-1 font-medium truncate">{nomeContato(a)}</span>
+                    <span className="text-corpo text-tx-1 font-medium truncate">{nomeDoContato(a)}</span>
                     <span className="dado text-mini text-tx-3 shrink-0">{hora(a.ultima_mensagem_em)}</span>
                   </div>
                   {empresa && (
@@ -286,7 +288,11 @@ export function ListaChamados({
                     )}
                   </div>
                   <div className="mt-1">
-                    <span className="dado text-mini text-tx-3 truncate">{a.contato?.telefone ?? ''}</span>
+                    {/* Titular anonimizado não tem telefone a mostrar: o valor
+                        guardado é chave de banco (`anonimizado:<uuid>`). */}
+                    <span className="dado text-mini text-tx-3 truncate">
+                      {ehTitularAnonimizado(a.contato?.telefone) ? '' : a.contato?.telefone ?? ''}
+                    </span>
                   </div>
                   {tags.length > 0 && (
                     <div className="flex flex-wrap items-center gap-1 mt-1.5">

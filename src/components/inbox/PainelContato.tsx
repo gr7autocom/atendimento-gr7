@@ -6,6 +6,8 @@ import {
   useParticipantes,
   useTarefasDoContato,
   nomeEmpresa,
+  nomeDoContato,
+  ehTitularAnonimizado,
   type AtendimentoLista,
 } from '../../lib/useInbox'
 import { Avatar } from '../ui/Avatar'
@@ -16,10 +18,8 @@ import { HistoricoContato } from './HistoricoContato'
 import { ParticipantesContato } from './ParticipantesContato'
 import { TarefasContato } from './TarefasContato'
 import { canalDoChamado } from '../../lib/canal'
-
-function nomeContato(a: AtendimentoLista) {
-  return a.contato?.nome || a.contato?.nome_whatsapp || a.contato?.telefone || 'Sem nome'
-}
+import { EliminarTitular } from './EliminarTitular'
+import { usePermissao } from '../../lib/permissoes'
 
 /** Card de contador do cabeçalho (Atendimentos, Mensagens). */
 function Contador({
@@ -63,6 +63,8 @@ export function PainelContato({
   const contadores = useContadoresContato(atendimento?.contato?.id ?? null)
   const participantes = useParticipantes(atendimento?.id ?? null)
   const tarefas = useTarefasDoContato(atendimento?.contato?.id ?? null)
+  const { isAdmin } = usePermissao()
+  const anonimizado = ehTitularAnonimizado(atendimento?.contato?.telefone)
 
   useEffect(() => {
     setNome(atendimento?.contato?.nome ?? '')
@@ -87,7 +89,7 @@ export function PainelContato({
   return (
     <aside className={cls}>
       <div className="p-4 flex flex-col items-center text-center border-b border-bd-1">
-        <Avatar nome={nomeContato(atendimento)} tamanho={72} canal={canal} />
+        <Avatar nome={nomeDoContato(atendimento)} tamanho={72} canal={canal} />
         <button
           type="button"
           onClick={copiarProtocolo}
@@ -142,8 +144,15 @@ export function PainelContato({
                   atualizar.mutate({ id: contato.id, valores: { nome: nome || null } })
                 }
               }}
-              placeholder={contato?.nome_whatsapp ?? 'Nome do contato'}
+              placeholder={anonimizado ? 'Removido a pedido do titular' : contato?.nome_whatsapp ?? 'Nome do contato'}
               aria-label="Nome do contato"
+              /*
+                Travado depois da eliminação, e isto é conformidade e não
+                enfeite: o campo grava direto em `contatos.nome`, então digitar
+                aqui reintroduziria o dado pessoal que o titular pediu para
+                apagar, sem passar por nenhuma checagem.
+              */
+              disabled={anonimizado}
               // Só no WhatsApp: ali a dica traz o nome do perfil da conta, que é
               // informação nova. No site ela repetiria o aviso do topo da seção,
               // que já cobre nome, telefone e CNPJ.
@@ -172,12 +181,20 @@ export function PainelContato({
               }}
               placeholder="Ex.: Financeiro"
               aria-label="Cargo do contato"
+              disabled={anonimizado}
             />
           </div>
 
           <div>
             <div className="rotulo mb-1">Telefone</div>
-            <div className="dado text-corpo text-tx-1">{contato?.telefone}</div>
+            {/*
+              O valor cru de um titular anonimizado é `anonimizado:<uuid>`, que
+              é chave de banco e não telefone. Mostrá-lo aqui não vaza dado
+              pessoal, mas faz o painel parecer quebrado.
+            */}
+            <div className={anonimizado ? 'text-corpo text-tx-3' : 'dado text-corpo text-tx-1'}>
+              {anonimizado ? 'Removido a pedido do titular' : contato?.telefone}
+            </div>
           </div>
         </div>
       </SecaoContato>
@@ -197,6 +214,13 @@ export function PainelContato({
       <SecaoContato titulo="Histórico" contagem={Math.max((contadores.data?.atendimentos ?? 1) - 1, 0)}>
         <HistoricoContato contatoId={contato?.id ?? null} atendimentoAtualId={atendimento.id} />
       </SecaoContato>
+
+      {/*
+        Ação de LGPD no rodapé, só para admin, e depois de tudo: é rara,
+        irreversível e não tem nada a ver com atender. Perto de Assumir ou
+        Transferir ela seria clique de rotina em algo que não volta.
+      */}
+      {isAdmin && <EliminarTitular contato={contato} />}
     </aside>
   )
 }

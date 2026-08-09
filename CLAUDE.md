@@ -41,6 +41,7 @@ Plataforma de atendimento via WhatsApp da GR7, operada pela equipe interna, **in
 | Canal web, PWA do cliente, sessão sem login | [docs/canal-web.md](docs/canal-web.md) |
 | Fluxo do bot, ciclo de vida do ticket | [docs/bot.md](docs/bot.md) |
 | Por que decidimos X | [docs/decisoes.md](docs/decisoes.md) |
+| LGPD: coleta, subprocessador, direito do titular | [docs/lgpd/](docs/lgpd/) |
 | Contatos, vínculo com empresa, o que o painel grava | [docs/prompt-alinhamento-contatos-painel.md](docs/prompt-alinhamento-contatos-painel.md) |
 
 ## Coleta nova pede revisão do aviso de privacidade
@@ -49,7 +50,9 @@ Sempre que uma tarefa fizer o produto **coletar algo que ele não coletava**, re
 
 Aconteceu em 2026-08-08: o anexo passou a receber prints, fotos e áudios do cliente, que vão para o **Cloudinary**, e o aviso continuou falando só de nome, telefone e mensagens. Só apareceu no fechamento da tarefa.
 
-Não existe `docs/lgpd/` neste projeto: inventário de tratamentos, subprocessadores e política publicada não estão escritos em lugar nenhum. Hoje o aviso dentro do app é o único documento de privacidade do produto.
+**A coleta nova entra no [docs/lgpd/inventario.md](docs/lgpd/inventario.md) na mesma tarefa, junto do aviso.** O inventário existe desde 2026-08-09 e só vale se acompanhar o código: uma linha a mais na tabela de tratamentos custa um minuto, e reconstruir de memória o que o sistema coleta custa uma auditoria.
+
+Os três documentos: [inventario.md](docs/lgpd/inventario.md) (o que se coleta, base legal, retenção), [subprocessadores.md](docs/lgpd/subprocessadores.md) (Supabase e Cloudinary, e o que a URL pública do Cloudinary implica) e [direitos-do-titular.md](docs/lgpd/direitos-do-titular.md) (como atender cada pedido do Art. 18). **Encarregado de dados ainda não indicado** — é o que falta para o aviso nomear uma pessoa em vez de um e-mail de setor.
 
 ## Regras específicas
 

@@ -4,6 +4,14 @@
 
 ---
 
+## 2026-08-09 — Direito de exclusão da LGPD
+
+- O administrador pode apagar os dados de quem pede exclusão: nome, telefone, as mensagens e os arquivos enviados saem, no sistema e no serviço de armazenamento
+- O chamado continua registrado, sem identificar a pessoa. É a prova de que o atendimento aconteceu, e a lei manda guardar por cinco anos
+- Para evitar clique errado, a exclusão só libera depois de digitar o telefone de quem vai ser esquecido
+- O aviso de privacidade passou a dizer os dois serviços contratados pelo nome (Supabase e Cloudinary), em vez de "serviços contratados"
+- Criado o inventário de privacidade do produto (`docs/lgpd/`): o que é coletado, para quê, e como atender cada pedido
+
 ## 2026-08-08 — Anexo, áudio e as ações do chat
 
 - Atendente e cliente podem enviar arquivos: print, foto, PDF, planilha e documento. Imagem aparece aberta na conversa e abre em tamanho maior ao clicar; o resto vira uma linha com o nome e o tamanho

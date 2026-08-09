@@ -25,6 +25,7 @@ import {
   usePresencaCliente,
   useEncerrarAcessoCliente,
   nomeEmpresa,
+  nomeDoContato,
   type AtendimentoLista,
   type EventoAtendimento,
   type Mensagem,
@@ -60,10 +61,6 @@ import { CampoAnexo, FilaAnexos, type AnexoPendente } from './CampoAnexo'
 type Departamento = { id: string; nome: string; ativo: boolean }
 type Motivo = { id: string; nome: string; ativo: boolean; departamento_id?: string | null }
 type MsgRapida = { id: string; atalho: string; texto: string; ativo?: boolean; departamento_id?: string | null }
-
-function nomeContato(a: AtendimentoLista) {
-  return a.contato?.nome || a.contato?.nome_whatsapp || a.contato?.telefone || 'Sem nome'
-}
 
 function hora(iso: string) {
   return new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
@@ -312,7 +309,7 @@ export function Conversa({
     setTexto(
       aplicarVariaveis(m.texto, {
         atendente: usuarioAtual?.nome ?? '',
-        contato: nomeContato(atendimento),
+        contato: nomeDoContato(atendimento),
         empresa: nomeEmpresa(atendimento.contato?.cliente) ?? '',
         protocolo: String(atendimento.protocolo),
         departamento: atendimento.departamento?.nome ?? '',
@@ -345,9 +342,9 @@ export function Conversa({
               <ArrowLeft size={18} />
             </button>
           )}
-          <Avatar nome={nomeContato(atendimento)} tamanho={34} canal={canal} />
+          <Avatar nome={nomeDoContato(atendimento)} tamanho={34} canal={canal} />
           <div className="min-w-0">
-            <div className="text-corpo font-medium text-tx-1 truncate">{nomeContato(atendimento)}</div>
+            <div className="text-corpo font-medium text-tx-1 truncate">{nomeDoContato(atendimento)}</div>
             {/* `flex-wrap`: com a presença do cliente a linha passa de quatro itens e
                 quebraria fora da tela no celular, escondendo justo o estado novo. */}
             <div className="flex flex-wrap items-center gap-2 text-apoio text-tx-2">

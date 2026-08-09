@@ -59,8 +59,15 @@ export type AnexoGravado = {
   tamanho_bytes: number
 }
 
-/** Assinatura do Cloudinary: SHA-1 dos parâmetros em ordem alfabética + o segredo. */
-async function assinar(params: Record<string, string>, segredo: string): Promise<string> {
+/**
+ * Assinatura do Cloudinary: SHA-1 dos parâmetros em ordem alfabética + o segredo.
+ *
+ * Exportada porque o `destroy` da eliminação de titular (LGPD) assina do mesmo
+ * jeito. Duplicar essa função em dois lugares seria o pior tipo de duplicação:
+ * uma cópia errada não falha no build, falha em produção com "assinatura
+ * inválida" e o arquivo do titular continua no ar.
+ */
+export async function assinar(params: Record<string, string>, segredo: string): Promise<string> {
   const base = Object.keys(params)
     .sort()
     .map((k) => `${k}=${params[k]}`)
