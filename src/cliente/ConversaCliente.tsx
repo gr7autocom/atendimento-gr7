@@ -183,44 +183,64 @@ function EscolhaDeSetor({
   )
 }
 
-function Avaliacao({ aoAvaliar, enviando }: { aoAvaliar: (nota: number) => void; enviando: boolean }) {
+/**
+ * Pop-up pedindo a nota. Sem X, sem Esc, sem clicar fora (`fechavel={false}` no
+ * `Modal`): não existe conversa "por trás" para onde voltar fechando — o rodapé
+ * já mostra o aviso de encerrado nesse momento — e simplesmente não pedir mais
+ * seria voltar ao problema de origem, a pergunta que ninguém notava no rodapé.
+ *
+ * Por isso o texto evita "obrigatório" ou "não pode fechar": a pessoa não está
+ * sendo impedida de nada, só está sendo convidada a responder uma pergunta
+ * rápida antes de seguir. Nenhuma cor de alerta, pelo mesmo motivo.
+ */
+function Avaliacao({
+  aberto,
+  aoAvaliar,
+  enviando,
+}: {
+  aberto: boolean
+  aoAvaliar: (nota: number) => void
+  enviando: boolean
+}) {
   const [nota, setNota] = useState<number | null>(null)
   return (
-    <div className="border-t border-bd-1 bg-sf-1 p-4 flex flex-col gap-3">
-      <p className="text-corpo-lg text-tx-1 text-center">De 0 a 10, como foi o atendimento?</p>
-      {/*
-        Botões e não campo de texto: no WhatsApp a nota vem digitada porque é o que
-        o canal permite; aqui a tela resolve, e ninguém erra o formato.
-      */}
-      <div className="grid grid-cols-6 sm:grid-cols-11 gap-1.5">
-        {Array.from({ length: 11 }, (_, n) => (
-          <button
-            key={n}
-            type="button"
-            onClick={() => setNota(n)}
-            aria-pressed={nota === n}
-            className={cn(
-              'h-11 rounded-1 border text-corpo-lg font-medium transicao',
-              'focus:outline-none focus:ring-2 focus:ring-[color:var(--br-soft)]',
-              nota === n
-                ? 'bg-br-soft border-br-2 text-br-2'
-                : 'bg-sf-2 border-bd-campo text-tx-2 hover:border-tx-3 hover:text-tx-1'
-            )}
-          >
-            {n}
-          </button>
-        ))}
+    <Modal titulo="Como foi o atendimento?" aberto={aberto} onFechar={() => {}} fechavel={false}>
+      <div className="flex flex-col gap-3">
+        <p className="text-corpo-lg text-tx-1 text-center">De 0 a 10, qual nota você dá?</p>
+        {/*
+          Botões e não campo de texto: no WhatsApp a nota vem digitada porque é o
+          que o canal permite; aqui a tela resolve, e ninguém erra o formato.
+        */}
+        <div className="grid grid-cols-6 sm:grid-cols-11 gap-1.5">
+          {Array.from({ length: 11 }, (_, n) => (
+            <button
+              key={n}
+              type="button"
+              onClick={() => setNota(n)}
+              aria-pressed={nota === n}
+              className={cn(
+                'h-11 rounded-1 border text-corpo-lg font-medium transicao',
+                'focus:outline-none focus:ring-2 focus:ring-[color:var(--br-soft)]',
+                nota === n
+                  ? 'bg-br-soft border-br-2 text-br-2'
+                  : 'bg-sf-2 border-bd-campo text-tx-2 hover:border-tx-3 hover:text-tx-1'
+              )}
+            >
+              {n}
+            </button>
+          ))}
+        </div>
+        <Botao
+          variante="primario"
+          disabled={nota === null}
+          carregando={enviando}
+          onClick={() => nota !== null && aoAvaliar(nota)}
+          className="h-11 text-corpo-lg w-full"
+        >
+          Enviar nota
+        </Botao>
       </div>
-      <Botao
-        variante="primario"
-        disabled={nota === null}
-        carregando={enviando}
-        onClick={() => nota !== null && aoAvaliar(nota)}
-        className="h-11 text-corpo-lg w-full"
-      >
-        Enviar nota
-      </Botao>
-    </div>
+    </Modal>
   )
 }
 
@@ -474,11 +494,13 @@ export function ConversaCliente({
         </div>
       </div>
 
-      {conversa.aguardando_avaliacao ? (
-        <div className="mx-auto w-full max-w-[720px]">
-          <Avaliacao aoAvaliar={aoAvaliar} enviando={enviando} />
-        </div>
-      ) : conversa.encerrado ? (
+      {/*
+        `aguardando_avaliacao` implica `encerrado`: os dois vêm juntos do servidor
+        até a nota ser enviada. O rodapé mostra sempre o aviso de encerrado, e o
+        pop-up da nota entra por cima — assim, se a rede atrasar entre um estado e
+        outro, não existe instante em que o rodapé mostra a caixa de digitar.
+      */}
+      {conversa.encerrado ? (
         <div className="shrink-0 border-t border-bd-1 bg-sf-1 px-4 py-4">
           <div className="mx-auto w-full max-w-[720px] flex flex-col items-center gap-3 text-center">
             <div className="flex items-center gap-2 text-corpo-lg text-tx-2">
@@ -701,6 +723,8 @@ export function ConversaCliente({
         }}
         aoCancelar={() => setModalEncerrar(false)}
       />
+
+      <Avaliacao aberto={conversa.aguardando_avaliacao} aoAvaliar={aoAvaliar} enviando={enviando} />
     </div>
   )
 }

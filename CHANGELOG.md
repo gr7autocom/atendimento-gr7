@@ -4,6 +4,10 @@
 
 ---
 
+## 2026-08-09 — A nota de avaliação virou pop-up
+
+- Quando o atendente encerra o chamado, o cliente agora vê um pop-up perguntando a nota de 0 a 10, em vez da pergunta discreta que ficava escondida embaixo da conversa
+
 ## 2026-08-09 — Direito de exclusão da LGPD
 
 - O administrador pode apagar os dados de quem pede exclusão: nome, telefone, as mensagens e os arquivos enviados saem, no sistema e no serviço de armazenamento

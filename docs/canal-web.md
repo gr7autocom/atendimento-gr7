@@ -144,7 +144,7 @@ Sem menu numerado, mas as regras de negócio não são do WhatsApp e se reaprove
 | Fila e roteamento | Idêntico |
 | Fora de horário e plantão | Idêntico: abre com plantonista de janela ativa, não abre sem |
 | Reabertura em 3h | Vale, mas **explícita** na tela, não silenciosa, e só com a sessão viva |
-| Avaliação | O gatilho já dispara. A resposta vira **seletor de 0 a 10** |
+| Avaliação | O gatilho já dispara (só quando o atendente finaliza, não quando o cliente encerra). A resposta é um **pop-up** com seletor de 0 a 10 (`fechavel={false}` no `Modal`), e não uma caixa embutida no rodapé — decisão de 2026-08-09, para o cliente não deixar de notar a pergunta |
 | `#sair` | Vira botão "Encerrar atendimento" com confirmação |
 | Identificação por CNPJ digitado | Não roda, o formulário resolve |
 

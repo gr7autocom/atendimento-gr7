@@ -25,23 +25,33 @@ export function Modal({
   onFechar,
   children,
   largura = 'padrao',
+  fechavel = true,
 }: {
   titulo: string
   aberto: boolean
   onFechar: () => void
   children: ReactNode
   largura?: keyof typeof LARGURAS
+  /**
+   * `false` tira o X, o Esc e o clique fora. É para o caso raro em que a tela
+   * só continua depois de uma resposta obrigatória (a nota de avaliação do
+   * cliente, por exemplo) — sem isso, "fechar" deixaria a pessoa num limbo
+   * sem ação nenhuma disponível, porque não existe conteúdo por trás para
+   * onde voltar. Continua um `role="dialog"` normal: quem usa teclado só não
+   * encontra uma saída, porque genuinamente não há uma.
+   */
+  fechavel?: boolean
 }) {
   const caixa = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (!aberto) return
+    if (!aberto || !fechavel) return
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onFechar()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [aberto, onFechar])
+  }, [aberto, fechavel, onFechar])
 
   /**
    * Foco: sem isso o Tab continuava passeando pela tela ATRÁS do diálogo, então
@@ -82,7 +92,7 @@ export function Modal({
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
-      onClick={onFechar}
+      onClick={fechavel ? onFechar : undefined}
     >
       <div
         ref={caixa}
@@ -96,9 +106,11 @@ export function Modal({
       >
         <div className="flex items-center justify-between px-4 h-12 border-b border-bd-1">
           <h2 className="text-corpo-lg font-semibold text-tx-1">{titulo}</h2>
-          <Botao variante="fantasma" tamanho="sm" onClick={onFechar} aria-label="Fechar">
-            <X size={16} />
-          </Botao>
+          {fechavel && (
+            <Botao variante="fantasma" tamanho="sm" onClick={onFechar} aria-label="Fechar">
+              <X size={16} />
+            </Botao>
+          )}
         </div>
         <div className="p-4">{children}</div>
       </div>
