@@ -4,6 +4,10 @@
 
 ---
 
+## 2026-08-10 — Corrigido: a tela voltava para o formulário ao mandar a primeira mensagem
+
+- Ao descrever o problema pela primeira vez, a tela chegava a mostrar de volta o formulário inicial por um instante antes do chat aparecer. Só acontecia com internet mais lenta, e não acontece mais
+
 ## 2026-08-10 — Editar e apagar avisam antes de recusar
 
 - No app do cliente, tentar editar ou apagar uma mensagem antiga agora mostra de cara que o prazo passou, em vez de deixar escolher a nota, escrever o texto novo ou confirmar o apagar para só então recusar

@@ -511,6 +511,17 @@ export function AppCliente() {
     )
   }
 
+  /*
+    Token existe, conversa ainda não chegou: a brecha entre `abrirChamado`
+    guardar o token e `buscarConversa` terminar (duas idas ao servidor, uma
+    depois da outra). Sem este retorno, nenhuma das checagens acima bate — não
+    tem rascunho (já foi limpo), não tem conversa (ainda não chegou) — e a tela
+    cai direto no formulário do zero, por um instante, entre a pessoa mandar o
+    relato e o chat de verdade aparecer. Com internet lenta dá para ver picar;
+    foi assim que o usuário achou, testando em produção.
+  */
+  if (token) return <Carregando />
+
   if (!disponibilidade) {
     return (
       <Recado
