@@ -4,6 +4,12 @@
 
 ---
 
+## 2026-08-10 — Aviso de resposta sem depender de som ou permissão
+
+- O título da aba do navegador agora mostra quantas respostas chegaram enquanto você não estava olhando, com um contador no favicon também — útil em qualquer máquina, mesmo sem caixa de som
+- O aviso passou a considerar corretamente quando você está com outro programa em primeiro plano, não só quando a aba está minimizada
+- Trocar de aba enquanto espera resposta não deixa mais o app "surdo": ele continua checando, só mais devagar
+
 ## 2026-08-10 — Corrigido: a tela voltava para o formulário ao mandar a primeira mensagem
 
 - Ao descrever o problema pela primeira vez, a tela chegava a mostrar de volta o formulário inicial por um instante antes do chat aparecer. Só acontecia com internet mais lenta, e não acontece mais

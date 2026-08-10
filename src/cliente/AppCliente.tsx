@@ -3,6 +3,7 @@ import { Identificacao, type DadosIdentificacao } from './Identificacao'
 import { ConversaCliente, type MensagemPendente } from './ConversaCliente'
 import { Carregando, Recado } from './Estados'
 import { avisar, tocarAvisoSonoro, tocarSomEnvio } from '../lib/notificacoes'
+import { avisarNaAba, limparAba } from '../lib/tituloAba'
 import {
   api,
   erroDeCampo,
@@ -29,6 +30,18 @@ import { lerSessao, limparSessao, salvarSessao } from './sessao'
   mudar aqui pede mudar lá.
 */
 const INTERVALO_MS = 10_000
+
+/*
+  Ritmo com a aba trocada para outra (não em foco, mas também não escondida
+  de verdade). Antes disto o polling PARAVA por completo nesse caso — e então
+  nada nunca avisava quem trocou de aba enquanto esperava a resposta, porque
+  não havia checagem nenhuma para disparar aviso. Continuar mais devagar, e
+  não parar, é decisão do usuário (2026-08-10): custa mais chamada de quem
+  esquece a aba aberta, e a presença que o atendente vê fica um pouco menos
+  exata por esse tempo — o ganho é o cliente saber que foi respondido sem
+  precisar voltar à aba para descobrir.
+*/
+const INTERVALO_ABA_ESCONDIDA_MS = 30_000
 
 type Rascunho = {
   dados: DadosIdentificacao
@@ -118,11 +131,22 @@ export function AppCliente() {
         const chegaram = nova.mensagens.filter((m) => !conhecidas.has(m.id) && m.origem !== 'cliente')
         if (chegaram.length > 0) {
           /*
-            Com o app à frente, a mensagem já apareceu na conversa: som discreto
-            e nada de card. Com a aba escondida vale o alerta, que é o único
-            aviso que a pessoa tem de que a resposta chegou.
+            `hasFocus()`, não `visibilityState`: são perguntas diferentes. A
+            aba continua "visível" mesmo com o Windows em outro programa na
+            frente — só fica "hidden" se for minimizada ou trocada de aba —,
+            então quem só trocou de janela (o caso que motivou isto, 2026-08-10:
+            cliente sem caixa de som, foi olhar outro programa esperando a
+            resposta) recebia sempre o som discreto, porque para a aba nada
+            tinha mudado. `hasFocus()` pergunta a coisa certa: esta janela tem
+            a atenção de quem usa agora?
+
+            Com foco, a mensagem já apareceu na conversa: som discreto e nada
+            de card. Sem foco vale o alerta — mas o card depende de permissão
+            que a pessoa pode nunca ter concedido, e som não ajuda numa máquina
+            sem caixa de som. Título e favicon não pedem permissão nenhuma: são
+            a garantia de que sobra algum aviso.
           */
-          if (document.visibilityState === 'visible') {
+          if (document.hasFocus()) {
             tocarSomEnvio()
           } else {
             tocarAvisoSonoro()
@@ -132,6 +156,7 @@ export function AppCliente() {
               url: '/',
               tag: 'resposta-atendimento',
             })
+            avisarNaAba(chegaram.length)
           }
         }
       }
@@ -183,35 +208,46 @@ export function AppCliente() {
   }, [])
 
   /*
-    Polling pausado com a aba escondida, e uma busca imediata ao voltar.
+    Polling mais devagar com a aba escondida — trocada para outra aba ou
+    minimizada —, mas nunca parado por completo.
 
-    Dois ganhos: não gastamos invocação com quem deixou a aba aberta a manhã
-    toda, e a presença que o atendente vê passa a dizer a verdade, porque quem
-    está com a aba em segundo plano de fato não está lendo.
+    Parava de vez até 2026-08-10: economizava invocação de quem deixa a aba
+    aberta a manhã toda, mas também significava que quem trocasse de aba
+    esperando resposta não tinha CHECAGEM NENHUMA acontecendo enquanto isso —
+    não é que o aviso falhasse, é que nada rodava para disparar aviso algum.
+    Continuar mais devagar troca invocação extra (e a presença que o atendente
+    vê ficando um pouco menos exata nesse período) por o cliente saber que foi
+    respondido sem precisar adivinhar a hora de voltar à aba.
   */
   useEffect(() => {
     if (!token || conversa?.encerrado) return
     let id: number | undefined
-    const parar = () => {
+    const comecar = (intervaloMs: number) => {
       if (id) window.clearInterval(id)
-      id = undefined
+      id = window.setInterval(buscarConversa, intervaloMs)
     }
-    const comecar = () => {
-      parar()
-      id = window.setInterval(buscarConversa, INTERVALO_MS)
-    }
+    // Zera o aviso da aba (título e favicon) assim que a pessoa recupera esta
+    // aba OU esta janela — o aviso é "tem algo novo", não "confirmamos que
+    // você leu", e essa distinção resolve sozinha no instante em que o olho
+    // chega à tela. Idempotente: chamar duas vezes (troca de aba dispara os
+    // dois eventos) não faz nada da segunda vez.
     const aoMudarVisibilidade = () => {
-      if (document.hidden) parar()
-      else {
+      if (document.hidden) {
+        comecar(INTERVALO_ABA_ESCONDIDA_MS)
+      } else {
+        limparAba()
         buscarConversa()
-        comecar()
+        comecar(INTERVALO_MS)
       }
     }
-    if (!document.hidden) comecar()
+    const aoGanharFoco = () => limparAba()
+    comecar(document.hidden ? INTERVALO_ABA_ESCONDIDA_MS : INTERVALO_MS)
     document.addEventListener('visibilitychange', aoMudarVisibilidade)
+    window.addEventListener('focus', aoGanharFoco)
     return () => {
-      parar()
+      if (id) window.clearInterval(id)
       document.removeEventListener('visibilitychange', aoMudarVisibilidade)
+      window.removeEventListener('focus', aoGanharFoco)
     }
   }, [token, conversa?.encerrado, buscarConversa])
 

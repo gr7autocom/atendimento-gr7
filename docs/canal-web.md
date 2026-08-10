@@ -233,6 +233,16 @@ No app do cliente o som sai depois da confirmação do servidor, e não no cliqu
 
 Os dois `.mp3` entram nos **dois** pacotes do build (`COMUNS` no [`vite.config.ts`](../vite.config.ts)), porque valem para o atendente e para o cliente.
 
+### "Ninguém está olhando" é `hasFocus()`, não `visibilityState`
+
+A aba continua **visível** mesmo com o Windows em outro programa na frente — só fica **hidden** se for minimizada ou trocada de aba. Usar `visibilityState` como critério (como o alerta acima fazia até 2026-08-10) faz o alerta nunca disparar em quem só trocou de janela — que é o caso mais comum de "não está olhando". `document.hasFocus()` pergunta a pergunta certa, e vale nos dois lados.
+
+### Título e favicon: aviso sem depender de permissão (só no cliente)
+
+O card do sistema exige permissão concedida, e no cliente isso depende de a pessoa ter clicado em "Avisar quando responderem" — fácil de nunca acontecer, e numa máquina sem caixa de som o som sozinho não ajuda. `lib/tituloAba.ts` cobre isso sem pedir nada: o título da aba ganha o prefixo `(N)` e o favicon uma bolinha com o número, os dois lidos sempre a partir da base original (nunca da badge anterior, para não empilhar) e zerados tanto no `visibilitychange` de volta quanto no `focus` da janela — cobre quem recupera o foco sem nunca ter trocado de aba.
+
+Trocar de aba **não pode mais parar o polling por completo** (decisão de 2026-08-10, revendo o desenho da Fase 5): parar de vez significava não haver checagem nenhuma rodando enquanto a pessoa está em outra aba, e portanto nenhum aviso possível — não é que o aviso falhasse, é que nada existia para disparar aviso algum. Com a aba trocada o polling continua a **30s** (contra 10s em foco), decisão que troca chamada extra e presença um pouco menos exata por o cliente saber que foi respondido.
+
 ## O que fica de fora
 
 Histórico para o cliente, acompanhamento de tarefas e push (a notificação depende do app aberto, mesmo que em outra aba).
