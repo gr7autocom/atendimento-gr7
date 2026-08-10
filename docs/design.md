@@ -151,6 +151,7 @@ Em [`src/components/ui/`](../src/components/ui/):
 | `Botao` | variantes `primario`, `neutro`, `perigo`, `fantasma`; tamanhos `sm`/`md`; aceita ícone |
 | `Entrada`, `AreaTexto`, `Selecao` | campos com rótulo, dica e erro; foco por anel |
 | `Modal` | overlay, fecha no Esc e no clique fora; `role="dialog"`. `fechavel={false}` tira as três saídas (X, Esc, clique fora), para o raro caso de resposta obrigatória sem conteúdo por trás para onde voltar (a nota de avaliação do cliente) |
+| `MenuContexto` | menu do botão direito, posicionado no cursor. Item com `desabilitado` fica visível e cinza, com o motivo no `title`, em vez de sumir da lista — sumir faria parecer que a ação nunca existiu (editar/apagar mensagem fora do prazo, no cliente) |
 | `Selo`, `PontoStatus` | selo por tom; status do atendimento como ponto colorido (+ rótulo opcional) |
 | `Tabela`, `Th`, `Tr`, `Td` | tabela densa com cabeçalho discreto e hover de linha |
 | `Vazio`, `Skeleton`, `LinhasCarregando`, `Erro` | estados: vazio orienta a ação; carregando usa esqueleto; erro oferece retry |

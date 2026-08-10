@@ -39,6 +39,17 @@ export type Disponibilidade = {
 /** Teto por anexo. Igual ao da central e ao da Edge Function (`MAX_ANEXO_BYTES`). */
 export const MAX_ANEXO_MB = 10
 
+/*
+  Janelas de apagar e editar a própria mensagem. Iguais a `JANELA_APAGAR_MIN` e
+  `JANELA_EDITAR_MIN` em `supabase/functions/atendimento-web/index.ts` — o servidor
+  é quem decide de verdade (`prazo_encerrado`), isto aqui só evita o clique morto:
+  sem isto, o menu oferece "Editar"/"Apagar" numa mensagem de duas horas atrás, e o
+  cliente só descobre que não pode depois de escolher a nota, escrever o texto
+  novo, ou confirmar o apagar.
+*/
+export const JANELA_APAGAR_MIN = 60
+export const JANELA_EDITAR_MIN = 15
+
 export type AnexoWeb = {
   id: string
   mensagem_id: string

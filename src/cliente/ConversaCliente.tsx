@@ -7,7 +7,12 @@ import { GravadorAudio, BotaoGravar } from '../components/ui/GravadorAudio'
 import { MenuContexto } from '../components/ui/MenuContexto'
 import { estadoDaPermissao, pedirPermissao, type EstadoPermissao } from '../lib/notificacoes'
 import { cn } from '../lib/utils'
-import type { AnexoWeb, Conversa, DepartamentoWeb, MensagemWeb } from './api'
+import { JANELA_APAGAR_MIN, JANELA_EDITAR_MIN, type AnexoWeb, type Conversa, type DepartamentoWeb, type MensagemWeb } from './api'
+
+/** Minutos passados desde `created_at`, para comparar com a janela de editar/apagar. */
+function minutosDesde(iso: string): number {
+  return (Date.now() - new Date(iso).getTime()) / 60_000
+}
 
 /**
  * Segunda tela do cliente: a conversa em si.
@@ -633,6 +638,8 @@ export function ConversaCliente({
                   {
                     rotulo: 'Editar',
                     icone: Pencil,
+                    desabilitado: minutosDesde(menuMsg.m.created_at) > JANELA_EDITAR_MIN,
+                    motivo: `Só dá para editar até ${JANELA_EDITAR_MIN} minutos depois de enviar.`,
                     onClick: () => {
                       setTextoEdicao(menuMsg.m.corpo ?? '')
                       setAEditar(menuMsg.m)
@@ -646,6 +653,8 @@ export function ConversaCliente({
                     rotulo: 'Apagar',
                     icone: Trash2,
                     variante: 'perigo' as const,
+                    desabilitado: minutosDesde(menuMsg.m.created_at) > JANELA_APAGAR_MIN,
+                    motivo: `Só dá para apagar até ${JANELA_APAGAR_MIN} minutos (1 hora) depois de enviar.`,
                     onClick: () => setAApagar(menuMsg.m),
                   },
                 ]

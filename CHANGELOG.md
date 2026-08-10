@@ -4,6 +4,10 @@
 
 ---
 
+## 2026-08-10 — Editar e apagar avisam antes de recusar
+
+- No app do cliente, tentar editar ou apagar uma mensagem antiga agora mostra de cara que o prazo passou, em vez de deixar escolher a nota, escrever o texto novo ou confirmar o apagar para só então recusar
+
 ## 2026-08-09 — A nota de avaliação virou pop-up
 
 - Quando o atendente encerra o chamado, o cliente agora vê um pop-up perguntando a nota de 0 a 10, em vez da pergunta discreta que ficava escondida embaixo da conversa

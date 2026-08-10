@@ -25,6 +25,14 @@ export type ItemContexto = {
   icone: LucideIcon
   onClick: () => void
   variante?: 'perigo'
+  /**
+   * Item visível mas sem ação — o prazo de editar/apagar já passou, por
+   * exemplo. Continua na lista, e não desaparece: some faria a pessoa achar
+   * que a função nunca existiu. `motivo` é o `title` do botão, e é o que
+   * explica o porquê sem precisar de tela de erro depois do clique.
+   */
+  desabilitado?: boolean
+  motivo?: string
 }
 
 const MARGEM = 8
@@ -86,6 +94,9 @@ export function MenuContexto({
             key={item.rotulo}
             type="button"
             role="menuitem"
+            disabled={item.desabilitado}
+            aria-disabled={item.desabilitado}
+            title={item.desabilitado ? item.motivo : undefined}
             onClick={() => {
               item.onClick()
               onFechar()
@@ -93,10 +104,14 @@ export function MenuContexto({
             className={cn(
               'flex items-center gap-2 w-full h-10 px-3 text-corpo text-left transicao',
               'focus:outline-none focus:bg-sf-2',
-              item.variante === 'perigo' ? 'text-err hover:bg-err-soft' : 'text-tx-1 hover:bg-sf-2'
+              item.desabilitado
+                ? 'text-tx-3 opacity-60 cursor-not-allowed hover:bg-transparent focus:bg-transparent'
+                : item.variante === 'perigo'
+                  ? 'text-err hover:bg-err-soft'
+                  : 'text-tx-1 hover:bg-sf-2'
             )}
           >
-            <Icone size={15} className={cn('shrink-0', item.variante === 'perigo' ? '' : 'text-tx-2')} />
+            <Icone size={15} className={cn('shrink-0', !item.desabilitado && item.variante !== 'perigo' && 'text-tx-2')} />
             {item.rotulo}
           </button>
         )
