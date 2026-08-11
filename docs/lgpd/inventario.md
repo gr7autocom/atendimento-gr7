@@ -16,7 +16,7 @@ Uma linha por finalidade real, com a tabela onde o dado mora. Ao acrescentar col
 
 | # | Finalidade | Dados | Base legal | Onde mora | Retenção |
 |---|---|---|---|---|---|
-| 1 | Atender o pedido de suporte pelo WhatsApp | Telefone, nome do perfil da conta, conteúdo das mensagens | Execução de contrato (Art. 7, V) — o suporte é parte do serviço contratado pela empresa | `contatos`, `atendimentos`, `atendimento_mensagens` | 5 anos após o encerramento |
+| 1 | Atender o pedido de suporte pelo WhatsApp | Telefone, nome do perfil da conta, foto do perfil, conteúdo das mensagens | Execução de contrato (Art. 7, V) — o suporte é parte do serviço contratado pela empresa | `contatos`, `atendimentos`, `atendimento_mensagens` | 5 anos após o encerramento |
 | 2 | Atender o pedido de suporte pelo site | Nome e telefone digitados, CNPJ (opcional), conteúdo das mensagens | **Consentimento** (Art. 7, I), registrado no aceite do formulário, somado à execução de contrato | as mesmas, com `canal = 'web'` | 5 anos após o encerramento |
 | 3 | Receber arquivo que descreve o problema | Prints, fotos, documentos e áudios enviados por qualquer dos lados | A mesma do atendimento em que o arquivo entrou | `atendimento_anexos` (metadado) + **Cloudinary** (o arquivo) | igual à mensagem |
 | 4 | Manter a conversa do site aberta no aparelho do cliente | Hash SHA-256 do token de sessão, **hash** do IP, vínculo com contato e chamado | Legítimo interesse (Art. 7, IX) — sem sessão não há como devolver a conversa a quem a abriu | `atendimento_web_sessoes` | Até **7 dias** após a sessão morrer; limpeza automática às 3h |

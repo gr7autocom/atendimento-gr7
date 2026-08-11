@@ -266,7 +266,12 @@ export function ListaChamados({
                   aria-hidden="true"
                   className={cn('absolute left-0 top-0 bottom-0 w-[2px]', ativo ? 'bg-br-1' : 'bg-transparent')}
                 />
-                <Avatar nome={nomeDoContato(a)} tamanho={38} canal={canalDoChamado(a.canal)} />
+                <Avatar
+                  nome={nomeDoContato(a)}
+                  fotoUrl={a.contato?.foto_url}
+                  tamanho={38}
+                  canal={canalDoChamado(a.canal)}
+                />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline justify-between gap-2">
                     <span className="text-corpo text-tx-1 font-medium truncate">{nomeDoContato(a)}</span>

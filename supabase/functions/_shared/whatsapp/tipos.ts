@@ -25,6 +25,13 @@ export type ConteudoEnvio =
 
 export type ResultadoEnvio = { wa_message_id: string }
 
+/** Nome e foto de perfil do contato, quando o evento da mensagem não trouxe. */
+export type PerfilContato = {
+  nome: string | null
+  /** URL da foto de perfil (tamanho preview). */
+  fotoUrl: string | null
+}
+
 /** Evento já normalizado, independente do provedor. É o que o domínio consome. */
 export type EventoNormalizado =
   | {
@@ -59,4 +66,6 @@ export interface WhatsAppDriver {
    * evitam loop e gasto de invocation. Ver POST /webhook.
    */
   configurarWebhook(url: string): Promise<void>
+  /** Nome e foto de perfil do contato. Ver POST /chat/details. */
+  buscarPerfil(telefone: string): Promise<PerfilContato>
 }

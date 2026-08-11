@@ -9,6 +9,8 @@ export type ContatoResumo = {
   id: string
   nome: string | null
   nome_whatsapp: string | null
+  /** Foto de perfil do WhatsApp (preview). Nula fora do WhatsApp ou sem retorno do provedor. */
+  foto_url: string | null
   telefone: string
   cargo: string | null
   cliente_id: string | null
@@ -109,7 +111,7 @@ export type Mensagem = {
 }
 
 const SELECT_ATENDIMENTO =
-  '*, contato:contatos(id, nome, nome_whatsapp, telefone, cargo, cliente_id, cliente:clientes(id, razao_social, nome_fantasia)), departamento:departamentos(nome), tags:atendimento_tag_vinculos(tag:atendimento_tags(id, nome, cor_fundo, cor_texto))'
+  '*, contato:contatos(id, nome, nome_whatsapp, foto_url, telefone, cargo, cliente_id, cliente:clientes(id, razao_social, nome_fantasia)), departamento:departamentos(nome), tags:atendimento_tag_vinculos(tag:atendimento_tags(id, nome, cor_fundo, cor_texto))'
 
 /** Clientes do painel, somente leitura, para vincular um contato à empresa. */
 export function useClientes(busca: string) {

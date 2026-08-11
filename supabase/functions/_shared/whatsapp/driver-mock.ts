@@ -1,6 +1,7 @@
 import type {
   ConteudoEnvio,
   EventoNormalizado,
+  PerfilContato,
   ResultadoConexao,
   ResultadoEnvio,
   WhatsAppDriver,
@@ -34,6 +35,11 @@ export class DriverMock implements WhatsAppDriver {
     // Sem provedor não há o que apontar: em desenvolvimento o webhook é chamado
     // direto por POST, com o payload já no shape do EventoNormalizado.
     return Promise.resolve()
+  }
+
+  buscarPerfil(_telefone: string): Promise<PerfilContato> {
+    // Sem provedor não há perfil nenhum para buscar.
+    return Promise.resolve({ nome: null, fotoUrl: null })
   }
 
   normalizarWebhook(payload: unknown): EventoNormalizado {

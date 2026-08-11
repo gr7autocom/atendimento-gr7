@@ -1,8 +1,10 @@
 # Bot e ciclo de vida do ticket — GR7 Atendimento
 
-> **Status: aprovado (Seção 3 do design, 2026-07-23).** O bot roda na Edge Function do webhook e trabalha **por ticket**: cada chamado é um ticket; ao encerrar, finaliza. Estados alinhados a [db.md](db.md): `triagem` → `na_fila` → `em_atendimento` → `finalizado`.
+> **Status: aprovado (Seção 3 do design, 2026-07-23).** O bot roda na Edge Function do webhook e trabalha **por ticket**: cada chamado é um ticket; ao encerrar, finaliza. Estados alinhados a [db.md](db.md): `na_fila` → `em_atendimento` → `finalizado` (`triagem` só existe em tickets antigos, ver abaixo).
 >
-> **Implementado (2026-07-27, modo mock, deployado):** o `whatsapp-webhook` já roda o fluxo — boas-vindas + menu, **identificação do potencial antes do menu com auto-vínculo por CNPJ**, fila, opção inválida (limite → padrão), `#sair`, **avaliação ao finalizar** (Fase 2), e **decisão por horário/plantão + reabertura em 3h** (lógica pura em `_shared/bot/horario.ts`). Sub-estado da conversa em `atendimentos.etapa_bot` (`identificacao` | `menu` | `avaliacao`). Como não há uazapi, o envio é mock (mensagens gravadas, não saem no WhatsApp).
+> **Implementado (2026-07-27, modo mock, deployado):** o `whatsapp-webhook` já roda o fluxo — boas-vindas + menu, **identificação do potencial antes do menu com auto-vínculo por CNPJ**, fila, opção inválida (limite → padrão), `#sair`, **avaliação ao finalizar** (Fase 2), e **decisão por horário/plantão + reabertura em 3h** (lógica pura em `_shared/bot/horario.ts`). Como não há uazapi, o envio é mock (mensagens gravadas, não saem no WhatsApp).
+>
+> **Chamado adiado até o setor (2026-08-10), mesma regra do canal web (ADR-11):** o ticket deixou de nascer na primeira mensagem. Enquanto o cliente ainda está identificando-se ou escolhendo o setor, não existe `atendimentos` — o sub-estado fica em `contatos.etapa_bot_pendente` (`identificacao` | `menu`) e `contatos.tentativas_menu_pendente`. O ticket só nasce **direto em `na_fila`**, já com o setor definido, quando o cliente confirma a escolha (ou cai no departamento padrão após as tentativas). Quem some no meio da triagem não deixa chamado nem protocolo gasto, e o histórico do atendente começa na mensagem que confirma o setor, não na navegação do menu (essas mensagens são enviadas de verdade pelo WhatsApp, mas não ficam gravadas em `atendimento_mensagens`). Status `triagem` e `atendimentos.etapa_bot` continuam existindo só para tickets abertos antes desta mudança — nenhum ticket novo passa por eles.
 
 ## Placeholders das mensagens
 
@@ -13,13 +15,7 @@ Textos configuráveis em `bot_mensagens` (admin). Variáveis preenchidas na hora
 ```
 mensagem recebida (webhook)
       │
-      ├─ contato tem ticket em TRIAGEM? (bot esperando escolha do menu)
-      │     └─ interpreta a mensagem:
-      │           ├─ opção válida  → define departamento, entra na fila, envia entrou_fila
-      │           ├─ #inicio       → remostra o menu principal (voltar_menu)
-      │           └─ inválida      → tentativas_menu++ ; envia opcao_invalida + menu
-      │                 └─ se tentativas_menu > max_tentativas_menu (padrão 2)
-      │                       → encaminha ao DEPARTAMENTO PADRÃO (encaminhado_padrao), entra na fila
+      ├─ contato tem ticket ATIVO ou em TRIAGEM (tickets antigos)? → ver "compatibilidade" abaixo
       │
       ├─ contato tem ticket FINALIZADO há menos de janela_reabertura_horas (3h)?
       │     ├─ avaliação pendente (avaliacao_solicitada_em, sem nota, dentro de tempo_avaliacao_min)?
@@ -27,28 +23,37 @@ mensagem recebida (webhook)
       │     │     └─ senão               → avaliacao_invalida
       │     └─ senão → REABRE: status na_fila, zera responsavel_id, mantém departamento (sem menu)
       │
-      ├─ contato tem ticket ATIVO (na_fila / em_atendimento)?
-      │     ├─ #sair → finaliza (encerrado_por = 'cliente') ; se avaliacao_ativa, pede nota
-      │     └─ senão → grava a mensagem no ticket (direcao entrada)
+      ├─ contato está em TRIAGEM PRÉ-CHAMADO? (contatos.etapa_bot_pendente preenchido; ainda não existe ticket)
+      │     └─ interpreta a mensagem conforme a etapa:
+      │           ├─ etapa identificacao → tenta casar CNPJ, avança para etapa menu, envia [identificacao_vinculada?] + menu
+      │           ├─ etapa menu, opção válida → NASCE O TICKET direto em na_fila com o setor, envia entrou_fila
+      │           └─ etapa menu, inválida      → tentativas_menu_pendente++ ; envia opcao_invalida + menu
+      │                 └─ se tentativas_menu_pendente > max_tentativas_menu (padrão 2)
+      │                       → NASCE O TICKET no DEPARTAMENTO PADRÃO (encaminhado_padrao), direto em na_fila
+      │           (#sair a qualquer momento desta fase: limpa a pendência, envia encerramento, não cria ticket)
       │
-      └─ senão → decide pelo horário e cria/roteia:
+      └─ senão → decide pelo horário:
             ├─ dentro do HORÁRIO COMERCIAL
-            │     → cria ticket (triagem), envia bem_vindo + instrucao_menu + menu
+            │     → marca etapa_bot_pendente (identificacao ou menu), envia bem_vindo + instrucao_menu + menu
             ├─ fora do comercial, mas em PLANTÃO com atendente vinculado ativo
-            │     → cria ticket (triagem, plantao_id do turno), envia plantao + menu
-            │        (ao escolher, vai para a FILA DE PLANTÃO — visível aos plantonistas)
+            │     → marca etapa_bot_pendente, envia plantao + menu
+            │        (ao escolher, o ticket nasce já com plantao_id do turno — visível aos plantonistas)
             └─ fora do comercial e sem plantonista na plataforma
                   → envia fora_horario (texto livre c/ contatos de emergência)
-                     e NÃO cria ticket (só direciona)
+                     e NÃO marca pendência nem cria ticket (só direciona)
 ```
+
+**Nenhuma mensagem da triagem pré-chamado é gravada em `atendimento_mensagens`** (nem a do cliente, nem a do bot) — são enviadas de verdade pelo WhatsApp, mas o histórico do atendente só começa quando o ticket nasce. O texto que confirma o setor (`entrou_fila`) já vem gravado como a primeira mensagem do ticket.
+
+**Compatibilidade com tickets antigos:** um contato com ticket em `status = 'triagem'` (aberto antes de 2026-08-10) continua resolvido pelo fluxo antigo — interpreta a escolha do setor, `#inicio`, tentativas inválidas — até sair da triagem. Nenhum ticket novo nasce mais nesse status.
 
 ## Ciclo de vida do ticket (status)
 
 ```
-triagem            bot enviou menu, esperando escolha (dep. nulo; não aparece em fila de trabalho)
+(sem ticket)       bot navegando a triagem (identificação, menu) — estado fica no CONTATO, não no ticket
    │  escolhe departamento (ou cai no padrão após 2 tentativas)
    ▼
-na_fila            na fila do departamento (comercial) ou do plantão (plantao_id)
+na_fila            nasce aqui, direto, já com o setor — na fila do departamento (comercial) ou do plantão (plantao_id)
    │  atendente clica "Assumir"  — OU responde direto (responder já assume)
    ▼
 em_atendimento     tem dono (responsavel_id)
@@ -67,7 +72,7 @@ finalizado         se avaliacao_ativa: bot pede nota 0-10 (janela tempo_avaliaca
 - **Assumir:** fila compartilhada; clicar "Assumir" vira dono. **Responder já assume** se ninguém pegou. (ADR-05)
 - **Menu automático** dos departamentos ativos. (ADR-06)
 - **Janela de reabertura 3h:** só reabre quando o atendimento foi **finalizado pelo atendente e a nota ficou pendente** (`avaliacao_solicitada_em` preenchido, `avaliacao` nula). Nesse caso, uma nova mensagem em até 3h reaproveita o mesmo ticket (volta pra fila do departamento, sem menu). Nota dada, `#sair` ou avaliação desligada = atendimento concluído → ticket novo, independente da hora. Entre 0 e `tempo_avaliacao_min` a mensagem ainda é lida como nota; desse limite até 3h, reabre. (ADR-07)
-- **Fallback de triagem:** 2 tentativas inválidas → encaminha ao departamento padrão. (ADR-08)
+- **Fallback de triagem:** 2 tentativas inválidas → o ticket nasce direto no departamento padrão (`encaminhado_padrao`), sem passar pelo atendente. (ADR-08)
 - **Plantão (revisto 2026-07-25):** deixou de ser turno global e passou a ser **janela de acesso por usuário** (`atendimento_usuario_horarios`, editada no card do atendente). Fora do comercial, quem tem uma janela cobrindo aquele horário é o plantonista e atende pela plataforma; sem ninguém de plantão, o bot só direciona (mensagem `fora_horario` com contatos de emergência), sem criar ticket. A trava vale também para acesso humano ao app: `pode_atender_agora()` na RLS + aviso no login. (ADR-09; tabelas `atendimento_plantoes`/`atendimento_plantao_usuarios` ficaram sem uso.)
 - **Encerramento pelo cliente:** `#sair` finaliza (registra `encerrado_por = 'cliente'`).
 - **Avaliação (opcional, `avaliacao_ativa`):** ao finalizar, bot pede nota 0-10 dentro de `tempo_avaliacao_min` (60).

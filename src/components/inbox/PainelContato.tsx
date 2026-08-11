@@ -3,6 +3,7 @@ import { Copy, Check, Headset, MessageSquare, Info } from 'lucide-react'
 import {
   useAtualizarContato,
   useContadoresContato,
+  useClientes,
   useParticipantes,
   useTarefasDoContato,
   nomeEmpresa,
@@ -11,7 +12,7 @@ import {
   type AtendimentoLista,
 } from '../../lib/useInbox'
 import { Avatar } from '../ui/Avatar'
-import { Entrada } from '../ui/Campo'
+import { Entrada, CampoBusca } from '../ui/Campo'
 import { Skeleton } from '../ui/Estados'
 import { SecaoContato } from './SecaoContato'
 import { HistoricoContato } from './HistoricoContato'
@@ -60,9 +61,12 @@ export function PainelContato({
   const [nome, setNome] = useState('')
   const [cargo, setCargo] = useState('')
   const [copiado, setCopiado] = useState(false)
+  const [vinculandoEmpresa, setVinculandoEmpresa] = useState(false)
+  const [buscaEmpresa, setBuscaEmpresa] = useState('')
   const contadores = useContadoresContato(atendimento?.contato?.id ?? null)
   const participantes = useParticipantes(atendimento?.id ?? null)
   const tarefas = useTarefasDoContato(atendimento?.contato?.id ?? null)
+  const clientesBusca = useClientes(buscaEmpresa)
   const { isAdmin } = usePermissao()
   const anonimizado = ehTitularAnonimizado(atendimento?.contato?.telefone)
 
@@ -86,10 +90,22 @@ export function PainelContato({
     setTimeout(() => setCopiado(false), 1500)
   }
 
+  function vincularEmpresa(clienteId: string) {
+    if (!contato) return
+    atualizar.mutate({ id: contato.id, valores: { cliente_id: clienteId } })
+    setVinculandoEmpresa(false)
+    setBuscaEmpresa('')
+  }
+
   return (
     <aside className={cls}>
       <div className="p-4 flex flex-col items-center text-center border-b border-bd-1">
-        <Avatar nome={nomeDoContato(atendimento)} tamanho={72} canal={canal} />
+        <Avatar
+          nome={nomeDoContato(atendimento)}
+          fotoUrl={atendimento.contato?.foto_url}
+          tamanho={72}
+          canal={canal}
+        />
         <button
           type="button"
           onClick={copiarProtocolo}
@@ -164,8 +180,56 @@ export function PainelContato({
             <div className="rotulo mb-1">Empresa</div>
             {contato?.cliente_id ? (
               <div className="text-corpo text-tx-1">{nomeEmpresa(contato.cliente) ?? 'Cadastro vinculado'}</div>
+            ) : vinculandoEmpresa ? (
+              <div className="flex flex-col gap-1.5">
+                <CampoBusca
+                  valor={buscaEmpresa}
+                  aoMudar={setBuscaEmpresa}
+                  rotuloAcessivel="Buscar empresa"
+                  placeholder="Digite ao menos 2 letras do nome"
+                  autoFocus
+                />
+                {buscaEmpresa.trim().length >= 2 && (
+                  <div className="max-h-40 overflow-y-auto rounded-1 border border-bd-2 bg-sf-2">
+                    {clientesBusca.isLoading ? (
+                      <p className="text-corpo text-tx-3 p-2.5">Buscando…</p>
+                    ) : (clientesBusca.data ?? []).length === 0 ? (
+                      <p className="text-corpo text-tx-3 p-2.5">
+                        Nenhuma empresa encontrada. O cadastro novo é feito no painel.
+                      </p>
+                    ) : (
+                      (clientesBusca.data ?? []).map((c) => (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => vincularEmpresa(c.id)}
+                          className="w-full text-left px-2.5 py-2 text-corpo text-tx-1 hover:bg-sf-3 transicao"
+                        >
+                          {nomeEmpresa(c) ?? 'Sem nome'}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setVinculandoEmpresa(false)
+                    setBuscaEmpresa('')
+                  }}
+                  className="self-start text-apoio text-tx-3 hover:text-tx-2 transicao"
+                >
+                  Cancelar
+                </button>
+              </div>
             ) : (
-              <div className="text-corpo text-tx-2">Sem cadastro. Use Aceitar para vincular a empresa e assumir.</div>
+              <button
+                type="button"
+                onClick={() => setVinculandoEmpresa(true)}
+                className="text-corpo text-br-2 hover:text-br-3 transicao"
+              >
+                Vincular empresa
+              </button>
             )}
           </div>
 

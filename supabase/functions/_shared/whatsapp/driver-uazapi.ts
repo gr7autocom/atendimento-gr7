@@ -1,6 +1,7 @@
 import type {
   ConteudoEnvio,
   EventoNormalizado,
+  PerfilContato,
   ResultadoConexao,
   ResultadoEnvio,
   WhatsAppDriver,
@@ -117,5 +118,22 @@ export class DriverUazapi implements WhatsAppDriver {
 
   normalizarWebhook(payload: unknown): EventoNormalizado {
     return normalizarEventoUazapi(payload)
+  }
+
+  /**
+   * `preview: true` pede a imagem menor: é só para o avatar da inbox, não tem
+   * por que puxar a original. `wa_name` (nome verificado do WhatsApp) vem
+   * antes de `wa_contactName`/`name` porque é o mesmo tipo de dado que
+   * `nome_whatsapp` já grava hoje — nome de agenda salva é outra coisa.
+   */
+  async buscarPerfil(telefone: string): Promise<PerfilContato> {
+    const dados = await chamar('POST', '/chat/details', { number: telefone, preview: true })
+    const nome =
+      (dados['wa_name'] as string | undefined) ||
+      (dados['wa_contactName'] as string | undefined) ||
+      (dados['name'] as string | undefined) ||
+      null
+    const fotoUrl = (dados['imagePreview'] as string | undefined) ?? null
+    return { nome, fotoUrl }
   }
 }

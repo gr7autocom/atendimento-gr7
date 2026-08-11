@@ -365,6 +365,22 @@ async function rotaIdentificar(sb: ClienteServico, req: Request, corpo: Record<s
     })
   }
 
+  /*
+    O trigger `registrar_evento_atendimento` grava o evento `atendimento_aberto`
+    no instante do INSERT acima, ou seja, ANTES do roteiro que acabou de ser
+    gravado. Sem este ajuste, a pílula "Atendimento #N" na conversa do atendente
+    ordena antes da própria boas-vindas reconstituída, dando a entender que o
+    chamado existia antes de a triagem começar — quando na verdade ele só nasce
+    ao final dela. Empurrar o timestamp do evento para depois do roteiro corrige
+    a ordem sem mexer no trigger (compartilhado com o WhatsApp, onde a ordem já
+    sai certa: lá cada mensagem chega numa requisição separada, de verdade).
+  */
+  await sb
+    .from('atendimento_eventos')
+    .update({ created_at: agora().toISOString() })
+    .eq('atendimento_id', chamado.id)
+    .eq('tipo', 'atendimento_aberto')
+
   // ----- sessão -----
   const token = gerarToken()
   const expira = expiracaoAbsoluta(agora())

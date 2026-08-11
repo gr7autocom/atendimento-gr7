@@ -4,6 +4,11 @@
 
 ---
 
+## 2026-08-11 — WhatsApp conectado de verdade
+
+- O atendimento agora recebe mensagens reais pelo WhatsApp, não só a simulação
+- Contato novo já chega com nome e foto do WhatsApp, quando disponíveis
+
 ## 2026-08-10 — Aviso de resposta sem depender de som ou permissão
 
 - O título da aba do navegador agora mostra quantas respostas chegaram enquanto você não estava olhando, com um contador no favicon também — útil em qualquer máquina, mesmo sem caixa de som

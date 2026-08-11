@@ -1,13 +1,14 @@
+import { useConexaoStatus } from './useConexaoWhatsapp'
+
 export type StatusBot = 'conectado' | 'desconectado' | 'carregando'
 
 /**
  * Status da conexão do WhatsApp (bot). Fonte única para a pílula da barra do topo
- * e para a tela de Conexão.
- *
- * Enquanto a integração uazapi não entra, retorna sempre `desconectado`. Quando o
- * adapter existir, este hook passa a buscar o status real (`statusConexao`) via
- * Edge Function e a revalidar em intervalo, sem mudar quem o consome.
+ * e para a tela de Conexão — as duas consultam `useConexaoStatus` (Edge Function
+ * `whatsapp-conexao`), então nunca divergem.
  */
 export function useStatusBot(): { status: StatusBot } {
-  return { status: 'desconectado' }
+  const { data, isLoading } = useConexaoStatus()
+  if (isLoading) return { status: 'carregando' }
+  return { status: data?.status === 'connected' ? 'conectado' : 'desconectado' }
 }

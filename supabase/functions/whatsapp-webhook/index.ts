@@ -39,17 +39,42 @@ type Ticket = {
 
 const agora = () => new Date().toISOString()
 
-async function acharOuCriarContato(sb: ClienteServico, telefone: string, nome: string | null | undefined) {
+const SELECT_CONTATO =
+  'id, nome, nome_whatsapp, foto_url, cliente_id, etapa_bot_pendente, tentativas_menu_pendente'
+
+async function acharOuCriarContato(
+  sb: ClienteServico,
+  driver: WhatsAppDriver,
+  telefone: string,
+  nome: string | null | undefined,
+) {
   const { data: existente } = await sb
     .from('contatos')
-    .select('id, nome, nome_whatsapp, cliente_id')
+    .select(SELECT_CONTATO)
     .eq('telefone', telefone)
     .maybeSingle()
   if (existente) return existente
+
+  /*
+    Contato novo: o evento às vezes já traz o pushName, mas nunca traz foto —
+    isso só vem buscando no provedor (POST /chat/details). Erro aqui não pode
+    travar o atendimento por causa de um dado decorativo: vira contato sem
+    foto, não 500 na primeira mensagem de alguém.
+  */
+  let nomeWhatsapp = nome ?? null
+  let fotoUrl: string | null = null
+  try {
+    const perfil = await driver.buscarPerfil(telefone)
+    nomeWhatsapp = nomeWhatsapp || perfil.nome
+    fotoUrl = perfil.fotoUrl
+  } catch (erro) {
+    console.error('buscarPerfil', erro)
+  }
+
   const { data, error } = await sb
     .from('contatos')
-    .insert({ telefone, nome_whatsapp: nome ?? null })
-    .select('id, nome, nome_whatsapp, cliente_id')
+    .insert({ telefone, nome_whatsapp: nomeWhatsapp, foto_url: fotoUrl })
+    .select(SELECT_CONTATO)
     .single()
   if (error) throw error
   return data
@@ -148,13 +173,19 @@ async function acharTicketAvaliacao(sb: ClienteServico, contatoId: string) {
   return (data && data[0]) || null
 }
 
-async function criarTicketTriagem(sb: ClienteServico, contatoId: string, etapa: string): Promise<Ticket> {
+/**
+ * O chamado só nasce quando o setor já está decidido (mesma regra do canal
+ * web, decisão de 2026-08-07): nasce direto em `na_fila`, nunca em `triagem`.
+ * Tickets antigos que ainda estejam em `triagem` (de antes desta mudança)
+ * continuam resolvidos pelo bloco de compatibilidade mais abaixo.
+ */
+async function criarTicket(sb: ClienteServico, contatoId: string, departamentoId: string | null): Promise<Ticket> {
   const { data, error } = await sb
     .from('atendimentos')
     .insert({
       contato_id: contatoId,
-      status: 'triagem',
-      etapa_bot: etapa,
+      departamento_id: departamentoId,
+      status: 'na_fila',
       canal: CANAL,
       tentativas_menu: 0,
       aberto_em: agora(),
@@ -164,6 +195,11 @@ async function criarTicketTriagem(sb: ClienteServico, contatoId: string, etapa: 
     .single()
   if (error) throw error
   return data as Ticket
+}
+
+/** Limpa o sub-estado de triagem pré-chamado gravado no contato. */
+async function limparPendenciaBot(sb: ClienteServico, contatoId: string) {
+  await sb.from('contatos').update({ etapa_bot_pendente: null, tentativas_menu_pendente: 0 }).eq('id', contatoId)
 }
 
 async function gravarEntrada(sb: ClienteServico, ticketId: string, wa_message_id: string, corpo: string | null) {
@@ -198,6 +234,18 @@ async function enviarBot(
   await sb.from('atendimentos').update({ ultima_mensagem_em: agora() }).eq('id', ticketId)
 }
 
+/**
+ * Mesma coisa que `enviarBot`, mas para quando ainda não existe chamado (bot
+ * navegando a triagem pré-chamado). Sem `atendimento_id` não há onde logar em
+ * `atendimento_mensagens` — e é assim de propósito: o histórico do atendente
+ * começa na mensagem que confirma o setor, não na navegação do menu.
+ */
+async function enviarBotSemTicket(driver: WhatsAppDriver, telefone: string, textos: string[]) {
+  for (const texto of textos) {
+    await driver.enviarMensagem(telefone, { tipo: 'texto', texto })
+  }
+}
+
 // `ticket` entra como anulável porque quem chama é o closure `aplica`, montado
 // antes de o chamado existir: ele captura a variável, não o valor. Hoje todas as
 // chamadas acontecem com o chamado já resolvido, mas o tipo tem que admitir o
@@ -223,9 +271,21 @@ Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return preflight()
   if (req.method !== 'POST') return respostaJson({ erro: 'Método não suportado' }, 405)
 
+  /*
+    Aceita o segredo pelo header OU por `?secret=` na URL. A uazapi não tem
+    como mandar header customizado na configuração do webhook dela (só a URL),
+    então header-only bloqueava TODA mensagem real com 401 silencioso — foi o
+    que aconteceu de verdade em produção: número conectado, mensagem mandada,
+    nada chegava, e não tinha nem contato novo no banco pra desconfiar do
+    motivo. `whatsapp-conexao` já embute o segredo na URL que registra.
+  */
   const segredo = Deno.env.get('WEBHOOK_SECRET')
-  if (segredo && req.headers.get('x-webhook-secret') !== segredo) {
-    return respostaJson({ erro: 'não autorizado' }, 401)
+  if (segredo) {
+    const viaQuery = new URL(req.url).searchParams.get('secret')
+    const viaHeader = req.headers.get('x-webhook-secret')
+    if (viaQuery !== segredo && viaHeader !== segredo) {
+      return respostaJson({ erro: 'não autorizado' }, 401)
+    }
   }
 
   let payload: unknown
@@ -256,7 +316,7 @@ Deno.serve(async (req: Request) => {
       .maybeSingle()
     if (dup) return respostaJson({ ok: true, dedup: true })
 
-    const contato = await acharOuCriarContato(sb, evento.telefone, evento.nome_whatsapp)
+    const contato = await acharOuCriarContato(sb, driver, evento.telefone, evento.nome_whatsapp)
     const nomeContato = contato.nome || contato.nome_whatsapp || evento.telefone
 
     const [msgs, cfg, deps] = await Promise.all([
@@ -300,7 +360,8 @@ Deno.serve(async (req: Request) => {
 
     if (!ticket) {
       // Continuação recente sem a nota formalizada: reabre o MESMO chamado (sem
-      // menu), em vez de abrir outro. Fora dessa condição, é chamado novo.
+      // menu), em vez de abrir outro. Fora dessa condição, é chamado novo (ou
+      // continuação da triagem pré-chamado, tratada logo abaixo).
       const janelaHoras = Number(cfg['janela_reabertura_horas'] ?? '3')
       const reab = await acharTicketReabertura(sb, contato.id, janelaHoras)
       if (reab) {
@@ -312,7 +373,70 @@ Deno.serve(async (req: Request) => {
         return respostaJson({ ok: true, reaberto: true, protocolo: reab.protocolo })
       }
 
-      // Chamado novo: decide pelo horário (comercial / plantão / fora).
+      /*
+        Chamado só nasce quando o setor é confirmado (mesma regra do canal
+        web, decisão de 2026-08-07, ver docs/canal-web.md). Até lá, o
+        sub-estado da triagem (identificação de CNPJ, escolha de setor,
+        tentativas erradas) fica em `contatos.etapa_bot_pendente` /
+        `tentativas_menu_pendente`: não existe chamado ainda para guardar
+        isso. As mensagens desta fase não são logadas em
+        `atendimento_mensagens` de propósito (`enviarBotSemTicket`) — o
+        histórico do atendente começa na mensagem que confirma o setor, não
+        na navegação do menu.
+      */
+      if (contato.etapa_bot_pendente) {
+        if (ehComandoSair(evento.corpo ?? '') && (cfg['permitir_cliente_finalizar'] ?? 'true') === 'true') {
+          await limparPendenciaBot(sb, contato.id)
+          await enviarBotSemTicket(driver, evento.telefone, [aplica('encerramento')])
+          return respostaJson({ ok: true })
+        }
+
+        if (contato.etapa_bot_pendente === 'identificacao') {
+          // Resposta da identificação: tenta casar o CNPJ com a base de clientes.
+          const digitos = extrairCnpj(evento.corpo ?? '')
+          let empresaVinculada: string | null = null
+          if (digitos) {
+            const { data } = await sb.rpc('atendimento_buscar_cliente_por_cnpj', { p_digitos: digitos })
+            const cliente = data && data[0]
+            if (cliente) {
+              await sb.from('contatos').update({ cliente_id: cliente.id }).eq('id', contato.id)
+              empresaVinculada = cliente.nome_fantasia || cliente.razao_social
+            }
+          }
+          await sb.from('contatos').update({ etapa_bot_pendente: 'menu' }).eq('id', contato.id)
+          const respostas = empresaVinculada
+            ? [aplica('identificacao_vinculada', empresaVinculada), menuTexto()]
+            : [menuTexto()]
+          await enviarBotSemTicket(driver, evento.telefone, respostas)
+          return respostaJson({ ok: true, vinculado: !!empresaVinculada })
+        }
+
+        // etapa_bot_pendente === 'menu': interpreta a escolha do setor.
+        const dep = interpretarEscolha(evento.corpo ?? '', deps)
+        if (dep) {
+          ticket = await criarTicket(sb, contato.id, dep.id)
+          await limparPendenciaBot(sb, contato.id)
+          await gravarEntrada(sb, ticket.id, evento.wa_message_id, evento.corpo)
+          await enviarBot(sb, driver, evento.telefone, ticket.id, [aplica('entrou_fila', null, dep.nome)])
+          return respostaJson({ ok: true, protocolo: ticket.protocolo })
+        }
+
+        const tent = (contato.tentativas_menu_pendente ?? 0) + 1
+        const max = Number(cfg['max_tentativas_menu'] ?? '2')
+        if (tent >= max) {
+          const padrao = deps.find((d) => d.id === cfg['departamento_padrao_id']) ?? deps[0]
+          ticket = await criarTicket(sb, contato.id, padrao?.id ?? null)
+          await limparPendenciaBot(sb, contato.id)
+          await gravarEntrada(sb, ticket.id, evento.wa_message_id, evento.corpo)
+          await enviarBot(sb, driver, evento.telefone, ticket.id, [aplica('encaminhado_padrao', null, padrao?.nome)])
+          return respostaJson({ ok: true, protocolo: ticket.protocolo })
+        }
+        await sb.from('contatos').update({ tentativas_menu_pendente: tent }).eq('id', contato.id)
+        await enviarBotSemTicket(driver, evento.telefone, [`${aplica('opcao_invalida')}\n${montarMenu(deps)}`])
+        return respostaJson({ ok: true })
+      }
+
+      // Chamado novo de verdade: decide pelo horário (comercial / plantão / fora).
       const [comercial, janelas] = await Promise.all([
         carregarFaixas(sb, 'atendimento_horarios', true),
         carregarFaixas(sb, 'atendimento_usuario_horarios', false),
@@ -339,12 +463,14 @@ Deno.serve(async (req: Request) => {
 
       // Saudação do plantão substitui a boas-vindas; o resto do fluxo é igual.
       const conhecido = !!contato.cliente_id
-      ticket = await criarTicketTriagem(sb, contato.id, conhecido ? 'menu' : 'identificacao')
-      await gravarEntrada(sb, ticket.id, evento.wa_message_id, evento.corpo)
+      await sb
+        .from('contatos')
+        .update({ etapa_bot_pendente: conhecido ? 'menu' : 'identificacao', tentativas_menu_pendente: 0 })
+        .eq('id', contato.id)
       const saudacao = plantao ? aplica('plantao') : aplica('bem_vindo')
-      await enviarBot(sb, driver, evento.telefone, ticket.id,
+      await enviarBotSemTicket(driver, evento.telefone,
         conhecido ? [saudacao, menuTexto()] : [saudacao, aplica('pedir_identificacao')])
-      return respostaJson({ ok: true, protocolo: ticket.protocolo, plantao })
+      return respostaJson({ ok: true, plantao })
     }
 
     await gravarEntrada(sb, ticket.id, evento.wa_message_id, evento.corpo)

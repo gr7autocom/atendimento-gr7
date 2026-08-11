@@ -154,6 +154,12 @@ export function Conversa({
    */
   async function enviarAudio(arquivo: File) {
     if (!usuarioId || !atendimento) return
+    // Sem dono e sem empresa: força o Aceitar em vez de assumir às cegas.
+    // O áudio já gravado continua no gravador, pronto para reenviar depois.
+    if (semDono && semCadastro) {
+      setModalAceitar(true)
+      return
+    }
     try {
       const enviado = await enviarAnexo(arquivo)
       responder.mutate(
@@ -257,6 +263,12 @@ export function Conversa({
   function enviar(e: FormEvent) {
     e.preventDefault()
     if (!temConteudo || subindoAlgum || !usuarioId || !atendimento) return
+    // Sem dono e sem empresa: força o Aceitar em vez de assumir às cegas.
+    // O texto e os anexos ficam como estão, prontos para reenviar depois.
+    if (semDono && semCadastro) {
+      setModalAceitar(true)
+      return
+    }
     responder.mutate(
       {
         atendimentoId: atendimento.id,
@@ -342,7 +354,12 @@ export function Conversa({
               <ArrowLeft size={18} />
             </button>
           )}
-          <Avatar nome={nomeDoContato(atendimento)} tamanho={34} canal={canal} />
+          <Avatar
+            nome={nomeDoContato(atendimento)}
+            fotoUrl={atendimento.contato?.foto_url}
+            tamanho={34}
+            canal={canal}
+          />
           <div className="min-w-0">
             <div className="text-corpo font-medium text-tx-1 truncate">{nomeDoContato(atendimento)}</div>
             {/* `flex-wrap`: com a presença do cliente a linha passa de quatro itens e
@@ -810,7 +827,11 @@ export function Conversa({
                   }
                 }}
                 placeholder={
-                  semDono ? 'Responder (isso assume o chamado). / para atalhos' : 'Escreva sua resposta ou / para atalhos'
+                  semDono
+                    ? semCadastro
+                      ? 'Enviar abre o vínculo da empresa. / para atalhos'
+                      : 'Responder (isso assume o chamado). / para atalhos'
+                    : 'Escreva sua resposta ou / para atalhos'
                 }
                 aria-label="Resposta"
                 className="flex-1 h-9 px-3 text-corpo-lg rounded-2 bg-sf-2 border border-bd-campo text-tx-1 placeholder:text-tx-3 hover:border-tx-3 focus:border-br-2 focus:outline-none focus:ring-2 focus:ring-[color:var(--br-soft)] transicao"

@@ -12,11 +12,18 @@ import { preflight, respostaJson } from '../_shared/cors.ts'
  * URL pública da `whatsapp-webhook` neste mesmo projeto. `SUPABASE_URL` é
  * injetada pelo runtime das Edge Functions, então na ativação basta chamar
  * `POST { acao: "webhook" }` sem informar endereço nenhum.
+ *
+ * Com `WEBHOOK_SECRET` configurado, o segredo vai embutido como `?secret=`:
+ * a uazapi não aceita header customizado na configuração do webhook dela,
+ * só URL — é o único jeito dela conseguir passar pela checagem do outro lado.
  */
 function urlDoWebhook(): string {
   const base = Deno.env.get('SUPABASE_URL') ?? ''
   if (!base) throw new Error('SUPABASE_URL ausente: informe a url no corpo da requisição')
-  return `${base}/functions/v1/whatsapp-webhook`
+  const url = new URL(`${base}/functions/v1/whatsapp-webhook`)
+  const segredo = Deno.env.get('WEBHOOK_SECRET')
+  if (segredo) url.searchParams.set('secret', segredo)
+  return url.toString()
 }
 
 Deno.serve(async (req: Request) => {
