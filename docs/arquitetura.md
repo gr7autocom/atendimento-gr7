@@ -34,7 +34,7 @@ Resultado: o painel continua byte-a-byte igual; as tabelas novas são invisívei
 
 ## Plano Supabase: Free → Pro
 
-- **Dev + piloto controlado:** Free (anexos vão pro Cloudinary, não pesam no DB; pg_cron/realtime/Edge Functions já funcionam no Free).
+- **Dev + piloto controlado:** Free (anexos vão pro Supabase Storage desde 2026-08-11, e não pro Cloudinary — passam a contar no teto de armazenamento do projeto, mas não pesam no DB relacional; pg_cron/realtime/Edge Functions já funcionam no Free).
 - **Produção real:** Pro. Motivos: (a) Free auto-pausa após ~7 dias ocioso, e o webhook do WhatsApp precisa estar sempre no ar; (b) backup diário/PITR para dados de atendimento.
 - **Limites que apertam primeiro no Free:** invocations de Edge Function (filtrar eventos da uazapi), conexões realtime simultâneas, compute compartilhado.
 

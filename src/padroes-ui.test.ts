@@ -168,15 +168,15 @@ describe('padrões de UI (docs/design.md)', () => {
     ).toBe('')
   })
 
-  it('o app do cliente não sobe arquivo direto para o Cloudinary', () => {
-    const achados = procurar(/lib\/cloudinary/, (arquivo) => !arquivo.startsWith('cliente/'))
+  it('o app do cliente não sobe arquivo direto para o Storage', () => {
+    const achados = procurar(/lib\/storage/, (arquivo) => !arquivo.startsWith('cliente/'))
     expect(
       relatar(
         achados,
-        'lib/cloudinary.ts manda o arquivo do navegador com um preset ABERTO. Na central tudo bem, ' +
-          'quem abre é funcionário logado. No app do cliente o navegador é de qualquer pessoa da ' +
-          'internet, e o preset exposto vira porta para encher a conta de lixo. Lá o upload passa ' +
-          'pela Edge Function (rota /anexo).'
+        'lib/storage.ts manda o arquivo do navegador com a sessão do atendente logado. Na central ' +
+          'tudo bem, quem abre é funcionário autenticado. No app do cliente o navegador é de ' +
+          'qualquer pessoa da internet, sem sessão de atendente nenhuma. Lá o upload passa pela ' +
+          'Edge Function (rota /anexo).'
       )
     ).toBe('')
   })

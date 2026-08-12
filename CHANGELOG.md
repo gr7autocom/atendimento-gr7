@@ -4,6 +4,23 @@
 
 ---
 
+## 2026-08-11 — Indicador de presença do cliente removido
+
+- O "cliente online"/"ausente" no cabeçalho da conversa do canal web saiu de cena — não influenciava a forma como o atendimento é conduzido, e a informação estava ficando desatualizada
+
+## 2026-08-11 — Enter na central não aciona mais o microfone
+
+- Na tela do atendente, apertar Enter no campo de resposta agora envia a mensagem de verdade; antes, em algumas situações, acionava a gravação de áudio por engano
+
+## 2026-08-11 — Canal web reconecta ao chamado em vez de duplicar
+
+- Se você fechar a conversa por acidente (ou o navegador esquecer o acesso) e voltar preenchendo o formulário de novo, agora você retoma o mesmo atendimento em andamento, em vez de abrir um segundo do zero
+
+## 2026-08-11 — Anexos migrados do Cloudinary para o Supabase Storage
+
+- Prints, fotos, documentos e áudios enviados na conversa agora ficam guardados no Supabase, o mesmo serviço que já hospeda o sistema — não depende mais do Cloudinary
+- O aviso de privacidade do cliente foi atualizado para não citar mais o Cloudinary
+
 ## 2026-08-11 — WhatsApp conectado de verdade
 
 - O atendimento agora recebe mensagens reais pelo WhatsApp, não só a simulação

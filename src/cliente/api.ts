@@ -186,10 +186,10 @@ export const api = {
 
   /**
    * Anexo. O arquivo vai em `multipart/form-data` para a Edge Function, que o
-   * manda ao Cloudinary com assinatura de servidor. O app do cliente NÃO fala
-   * com o Cloudinary direto: o preset aberto que a central usa não pode ser
-   * embarcado num app que qualquer pessoa da internet abre. Há guarda em
-   * `src/padroes-ui.test.ts` para isso.
+   * grava no Supabase Storage com a chave de serviço. O app do cliente NÃO fala
+   * com o Storage direto: o upload autenticado que a central usa depende de
+   * sessão de atendente, que não pode ser embarcada num app que qualquer pessoa
+   * da internet abre. Há guarda em `src/padroes-ui.test.ts` para isso.
    *
    * Sem `client_msg_id`: o reenvio de arquivo é decisão consciente de quem
    * clica de novo, e deduplicar por id exigiria comparar o conteúdo, não a

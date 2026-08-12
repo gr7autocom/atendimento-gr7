@@ -1,18 +1,17 @@
 /**
  * Upload de anexo do canal web, feito **pelo servidor**.
  *
- * Por que não do navegador, como a central faz: lá o `lib/cloudinary.ts` sobe
- * direto com um preset aberto, e isso é aceitável porque quem abre a central é
- * funcionário logado. Aqui o navegador é de qualquer pessoa da internet. Um
- * preset aberto embarcado no app do cliente é um endereço de upload sem dono
- * publicado na web, e a primeira coisa que acontece com um desses é alguém
- * hospedar o que quiser na conta.
- *
- * Então o arquivo passa por aqui: a função confere a sessão, o tipo e o
- * tamanho, e só então envia ao Cloudinary com **assinatura** gerada a partir do
- * `CLOUDINARY_API_SECRET`, que nunca sai do servidor.
+ * Por que não do navegador, como a central faz: lá o `lib/storage.ts` sobe
+ * direto com a sessão do atendente logado, e isso é aceitável porque quem
+ * abre a central é funcionário autenticado. Aqui o navegador é de qualquer
+ * pessoa da internet, sem sessão de atendente nenhuma. Então o arquivo passa
+ * por aqui: a função confere a sessão do canal web (não a do Supabase), o
+ * tipo e o tamanho, e só então grava no bucket com a chave de serviço, que
+ * ignora RLS — é o mesmo motivo pelo qual `atendimento-web` inteira roda com
+ * service role (ver `_shared/supabase.ts`).
  */
 
+import type { ClienteServico } from '../supabase.ts'
 import { ErroContrato } from './contrato.ts'
 
 /** Teto por arquivo. Igual ao da central, para o cliente não descobrir na hora que o dele é maior. */
@@ -52,69 +51,57 @@ export function tipoAceito(tipo: string): boolean {
 }
 
 export type AnexoGravado = {
-  public_id: string
+  storage_path: string
   url: string
   nome_arquivo: string
   tipo_mime: string
   tamanho_bytes: number
 }
 
-/**
- * Assinatura do Cloudinary: SHA-1 dos parâmetros em ordem alfabética + o segredo.
- *
- * Exportada porque o `destroy` da eliminação de titular (LGPD) assina do mesmo
- * jeito. Duplicar essa função em dois lugares seria o pior tipo de duplicação:
- * uma cópia errada não falha no build, falha em produção com "assinatura
- * inválida" e o arquivo do titular continua no ar.
- */
-export async function assinar(params: Record<string, string>, segredo: string): Promise<string> {
-  const base = Object.keys(params)
-    .sort()
-    .map((k) => `${k}=${params[k]}`)
-    .join('&')
-  const dados = new TextEncoder().encode(base + segredo)
-  const hash = await crypto.subtle.digest('SHA-1', dados)
-  return Array.from(new Uint8Array(hash))
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('')
+const BUCKET = 'atendimento-anexos'
+const MAX_NOME = 60
+
+/** Mesma limpeza de nome do `src/lib/storage.ts`, duplicada porque a Edge Function
+ *  (Deno) e o frontend (Vite) não compartilham módulo entre si. */
+function sanitizar(nome: string): string {
+  const ponto = nome.lastIndexOf('.')
+  const temExtensao = ponto > 0 && ponto < nome.length - 1
+  const base = temExtensao ? nome.slice(0, ponto) : nome
+  const ext = temExtensao ? nome.slice(ponto + 1) : ''
+
+  const limpo = (s: string, max: number, manterHifen: boolean) =>
+    s
+      .normalize('NFD')
+      .replace(/\p{Diacritic}/gu, '')
+      .toLowerCase()
+      .replace(manterHifen ? /[^a-z0-9]+/g : /[^a-z0-9]/g, manterHifen ? '-' : '')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, max)
+
+  const baseLimpa = limpo(base, MAX_NOME, true) || 'arquivo'
+  const extLimpa = limpo(ext, 20, false)
+  return extLimpa ? `${baseLimpa}.${extLimpa}` : baseLimpa
 }
 
 /**
- * Manda o arquivo ao Cloudinary e devolve o que vai para `atendimento_anexos`.
+ * Grava o arquivo no Storage e devolve o que vai para `atendimento_anexos`.
  *
- * `resource_type=auto` porque o mesmo caminho serve para imagem, PDF e áudio, e
- * o Cloudinary trata cada um de um jeito.
+ * `sb` precisa ser o cliente de serviço (`criarClienteServico()`): o upload
+ * ignora RLS de propósito, porque quem chama aqui não tem sessão Supabase.
  */
-export async function subirParaCloudinary(arquivo: File): Promise<AnexoGravado> {
-  const cloud = Deno.env.get('CLOUDINARY_CLOUD_NAME')
-  const apiKey = Deno.env.get('CLOUDINARY_API_KEY')
-  const apiSecret = Deno.env.get('CLOUDINARY_API_SECRET')
+export async function subirParaStorage(sb: ClienteServico, arquivo: File): Promise<AnexoGravado> {
+  const path = `atendimento-web/${crypto.randomUUID()}-${sanitizar(arquivo.name)}`
 
-  // Falha fechada e explícita: sem credencial, o anexo não vai a lugar nenhum,
-  // e o cliente precisa saber disso em vez de ver a mensagem sair sem o arquivo.
-  if (!cloud || !apiKey || !apiSecret) throw new ErroContrato('erro_interno', 500)
-
-  const timestamp = Math.floor(Date.now() / 1000).toString()
-  const pasta = 'atendimento-web'
-  const assinatura = await assinar({ folder: pasta, timestamp }, apiSecret)
-
-  const form = new FormData()
-  form.append('file', arquivo)
-  form.append('api_key', apiKey)
-  form.append('timestamp', timestamp)
-  form.append('folder', pasta)
-  form.append('signature', assinatura)
-
-  const resposta = await fetch(`https://api.cloudinary.com/v1_1/${cloud}/auto/upload`, {
-    method: 'POST',
-    body: form,
+  const { error } = await sb.storage.from(BUCKET).upload(path, arquivo, {
+    contentType: arquivo.type || 'application/octet-stream',
+    upsert: false,
   })
-  if (!resposta.ok) throw new ErroContrato('erro_interno', 502)
+  if (error) throw new ErroContrato('erro_interno', 502)
 
-  const dados = (await resposta.json()) as { secure_url: string; public_id: string }
+  const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
   return {
-    public_id: dados.public_id,
-    url: dados.secure_url,
+    storage_path: path,
+    url: `${supabaseUrl}/storage/v1/object/public/${BUCKET}/${path}`,
     nome_arquivo: arquivo.name,
     tipo_mime: arquivo.type || 'application/octet-stream',
     tamanho_bytes: arquivo.size,

@@ -23,7 +23,7 @@
  */
 
 import { criarClienteServico, type ClienteServico } from '../_shared/supabase.ts'
-import { MAX_ANEXO_BYTES, subirParaCloudinary, tipoAceito } from '../_shared/web/anexo.ts'
+import { MAX_ANEXO_BYTES, subirParaStorage, tipoAceito } from '../_shared/web/anexo.ts'
 import { preflightWeb, respostaDeErro, respostaJsonWeb } from '../_shared/cors-web.ts'
 import {
   ErroContrato,
@@ -82,8 +82,8 @@ const SELECT_MENSAGEM = 'id, direcao, origem, corpo, created_at, editada_em, res
 const JANELA_APAGAR_MIN = 60
 const JANELA_EDITAR_MIN = 15
 
-// Mesma disciplina do select acima. `public_id` fica de fora: é o identificador
-// interno no Cloudinary, serve para apagar do nosso lado e não diz nada ao
+// Mesma disciplina do select acima. `storage_path` fica de fora: é o identificador
+// interno no Supabase Storage, serve para apagar do nosso lado e não diz nada ao
 // cliente, que só precisa da URL para ver o arquivo.
 const SELECT_ANEXO = 'id, mensagem_id, url, nome_arquivo, tipo_mime, tamanho_bytes'
 
@@ -301,91 +301,143 @@ async function rotaIdentificar(sb: ClienteServico, req: Request, corpo: Record<s
     }
   }
 
-  // ----- chamado -----
+  // ----- chamado: reaproveita se este contato já tiver um aberto -----
   /*
-    Criado so agora, com setor E primeira mensagem (decisao de 2026-08-07).
-
-    Ate aqui a conversa aconteceu na tela do cliente, sem gravar nada: quem
-    desiste no meio da escolha do setor nao deixa contato orfao, chamado vazio
-    nem protocolo gasto. Nasce direto em `na_fila`, porque ja tem tudo o que a
-    fila precisa. Sem empresa, cai naturalmente em Potenciais na inbox.
+    Sem isto, quem perde o token do aparelho (fechou a aba, limpou o navegador,
+    trocou de aparelho) preenchia o formulário de novo e ganhava um SEGUNDO
+    chamado — o primeiro ficava órfão, esperando na fila sem ninguém saber que o
+    cliente já tinha seguido para outro. O WhatsApp já evita exatamente isso
+    (`acharTicketAberto`, em whatsapp-webhook/index.ts); o canal web nunca tinha
+    ganhado a mesma checagem. Corrigido em 2026-08-11.
   */
-  const { data: chamado, error: eChamado } = await sb
+  const { data: aberto } = await sb
     .from('atendimentos')
-    .insert({
-      contato_id: contatoId,
-      departamento_id: dep.id,
-      status: 'na_fila',
-      canal: CANAL,
-      aberto_em: agora().toISOString(),
-      ultima_mensagem_em: agora().toISOString(),
-    })
-    .select('id, protocolo')
-    .single()
-  if (eChamado) throw eChamado
+    .select('id, protocolo, departamento_id')
+    .eq('contato_id', contatoId)
+    .eq('canal', CANAL)
+    .in('status', ['na_fila', 'em_atendimento'])
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
 
-  /*
-    A conversa e gravada inteira, na mesma ordem em que o cliente a viveu na
-    tela. O atendente precisa ler o caminho todo, inclusive a escolha do setor:
-    sem isso ele abre um chamado que comeca no meio.
+  let chamadoId: string
+  let protocolo: number
+  let depNome: string
 
-    `bem_vindo` vem do banco (mesma voz do WhatsApp); a pergunta do setor e o
-    pedido de relato sao textos deste canal, porque o do banco
-    (`instrucao_menu`) manda digitar o NUMERO do setor, instrucao que aqui seria
-    falsa.
-  */
-  const textos = await carregarTextos(sb)
-  const bemVindo = aplicarVariaveis(textos.bem_vindo ?? '', {
-    nome,
-    departamento: dep.nome,
-    protocolo: String(chamado.protocolo),
-  })
-  const roteiro: { origem: 'bot' | 'cliente'; corpo: string }[] = [
-    ...(bemVindo ? [{ origem: 'bot' as const, corpo: bemVindo }] : []),
-    { origem: 'bot', corpo: textoWeb(textos, 'pergunta_setor') },
-    { origem: 'cliente', corpo: dep.nome },
-    { origem: 'bot', corpo: textoWeb(textos, 'pedir_relato') },
-    { origem: 'cliente', corpo: mensagem },
-    // Por último: o protocolo só existe depois de o chamado nascer, e é aqui que
-    // ele de fato entra na fila.
-    {
-      origem: 'bot',
-      corpo: aplicarVariaveis(textoWeb(textos, 'entrou_fila'), {
-        protocolo: String(chamado.protocolo),
-        departamento: dep.nome,
-      }),
-    },
-  ]
-  for (const fala of roteiro) {
+  if (aberto) {
+    chamadoId = aberto.id
+    protocolo = aberto.protocolo
+    // O departamento que conta é o do chamado já aberto, não o que a pessoa
+    // escolheu agora nesta segunda identificação — o chamado já está roteado,
+    // às vezes já com atendente, e trocar de setor no meio confundiria os dois.
+    const { data: depAtual } = await sb
+      .from('departamentos')
+      .select('nome')
+      .eq('id', aberto.departamento_id)
+      .maybeSingle()
+    depNome = depAtual?.nome ?? dep.nome
+
     await sb.from('atendimento_mensagens').insert({
-      atendimento_id: chamado.id,
-      direcao: fala.origem === 'cliente' ? 'entrada' : 'saida',
-      origem: fala.origem,
-      corpo: fala.corpo,
+      atendimento_id: chamadoId,
+      direcao: 'saida',
+      origem: 'bot',
+      corpo: 'Reconectado ao seu atendimento em andamento. Pode continuar por aqui.',
     })
-  }
+    // Sem isto o chamado não sobe na ordenação da inbox (por `ultima_mensagem_em`
+    // desc), e o atendente não percebe que o cliente voltou.
+    await sb
+      .from('atendimentos')
+      .update({ ultima_mensagem_em: agora().toISOString() })
+      .eq('id', chamadoId)
+  } else {
+    /*
+      Criado so agora, com setor E primeira mensagem (decisao de 2026-08-07).
 
-  /*
-    O trigger `registrar_evento_atendimento` grava o evento `atendimento_aberto`
-    no instante do INSERT acima, ou seja, ANTES do roteiro que acabou de ser
-    gravado. Sem este ajuste, a pílula "Atendimento #N" na conversa do atendente
-    ordena antes da própria boas-vindas reconstituída, dando a entender que o
-    chamado existia antes de a triagem começar — quando na verdade ele só nasce
-    ao final dela. Empurrar o timestamp do evento para depois do roteiro corrige
-    a ordem sem mexer no trigger (compartilhado com o WhatsApp, onde a ordem já
-    sai certa: lá cada mensagem chega numa requisição separada, de verdade).
-  */
-  await sb
-    .from('atendimento_eventos')
-    .update({ created_at: agora().toISOString() })
-    .eq('atendimento_id', chamado.id)
-    .eq('tipo', 'atendimento_aberto')
+      Ate aqui a conversa aconteceu na tela do cliente, sem gravar nada: quem
+      desiste no meio da escolha do setor nao deixa contato orfao, chamado vazio
+      nem protocolo gasto. Nasce direto em `na_fila`, porque ja tem tudo o que a
+      fila precisa. Sem empresa, cai naturalmente em Potenciais na inbox.
+    */
+    const { data: chamado, error: eChamado } = await sb
+      .from('atendimentos')
+      .insert({
+        contato_id: contatoId,
+        departamento_id: dep.id,
+        status: 'na_fila',
+        canal: CANAL,
+        aberto_em: agora().toISOString(),
+        ultima_mensagem_em: agora().toISOString(),
+      })
+      .select('id, protocolo')
+      .single()
+    if (eChamado) throw eChamado
+    chamadoId = chamado.id
+    protocolo = chamado.protocolo
+    depNome = dep.nome
+
+    /*
+      A conversa e gravada inteira, na mesma ordem em que o cliente a viveu na
+      tela. O atendente precisa ler o caminho todo, inclusive a escolha do setor:
+      sem isso ele abre um chamado que comeca no meio.
+
+      `bem_vindo` vem do banco (mesma voz do WhatsApp); a pergunta do setor e o
+      pedido de relato sao textos deste canal, porque o do banco
+      (`instrucao_menu`) manda digitar o NUMERO do setor, instrucao que aqui seria
+      falsa.
+    */
+    const textos = await carregarTextos(sb)
+    const bemVindo = aplicarVariaveis(textos.bem_vindo ?? '', {
+      nome,
+      departamento: dep.nome,
+      protocolo: String(protocolo),
+    })
+    const roteiro: { origem: 'bot' | 'cliente'; corpo: string }[] = [
+      ...(bemVindo ? [{ origem: 'bot' as const, corpo: bemVindo }] : []),
+      { origem: 'bot', corpo: textoWeb(textos, 'pergunta_setor') },
+      { origem: 'cliente', corpo: dep.nome },
+      { origem: 'bot', corpo: textoWeb(textos, 'pedir_relato') },
+      { origem: 'cliente', corpo: mensagem },
+      // Por último: o protocolo só existe depois de o chamado nascer, e é aqui que
+      // ele de fato entra na fila.
+      {
+        origem: 'bot',
+        corpo: aplicarVariaveis(textoWeb(textos, 'entrou_fila'), {
+          protocolo: String(protocolo),
+          departamento: dep.nome,
+        }),
+      },
+    ]
+    for (const fala of roteiro) {
+      await sb.from('atendimento_mensagens').insert({
+        atendimento_id: chamadoId,
+        direcao: fala.origem === 'cliente' ? 'entrada' : 'saida',
+        origem: fala.origem,
+        corpo: fala.corpo,
+      })
+    }
+
+    /*
+      O trigger `registrar_evento_atendimento` grava o evento `atendimento_aberto`
+      no instante do INSERT acima, ou seja, ANTES do roteiro que acabou de ser
+      gravado. Sem este ajuste, a pílula "Atendimento #N" na conversa do atendente
+      ordena antes da própria boas-vindas reconstituída, dando a entender que o
+      chamado existia antes de a triagem começar — quando na verdade ele só nasce
+      ao final dela. Empurrar o timestamp do evento para depois do roteiro corrige
+      a ordem sem mexer no trigger (compartilhado com o WhatsApp, onde a ordem já
+      sai certa: lá cada mensagem chega numa requisição separada, de verdade).
+    */
+    await sb
+      .from('atendimento_eventos')
+      .update({ created_at: agora().toISOString() })
+      .eq('atendimento_id', chamadoId)
+      .eq('tipo', 'atendimento_aberto')
+  }
 
   // ----- sessão -----
   const token = gerarToken()
   const expira = expiracaoAbsoluta(agora())
   const { error: eSessao } = await sb.from('atendimento_web_sessoes').insert({
-    atendimento_id: chamado.id,
+    atendimento_id: chamadoId,
     contato_id: contatoId,
     token_hash: await hashToken(token),
     token_prefixo: prefixoToken(token),
@@ -408,8 +460,8 @@ async function rotaIdentificar(sb: ClienteServico, req: Request, corpo: Record<s
   return respostaJsonWeb(req, {
     token,
     expira_em: expira,
-    protocolo: chamado.protocolo,
-    departamento: dep.nome,
+    protocolo,
+    departamento: depNome,
     empresa,
   }, 201)
 }
@@ -507,8 +559,8 @@ async function garantirChamadoAberto(sb: ClienteServico, atendimentoId: string) 
 }
 
 /**
- * Anexo do cliente. Recebe o arquivo em `multipart/form-data`, confere, sobe ao
- * Cloudinary pelo servidor (ver `_shared/web/anexo.ts`) e grava a mensagem com
+ * Anexo do cliente. Recebe o arquivo em `multipart/form-data`, confere, grava
+ * no Storage pelo servidor (ver `_shared/web/anexo.ts`) e grava a mensagem com
  * o anexo junto.
  *
  * Mensagem e anexo na mesma chamada de propósito: em duas chamadas, a queda de
@@ -538,10 +590,10 @@ async function rotaAnexo(sb: ClienteServico, req: Request) {
   await garantirChamadoAberto(sb, sessao.atendimento_id)
 
   // O upload vem antes do insert: com o insert primeiro, uma falha no
-  // Cloudinary deixaria na conversa uma mensagem que promete um arquivo
+  // Storage deixaria na conversa uma mensagem que promete um arquivo
   // inexistente. Na ordem inversa o pior caso é um arquivo órfão lá, que não
   // aparece para ninguém.
-  const enviado = await subirParaCloudinary(arquivo)
+  const enviado = await subirParaStorage(sb, arquivo)
 
   const { data: msg, error } = await sb
     .from('atendimento_mensagens')
@@ -557,7 +609,7 @@ async function rotaAnexo(sb: ClienteServico, req: Request) {
 
   const { error: errAnexo } = await sb.from('atendimento_anexos').insert({
     mensagem_id: msg.id,
-    public_id: enviado.public_id,
+    storage_path: enviado.storage_path,
     url: enviado.url,
     nome_arquivo: enviado.nome_arquivo,
     tipo_mime: enviado.tipo_mime,

@@ -8,9 +8,9 @@ Referência do segundo canal de atendimento, como [whatsapp.md](whatsapp.md) é 
 
 - O **aceite** grava `aceite_em` e é o registro do consentimento. Ao lado dele, o link "Como usamos seus dados" abre o aviso ([`src/cliente/AvisoPrivacidade.tsx`](../src/cliente/AvisoPrivacidade.tsx)): consentimento sem a pessoa poder ler o que aceita não é consentimento.
 - **Sessões expiradas são apagadas por rotina diária** (migration `20260807150000`, função `atendimento_web_limpar_sessoes`, agendada às 3h de Brasília). Apaga o que morreu pelas três vias com folga de 7 dias, para o cliente que volta em cima da hora continuar reconhecido.
-- **O anexo trouxe dado novo, e o aviso precisou acompanhar** (2026-08-08). O cliente passou a enviar prints, fotos, documentos e áudios, que ficam no **Cloudinary** e não no nosso banco (`atendimento_anexos` guarda a URL). São dados pessoais como quaisquer outros, e um print de tela costuma trazer dado de terceiro junto, por isso o aviso pede para enviar só o necessário. Ao acrescentar coleta nova neste canal, revisar o [`AvisoPrivacidade.tsx`](../src/cliente/AvisoPrivacidade.tsx) **na mesma tarefa**: consentimento que não descreve o que é coletado não vale como consentimento.
-- **Não existe `docs/lgpd/` neste projeto** (conferido em 2026-08-08): inventário de tratamentos, lista de subprocessadores e política publicada não estão escritos em lugar nenhum. O Cloudinary é o segundo subprocessador do canal, ao lado do Supabase. Enquanto isso não existir, o aviso ao cliente é o único documento de privacidade do produto.
-- **O direito de exclusão da LGPD ainda não tem caminho técnico.** `atendimento_mensagens` não tem policy de DELETE, e a retenção de 5 anos é justificada pelo CDC. Com anexo, apagar passou a ter uma segunda ponta: o arquivo no Cloudinary, que o `public_id` identifica. O aviso manda escrever para `suporte@gr7autocom.com.br`, que é o caminho humano enquanto isso.
+- **O anexo trouxe dado novo, e o aviso precisou acompanhar** (2026-08-08). O cliente passou a enviar prints, fotos, documentos e áudios, que ficam no **Supabase Storage** (bucket `atendimento-anexos`) e não no nosso banco (`atendimento_anexos` guarda a URL). São dados pessoais como quaisquer outros, e um print de tela costuma trazer dado de terceiro junto, por isso o aviso pede para enviar só o necessário. Ao acrescentar coleta nova neste canal, revisar o [`AvisoPrivacidade.tsx`](../src/cliente/AvisoPrivacidade.tsx) **na mesma tarefa**: consentimento que não descreve o que é coletado não vale como consentimento.
+- **Migrado do Cloudinary para o Supabase Storage em 2026-08-11** (ver [decisoes.md](decisoes.md)). Os anexos passaram a ficar sob a mesma responsabilidade do Supabase que já hospeda banco e sistema, sem depender de um segundo subprocessador terceiro. Ver [lgpd/subprocessadores.md](lgpd/subprocessadores.md) e [lgpd/inventario.md](lgpd/inventario.md).
+- **O direito de exclusão da LGPD tem caminho técnico** (`atendimento-lgpd`, ver [lgpd/direitos-do-titular.md](lgpd/direitos-do-titular.md)). Com anexo, apagar tem uma segunda ponta: o arquivo no Storage, que o `storage_path` identifica.
 
 ## O que é
 
@@ -59,7 +59,7 @@ O CNPJ é dado público. Se fosse a chave de acesso, qualquer pessoa que o digit
 - Expiração tripla: absoluta (12h), por inatividade (2h, mata token esquecido em máquina compartilhada) e ligada ao ciclo do chamado
 - **Finalizar não revoga na hora.** A sessão vale até `finalizado_em + janela_reabertura_horas`, senão avaliação e reabertura morrem junto
 - Revogação manual pelo menu da conversa, na central. O cenário é concreto: quem abriu o chamado sai da empresa. Entregue no menu ⋮ da conversa (desktop e mobile), com confirmação. A RPC exige atendente logado desde a migration `20260806120100` — até ela, um visitante sem login revogava chamado da fila livre (ver [db.md](db.md), "REVOKE ... FROM PUBLIC não fecha função")
-- **Presença do cliente** na central sai da RPC `atendimento_web_presenca` (migration `20260806120000`): último uso e quantos acessos vivos, nunca token nem IP
+- **Indicador de presença ("online"/"ausente") removido em 2026-08-11** (decisão do usuário): não bate com o fluxo real de atendimento (se o cliente sumir, o atendente só finaliza o chamado — não precisa de um relógio dizendo há quanto tempo). A RPC `atendimento_web_presenca` (migration `20260806120000`) continua existindo e sendo chamada, só que agora só para decidir se "Encerrar acesso do cliente" aparece no menu (`sessoes_ativas > 0`) — não alimenta mais nenhuma tela
 
 **Consequência que não pode ficar escondida:** limpar dados do navegador, trocar de máquina ou usar aba anônima faz o cliente perder a conversa em andamento e abrir outra. Não há solução dentro de "sem login", então o aviso é explícito na tela de identificação.
 
@@ -85,7 +85,7 @@ Todas são **POST**, com JSON, e as autenticadas levam o token no header `x-sess
 | `/avaliar` | `nota` 0-10 | `ok` |
 | `/anexo` | `arquivo` + `mensagem` opcional (multipart) | `ok` |
 
-O `/anexo` é a única rota que não recebe JSON. Ele sai do roteamento **antes** da leitura do corpo, porque ler um arquivo binário como texto consumiria o stream e o `req.formData()` receberia um corpo vazio. Teto de 10 MB e lista fechada de tipos (imagem, PDF, planilha, documento e áudio). O upload é assinado no servidor com `CLOUDINARY_API_SECRET`: **o app do cliente não fala com o Cloudinary direto**, porque o preset aberto que a central usa não pode ser embarcado num app que qualquer pessoa da internet abre. Mensagem e anexo entram na mesma chamada, senão uma queda de rede entre as duas deixaria "segue o print" sem print.
+O `/anexo` é a única rota que não recebe JSON. Ele sai do roteamento **antes** da leitura do corpo, porque ler um arquivo binário como texto consumiria o stream e o `req.formData()` receberia um corpo vazio. Teto de 10 MB e lista fechada de tipos (imagem, PDF, planilha, documento e áudio). O upload é gravado no servidor com a chave de serviço (`SUPABASE_SERVICE_ROLE_KEY`): **o app do cliente não fala com o Storage direto**, porque o upload autenticado que a central usa depende de sessão de atendente, que o cliente não tem. Mensagem e anexo entram na mesma chamada, senão uma queda de rede entre as duas deixaria "segue o print" sem print.
 
 O `aceite` é obrigatório e grava `aceite_em` na sessão: é o registro do consentimento exigido pela LGPD.
 
@@ -180,9 +180,9 @@ Em `atendimento_mensagens`, na mesma tabela das conversas de WhatsApp. O navegad
 
 Não existe alternativa: nem a API oficial da Meta nem as não-oficiais devolvem histórico de conversa. O WhatsApp entrega eventos em tempo real e nada mais, então qualquer plataforma de atendimento guarda cópia em banco próprio. A impressão de que o painel "espelha o WhatsApp" vem de duas sincronizações (mensagem enviada pelo celular chega por webhook; deleção também), não de o WhatsApp ser a fonte.
 
-**Volume não preocupa nesta escala.** Uma mensagem de texto ocupa cerca de 0,5 KB com índices. 300 mil mensagens por mês, que seriam 10 mil chamados de 30 mensagens, dão 1,8 GB por ano contra os 8 GB do plano Pro. Mídia não entra no banco: `atendimento_anexos` guarda só a URL do Cloudinary.
+**Volume não preocupa nesta escala.** Uma mensagem de texto ocupa cerca de 0,5 KB com índices. 300 mil mensagens por mês, que seriam 10 mil chamados de 30 mensagens, dão 1,8 GB por ano contra os 8 GB do plano Pro. Mídia não entra no banco: `atendimento_anexos` guarda só a URL do Supabase Storage.
 
-**Retenção:** 5 anos após o encerramento do chamado, alinhado ao Código de Defesa do Consumidor e justificado como prova da relação de consumo. A rotina de limpeza só quando o banco passar de uns 4 GB ou no primeiro pedido de exclusão. O **direito de exclusão** da LGPD vai precisar de um caminho próprio, mais delicado, porque `atendimento_mensagens` não tem policy de DELETE nenhuma.
+**Retenção:** 5 anos após o encerramento do chamado, alinhado ao Código de Defesa do Consumidor e justificado como prova da relação de consumo. A rotina de limpeza só quando o banco passar de uns 4 GB ou no primeiro pedido de exclusão. O **direito de exclusão** da LGPD tem caminho técnico (`atendimento-lgpd`, ver [lgpd/direitos-do-titular.md](lgpd/direitos-do-titular.md)), mesmo `atendimento_mensagens` não tendo policy de DELETE nenhuma para uso direto: a Edge Function usa RPCs `SECURITY DEFINER` para isso.
 
 ## O guard do despacho
 

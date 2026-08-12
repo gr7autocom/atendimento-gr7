@@ -67,9 +67,8 @@ As três abas são **exclusivas**: um chamado aparece em uma só, nunca duplicad
 
 ### Coluna 2 — Conversa
 - Cabeçalho: contato + protocolo + **canal** + ações (buscar na conversa, tags, transferir, finalizar).
-- **Presença do cliente**, só no canal do site: "Cliente na conversa" (último acesso há menos de 45s, que tolera três falhas do polling de 10s), "Cliente ausente há X" ou "Cliente sem acesso". Existe porque o PWA **não tem push**: quem fecha a janela não é avisado de nada, e sem o indicador o atendente escreve sem saber se está falando com uma tela fechada. No WhatsApp não aparece, porque quem diz se a pessoa está online é o aparelho dela.
 - **Menu ⋮ com "Encerrar acesso do cliente"** (site, com acesso vivo). No desktop o menu é montado só quando existe ação secundária, para a ação rara não disputar a barra com Assumir, Transferir e Finalizar. Confirmação diz o efeito real, e depois de encerrar o item some junto com o acesso.
-- Thread com bolhas por origem (cliente / atendente / bot), status de entrega, mídia (Cloudinary), auto-scroll.
+- Thread com bolhas por origem (cliente / atendente / bot), status de entrega, mídia (Supabase Storage), auto-scroll.
 - **Mensagens de sistema** (eventos) como **pílulas centralizadas**, internas (o cliente não vê): "Atendimento #NNN", "Fim das mensagens com o bot", "X assumiu"/"X não faz mais parte", transferência, encerrado, reaberto. Base do histórico (`atendimento_eventos`, ver [db.md](db.md)).
 - Rodapé: **Assumir** (ou responder já assume), campo de resposta, **`/` mensagens rápidas**, anexo, enviar.
 - **Transferir:** modal com departamento e/ou atendente (registra em `atendimento_transferencias`).

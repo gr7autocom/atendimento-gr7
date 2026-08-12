@@ -33,6 +33,12 @@ export function Botao({
   children,
   className,
   disabled,
+  // Sem isto, um Botao dentro de <form> nasce type="submit" (padrão do HTML) e
+  // vira alvo de qualquer Enter dado no formulário, mesmo sem ninguém ter
+  // clicado nele — foi o que fazia o Enter no campo de resposta acionar o
+  // microfone em vez de mandar a mensagem, porque BotaoGravar vem antes do
+  // Enviar no DOM. Quem realmente quer submeter continua passando type="submit".
+  type = 'button',
   ...props
 }: {
   variante?: Variante
@@ -44,6 +50,7 @@ export function Botao({
   return (
     <button
       {...props}
+      type={type}
       disabled={disabled || carregando}
       aria-busy={carregando || undefined}
       className={cn(

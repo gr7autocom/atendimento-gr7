@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from './supabase'
 import type { Canal } from './canal'
-import type { ArquivoEnviado } from './cloudinary'
+import type { ArquivoEnviado } from './storage'
 
 export type EmpresaResumo = { id: string; razao_social: string | null; nome_fantasia: string | null }
 
@@ -294,7 +294,6 @@ export function useEventos(atendimentoId: string | null) {
 export type Anexo = {
   id: string
   mensagem_id: string
-  public_id: string
   url: string
   nome_arquivo: string | null
   tipo_mime: string | null
@@ -326,7 +325,7 @@ export function useAnexos(atendimentoId: string | null) {
 
       const { data, error } = await supabase
         .from('atendimento_anexos')
-        .select('id, mensagem_id, public_id, url, nome_arquivo, tipo_mime, tamanho_bytes, created_at')
+        .select('id, mensagem_id, url, nome_arquivo, tipo_mime, tamanho_bytes, created_at')
         .in('mensagem_id', ids)
         .order('created_at')
       if (error) throw error
@@ -736,7 +735,7 @@ export function useAcoesAtendimento() {
       corpo: string
       usuarioId: string
       precisaAssumir: boolean
-      /** Já enviados ao Cloudinary pela tela; aqui só se grava o vínculo. */
+      /** Já enviados ao Storage pela tela; aqui só se grava o vínculo. */
       anexos?: ArquivoEnviado[]
       /** Mensagem citada, com o trecho copiado no momento da citação. */
       resposta?: { id: string; corpo: string; remetente: string } | null
@@ -771,7 +770,7 @@ export function useAcoesAtendimento() {
         const { error: errAnexo } = await supabase.from('atendimento_anexos').insert(
           anexos.map((a) => ({
             mensagem_id: (msg as { id: string }).id,
-            public_id: a.public_id,
+            storage_path: a.storage_path,
             url: a.url,
             nome_arquivo: a.nome_arquivo,
             tipo_mime: a.tipo_mime,
@@ -779,9 +778,9 @@ export function useAcoesAtendimento() {
           })) as never
         )
         /*
-          O arquivo já está no Cloudinary quando isto falha, então a mensagem
+          O arquivo já está no Storage quando isto falha, então a mensagem
           existiria sem o anexo que a explica ("segue em anexo" e nada). Falhar
-          alto faz a tela mostrar o erro; o órfão no Cloudinary é o custo menor.
+          alto faz a tela mostrar o erro; o órfão no Storage é o custo menor.
         */
         if (errAnexo) throw errAnexo
       }

@@ -156,15 +156,15 @@ describe('canal web: a mensagem devolvida ao cliente é uma lista fechada', () =
     ).toEqual([...PERMITIDOS].sort())
   })
 
-  it('o anexo devolvido não leva o public_id', () => {
+  it('o anexo devolvido não leva o storage_path', () => {
     const achado = fonte.match(/const SELECT_ANEXO = '([^']+)'/)
     expect(achado, 'SELECT_ANEXO sumiu ou mudou de forma').not.toBeNull()
 
     const campos = achado![1].split(',').map((c) => c.trim())
     expect(
       campos.sort(),
-      'O `public_id` é o identificador interno no Cloudinary e serve para apagar do nosso ' +
-        'lado. O cliente só precisa da URL para ver o arquivo.'
+      'O `storage_path` é o identificador interno no Supabase Storage e serve para apagar do ' +
+        'nosso lado. O cliente só precisa da URL para ver o arquivo.'
     ).toEqual(['id', 'mensagem_id', 'nome_arquivo', 'tamanho_bytes', 'tipo_mime', 'url'].sort())
   })
 

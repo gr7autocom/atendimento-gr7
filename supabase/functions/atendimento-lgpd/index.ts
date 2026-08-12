@@ -5,12 +5,12 @@
  * A ORDEM É O PRODUTO DESTA FUNÇÃO
  *
  *   1. lista os arquivos do titular      (RPC atendimento_lgpd_anexos_do_titular)
- *   2. apaga cada um no Cloudinary       (destroy assinado)
+ *   2. apaga cada um no Storage          (bucket atendimento-anexos)
  *   3. elimina no banco                  (RPC atendimento_lgpd_eliminar_titular)
  *
  * Invertida, ela não funciona, e não é questão de estilo: `atendimento_anexos`
  * tem `ON DELETE CASCADE` em `mensagem_id`, então o passo 3 apaga o registro do
- * anexo e leva o `public_id` com ele. O arquivo ficaria no Cloudinary para
+ * anexo e leva o `storage_path` com ele. O arquivo ficaria no Storage para
  * sempre, alcançável por quem tivesse a URL, e sem nenhuma referência no
  * sistema dizendo que existe — impossível de achar depois, nem de propósito.
  * ─────────────────────────────────────────────────────────────────────────────
@@ -20,7 +20,11 @@
  * O client é criado com o JWT de quem chamou, então quem decide se a pessoa
  * pode eliminar é o `e_admin()` dentro das RPCs, no banco. Com service role a
  * função ignoraria a RLS e teria de reimplementar a checagem de permissão aqui
- * — duas verdades sobre quem é admin, e a de fora sempre desatualizando.
+ * — duas verdades sobre quem é admin, e a de fora sempre desatualizando. A
+ * remoção no Storage segue a mesma regra: as policies do bucket
+ * `atendimento-anexos` (migration `20260811150000`) também checam
+ * `e_admin()`, então este client sem service role também é quem apaga o
+ * arquivo, sem precisar de um segundo cliente.
  *
  * É o oposto da `atendimento-web`, que usa service role porque atende cliente
  * sem login nenhum. Aqui existe login, e ele é a autorização.
@@ -28,9 +32,9 @@
 // `esm.sh` e não `jsr`, como o resto das functions: o deno.lock fixa esta URL e
 // misturar as duas origens traria duas cópias do supabase-js para o bundle.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { apagarNoCloudinary, type ResultadoApagar } from '../_shared/cloudinary-apagar.ts'
+import { apagarNoStorage, type ResultadoApagar } from '../_shared/storage-apagar.ts'
 
-type AnexoDoTitular = { public_id: string | null; url: string | null; tipo_mime: string | null }
+type AnexoDoTitular = { storage_path: string | null; url: string | null }
 
 /*
   Origens da central. Diferente do `cors-web.ts`, que serve ao PWA do cliente:
@@ -104,15 +108,14 @@ Deno.serve(async (req) => {
     })
   }
 
-  // 2. Cloudinary. Um a um, e sequencial: são poucos por titular, e em rajada o
-  // provedor devolve 420 (rate limit), o que aqui significaria arquivo não
-  // apagado. Falha de um não impede os outros nem a eliminação: o que não saiu
-  // volta no relatório para alguém repetir, porque abortar por um arquivo
-  // deixaria o pedido do titular inteiramente sem atendimento.
+  // 2. Storage. Um a um: são poucos por titular, e falha de um não impede os
+  // outros nem a eliminação — o que não saiu volta no relatório para alguém
+  // repetir, porque abortar por um arquivo deixaria o pedido do titular
+  // inteiramente sem atendimento.
   const arquivos: ResultadoApagar[] = []
   for (const a of (anexos ?? []) as AnexoDoTitular[]) {
-    if (!a.public_id) continue
-    arquivos.push(await apagarNoCloudinary(a.public_id, a.tipo_mime))
+    if (!a.storage_path) continue
+    arquivos.push(await apagarNoStorage(supabase, a.storage_path))
   }
 
   // 3. Só agora o banco.

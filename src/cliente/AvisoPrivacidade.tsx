@@ -38,10 +38,9 @@ export function AvisoPrivacidade({ aberto, onFechar }: { aberto: boolean; onFech
 
         <Secao titulo="Quem tem acesso">
           Apenas a equipe de atendimento da GR7 Autocom. Seus dados não são compartilhados com
-          terceiros para fins comerciais. Dois serviços contratados atuam sob nossa
-          responsabilidade: o <span className="text-tx-1">Supabase</span>, que hospeda o sistema e o
-          banco de dados, e o <span className="text-tx-1">Cloudinary</span>, que guarda os arquivos
-          enviados na conversa.
+          terceiros para fins comerciais. Um serviço contratado atua sob nossa responsabilidade: o{' '}
+          <span className="text-tx-1">Supabase</span>, que hospeda o sistema, o banco de dados e os
+          arquivos enviados na conversa.
         </Secao>
 
         <Secao titulo="Por quanto tempo mantemos">

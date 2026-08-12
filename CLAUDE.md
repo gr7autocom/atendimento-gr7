@@ -52,7 +52,7 @@ Aconteceu em 2026-08-08: o anexo passou a receber prints, fotos e áudios do cli
 
 **A coleta nova entra no [docs/lgpd/inventario.md](docs/lgpd/inventario.md) na mesma tarefa, junto do aviso.** O inventário existe desde 2026-08-09 e só vale se acompanhar o código: uma linha a mais na tabela de tratamentos custa um minuto, e reconstruir de memória o que o sistema coleta custa uma auditoria.
 
-Os três documentos: [inventario.md](docs/lgpd/inventario.md) (o que se coleta, base legal, retenção), [subprocessadores.md](docs/lgpd/subprocessadores.md) (Supabase e Cloudinary, e o que a URL pública do Cloudinary implica) e [direitos-do-titular.md](docs/lgpd/direitos-do-titular.md) (como atender cada pedido do Art. 18). **Encarregado de dados ainda não indicado** — é o que falta para o aviso nomear uma pessoa em vez de um e-mail de setor.
+Os três documentos: [inventario.md](docs/lgpd/inventario.md) (o que se coleta, base legal, retenção), [subprocessadores.md](docs/lgpd/subprocessadores.md) (Supabase, incluindo o Storage dos anexos desde 2026-08-11, e o que a URL pública implica) e [direitos-do-titular.md](docs/lgpd/direitos-do-titular.md) (como atender cada pedido do Art. 18). **Encarregado de dados ainda não indicado** — é o que falta para o aviso nomear uma pessoa em vez de um e-mail de setor.
 
 ## Regras específicas
 

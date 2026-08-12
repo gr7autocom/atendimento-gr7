@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { Paperclip, X, AlertCircle } from 'lucide-react'
-import { enviarAnexo, recusaDoArquivo, formatarTamanho, type ArquivoEnviado } from '../../lib/cloudinary'
+import { enviarAnexo, recusaDoArquivo, formatarTamanho, type ArquivoEnviado } from '../../lib/storage'
 import { cn } from '../../lib/utils'
 
 /**

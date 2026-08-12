@@ -21,7 +21,7 @@ import type { ContatoResumo } from '../../lib/useInbox'
  *
  * A diretriz de UX para ação destrutiva é "confirme antes, e ofereça desfazer".
  * A segunda metade **não existe aqui**: quando o modal fecha, os arquivos já
- * saíram do Cloudinary e não voltam com nenhum botão.
+ * saíram do Storage e não voltam com nenhum botão.
  *
  * Sem volta, a confirmação precisa ser mais dura que um "Confirmar", e o motivo
  * é concreto: o painel do contato troca de conteúdo conforme a conversa aberta,
@@ -30,7 +30,7 @@ import type { ContatoResumo } from '../../lib/useInbox'
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
-type Arquivo = { public_id: string; apagado: boolean; motivo?: string }
+type Arquivo = { storage_path: string; apagado: boolean; motivo?: string }
 type Resultado = {
   mensagens_apagadas: number
   anexos_apagados: number
@@ -252,8 +252,8 @@ function ResultadoEliminacao({ resultado, onFechar }: { resultado: Resultado; on
             </p>
             <ul className="mt-1.5 flex flex-col gap-0.5">
               {sobraram.map((a) => (
-                <li key={a.public_id} className="text-corpo text-tx-3 dado break-all">
-                  {a.public_id}
+                <li key={a.storage_path} className="text-corpo text-tx-3 dado break-all">
+                  {a.storage_path}
                   {a.motivo ? ` — ${a.motivo}` : ''}
                 </li>
               ))}

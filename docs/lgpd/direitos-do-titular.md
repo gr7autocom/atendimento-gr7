@@ -12,7 +12,7 @@
 | **Correção** (III) | Sim, na tela | Painel do contato: nome e cargo são editáveis pelo atendente |
 | **Anonimização ou eliminação** (IV e VI) | **Sim, na tela** | Ver abaixo |
 | **Portabilidade** (V) | Não existe | Exigiria exportar em formato estruturado. Nunca foi pedido; construir quando for |
-| **Informação sobre compartilhamento** (VII) | Sim, escrito | [subprocessadores.md](subprocessadores.md), e o aviso nomeia os dois |
+| **Informação sobre compartilhamento** (VII) | Sim, escrito | [subprocessadores.md](subprocessadores.md), e o aviso nomeia o Supabase |
 | **Revogação do consentimento** (IX) | Parcial | Encerrar o acesso do cliente derruba a sessão dele (menu ⋮ da conversa). Revogar o consentimento do tratamento inteiro é a eliminação |
 
 ## Eliminação: o caminho que existe
@@ -21,13 +21,13 @@
 
 **O que acontece, na ordem:**
 
-1. Os arquivos do titular são apagados no **Cloudinary**
+1. Os arquivos do titular são apagados no **Supabase Storage**
 2. As mensagens e os anexos saem do banco, junto com as sessões web do aparelho dele
 3. O contato é anonimizado: nome e nome de WhatsApp viram nulos, e o telefone vira `anonimizado:<uuid>`, porque a coluna é obrigatória e única
 4. O chamado **fica**: protocolo, datas, setor, motivo e nota
 5. A operação é registrada em `atendimento_lgpd_eliminacoes`
 
-**Por que os arquivos primeiro.** `atendimento_anexos` cai em cascata com a mensagem, levando o `public_id` — a única chave capaz de apagar o arquivo no provedor. Na ordem inversa, o arquivo ficaria no Cloudinary para sempre e sem nenhuma referência no sistema apontando para ele. Isso não é teoria: aconteceu na primeira execução real, em 2026-08-08, quando um erro de chave estrangeira abortou o passo do banco. O rollback desfez o banco, os arquivos já tinham saído, e repetir a operação terminou o serviço. É o lado certo de falhar.
+**Por que os arquivos primeiro.** `atendimento_anexos` cai em cascata com a mensagem, levando o `storage_path` — a única chave capaz de apagar o arquivo no Storage. Na ordem inversa, o arquivo ficaria lá para sempre e sem nenhuma referência no sistema apontando para ele. Isso não é teoria: aconteceu na primeira execução real, em 2026-08-08 (quando o arquivo ainda ficava no Cloudinary), quando um erro de chave estrangeira abortou o passo do banco. O rollback desfez o banco, os arquivos já tinham saído, e repetir a operação terminou o serviço. É o lado certo de falhar.
 
 **Se algum arquivo não sair**, a tela diz quais e que dá para repetir. Eliminação parcial anunciada como completa é pior que falha declarada.
 

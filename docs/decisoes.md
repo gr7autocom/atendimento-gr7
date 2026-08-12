@@ -22,7 +22,7 @@ Registro das decisões fechadas no discovery/design, com justificativa. Data: 20
 
 ## ADR-04 — Supabase Free no piloto → Pro na produção
 **Decisão:** desenvolver e pilotar no Free; migrar para Pro na produção real.
-**Por quê:** Cloudinary tira o peso dos anexos; pg_cron/realtime/Edge já rodam no Free. Migrar para Pro por causa do auto-pause (webhook precisa estar sempre no ar) e backup.
+**Por quê:** pg_cron/realtime/Edge já rodam no Free. Migrar para Pro por causa do auto-pause (webhook precisa estar sempre no ar) e backup. **Nota (2026-08-11):** os anexos migraram do Cloudinary para o Supabase Storage ([ADR-12](#adr-12--migração-dos-anexos-cloudinary--supabase-storage)), então agora contam no teto de armazenamento do próprio projeto Supabase — não mais um fator a favor do Free por tirarem peso de fora.
 
 ## ADR-05 — Posse do ticket: Assumir explícito
 **Decisão:** ticket cai numa fila compartilhada do departamento; o atendente clica "Assumir" para virar dono.
@@ -56,9 +56,29 @@ Registro das decisões fechadas no discovery/design, com justificativa. Data: 20
 
 - Sem login, **não há barreira de entrada**: qualquer pessoa abre chamado. É o mesmo grau de abertura do WhatsApp, com menos atrito, e o rate limit é a única defesa. O impacto é chamado falso, nunca vazamento de conversa
 - **Limpar o navegador perde a conversa em andamento.** Não há solução dentro de "sem login", então o aviso é explícito na tela
-- **Não há push**: com o PWA fechado o cliente não é avisado. Por isso o atendente vê presença do cliente na conversa
+- **Não há push**: com o PWA fechado o cliente não é avisado. O indicador de presença que mitigava isso foi removido em 2026-08-11 (ver [ADR-13](#adr-13--indicador-de-presença-removido)) — hoje o atendente decide só pelo andamento da conversa, e finaliza se o cliente sumir
 
 Referência do canal em [canal-web.md](canal-web.md).
+
+## ADR-12 — Migração dos anexos: Cloudinary → Supabase Storage
+
+**Decisão (2026-08-11):** os anexos (prints, fotos, documentos e áudios) passam a ser gravados no Supabase Storage, bucket próprio `atendimento-anexos`, em vez do Cloudinary. Acervo já existente migrado (era um único arquivo). O Cloudinary sai deste repositório por completo; os secrets `CLOUDINARY_*` seguem configurados no Supabase compartilhado só porque `painel-implantacao-v2` ainda usa a mesma conta para limpar o legado dele (ver o design doc da migração dele, `docs/superpowers/specs/2026-08-08-migracao-cloudinary-supabase-storage-design.md`, naquele repo).
+
+**Por quê:** o usuário migrou o painel de implantação para o Storage e decidiu não manter dois provedores de arquivo diferentes entre os dois projetos irmãos. Bucket próprio, e não o `arquivos` do painel: os anexos daqui são conversa com cliente externo, e misturá-los no bucket interno de tarefas/scrap do painel acoplaria os dois produtos sem necessidade.
+
+**Como:** mesmo desenho de dois caminhos que já existia com o Cloudinary — a central (atendente autenticado) sobe direto pro bucket com a própria sessão (`src/lib/storage.ts`); o canal web (cliente sem login) nunca fala com o Storage direto, passa pela Edge Function `atendimento-web`, que grava com a chave de serviço. A exclusão de titular (LGPD) segue sem service role, de propósito: as policies do bucket (`atendimento_anexos_select`/`_delete`) checam `public.e_admin()`, a mesma função que já autoriza a RPC de eliminação.
+
+**Trade-off aceito conscientemente:** o bucket é público (mesma característica do Cloudinary antes) — quem tiver a URL acessa o arquivo sem login. Documentado em [lgpd/subprocessadores.md](lgpd/subprocessadores.md); não é regressão, é a mesma exposição que já existia.
+
+**Referência da migração-irmã:** `painel-implantacao-v2` fez o mesmo movimento em 2026-08-08/09 para tarefas, Talks e avatares; o desenho daqui reaproveita as lições de lá, sobretudo a de que `storage.objects` **precisa de policy de SELECT** além de INSERT/DELETE, senão a exclusão responde sucesso sem apagar nada.
+
+## ADR-13 — Indicador de presença removido
+
+**Decisão (2026-08-11):** o "Cliente na conversa" / "Cliente ausente há X min" / "Cliente sem acesso" do cabeçalho da conversa (canal web) saiu da tela.
+
+**Por quê:** o usuário comparou com o Zintech, referência de fluxo deste produto, que não tem esse indicador — e ao pensar no fluxo real percebeu que não precisa dele: o atendente já vê a última mensagem e decide sozinho se continua ou finaliza; um relógio dizendo "ausente há 4 min" não muda essa decisão. Motivou a remoção também um bug encontrado no caminho: o indicador podia ficar desatualizado com a central em segundo plano (a biblioteca de polling pausa por padrão nessa condição), e investigar por que valeu menos a pena que simplesmente tirar uma informação que não influenciava nenhuma ação.
+
+**O que ficou:** a RPC `atendimento_web_presenca` continua no banco e é chamada — não para exibir nada, só para decidir se "Encerrar acesso do cliente" aparece no menu (`sessoes_ativas > 0`). O componente `PresencaCliente.tsx` foi apagado; o hook `usePresencaCliente` ficou, porque essa segunda função ainda depende dele.
 
 ## Pendências de decisão (design em aberto)
 

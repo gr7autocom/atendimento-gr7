@@ -50,11 +50,10 @@ import { cn } from '../../lib/utils'
 import { canalDoChamado, ROTULO_CANAL } from '../../lib/canal'
 import { textoRodapeFinalizado, janelaEmHoras } from '../../lib/reabertura'
 import { useConfig } from '../../lib/useConfig'
-import { PresencaCliente } from './PresencaCliente'
 import { ListaAnexos } from '../ui/Anexo'
 import { GravadorAudio, BotaoGravar } from '../ui/GravadorAudio'
 import { MenuContexto } from '../ui/MenuContexto'
-import { enviarAnexo } from '../../lib/cloudinary'
+import { enviarAnexo } from '../../lib/storage'
 import { tocarSomEnvio } from '../../lib/notificacoes'
 import { CampoAnexo, FilaAnexos, type AnexoPendente } from './CampoAnexo'
 
@@ -377,12 +376,6 @@ export function Conversa({
               <span className="text-tx-3">·</span>
               <span className="shrink-0">{ROTULO_CANAL[canal]}</span>
               <PontoStatus status={atendimento.status} />
-              {/* Presença só no site: no WhatsApp quem diz se a pessoa está online é
-                  o aparelho dela, não nós. Chamado finalizado não consulta. */}
-              <PresencaCliente
-                atendimentoId={atendimento.id}
-                ativo={canal === 'web' && !finalizado}
-              />
             </div>
           </div>
         </div>
